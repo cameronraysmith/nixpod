@@ -40,7 +40,7 @@
 
       perSystem = { self', pkgs, ... }:
         let
-          myUserName = "user";
+          myUserName = "runner";
         in
         {
           legacyPackages.homeConfigurations.${myUserName} =

@@ -15,7 +15,7 @@ build:
 
 # activate home manager: rm ~/.bashrc ~/.profile || true && nix run && zsh
 # Run the Docker container
-run mount_path="$(pwd)" work_dir="/home/user/work": build
+run mount_path="$(pwd)" work_dir="/home/runner/work": build
     docker run -it --entrypoint "/bin/bash" \
     --rm -v {{mount_path}}:{{work_dir}} debnix:latest \
     -c 'cd {{work_dir}} && echo "export PS1=\"${debian_chroot:+($debian_chroot)}\h:\w\$\n> \"" >> ~/.bashrc && exec bash'

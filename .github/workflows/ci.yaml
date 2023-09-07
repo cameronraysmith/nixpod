@@ -38,8 +38,8 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
-      - name: Run the Magic Nix Cache
-        uses: DeterminateSystems/magic-nix-cache-action@main
+      # - name: Run the Magic Nix Cache
+      #   uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: cachix/cachix-action@v12
         with:
           name: srid
