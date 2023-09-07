@@ -1,7 +1,7 @@
 FROM debian:stable-slim
 
 # setup environment
-ARG USER="user"
+ARG USER="runner"
 ARG UID="1000"
 ARG GID="100"
 ENV USER=${USER}
@@ -19,7 +19,7 @@ RUN apt update -y && \
 # create user and grant sudo privileges
 # RUN groupadd --gid=${GID} ${USER} && \
 RUN useradd --create-home --shell=/bin/bash --uid=${UID} --gid=${GID} ${USER} && \
-    echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/user
+    echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"${USER}"
 
 # install nix for non-root user
 USER ${USER}
