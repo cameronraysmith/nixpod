@@ -1,4 +1,6 @@
 {
+  description = "A portable flake for Nix-based development when you cannot necessarily use NixOS";
+
   inputs = {
     # Principle inputs (updated by `nix run .#update`)
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -10,33 +12,22 @@
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs @ { 
-    self,
-    nixpkgs,
-    home-manager,
-    flake-parts,
-    nixos-flake,
-    systems,
-    ...
-  }:
+  outputs =
+    inputs @ { self
+    , nixpkgs
+    , home-manager
+    , flake-parts
+    , nixos-flake
+    , systems
+    , ...
+    }:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       # systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       systems = import systems;
       imports = [
         inputs.nixos-flake.flakeModule
+        ./home
       ];
-
-      flake.homeModules.default = ./home.nix;
-
-      flake.templates.default = {
-        description = "A `home-manager` template providing useful tools & settings for Nix-based development";
-        path = builtins.path {
-          path = ./.;
-          filter = path: _:
-            !(inputs.nixpkgs.lib.hasSuffix "LICENSE" path ||
-              inputs.nixpkgs.lib.hasSuffix "README.md" path);
-        };
-      };
 
       perSystem = { self', pkgs, ... }:
         let

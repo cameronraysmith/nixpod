@@ -1,27 +1,46 @@
-# https://nix-community.github.io/home-manager/index.html#sec-usage-configuration
-{ pkgs, ... }: {
-  imports = [
-    # This loads ./home/neovim/default.nix - neovim configured for Haskell dev, and other things.
-    ./home/neovim
-    ./home/starship.nix
-  ];
+{ pkgs, ... }:
 
-  # Nix packages to install to $HOME
-  #
-  # Search for packages here: https://search.nixos.org/packages
+# Platform-independent terminal setup
+{
   home.packages = with pkgs; [
-    tmate
-    nix-info
+    # Unix tools
+    ripgrep
+    fd
+    sd
+    tree
+
+    # Nix dev
     cachix
-    lazygit # Better git UI
-    ripgrep # Better `grep`
-    nil # Nix language server
-    nixci
+    nil
+    nix-info
+    nixpkgs-fmt
+
+    # Publishing
+    asciinema
+
+    # Dev
+    gh
+    just
+    lazygit
+    tmate
   ];
 
-  # Programs natively supported by home-manager.
+  home.shellAliases = rec {
+    e = "nvim";
+    g = "git";
+    lg = "lazygit";
+    t = "tree";
+  };
+
   programs = {
-    # on macOS, you probably don't need this
+    bat.enable = true;
+    autojump.enable = false;
+    zoxide.enable = true;
+    fzf.enable = true;
+    jq.enable = true;
+    nix-index.enable = true;
+    htop.enable = true;
+
     bash = {
       enable = true;
       initExtra = ''
@@ -30,7 +49,6 @@
       '';
     };
 
-    # For macOS's default shell.
     zsh = {
       enable = true;
       envExtra = ''
@@ -39,13 +57,9 @@
       '';
     };
 
-    # https://zero-to-flakes.com/direnv
     direnv = {
       enable = true;
       nix-direnv.enable = true;
     };
-
-    # Type `z <pat>` to cd to some directory
-    zoxide.enable = true;
   };
 }
