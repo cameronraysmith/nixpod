@@ -12,15 +12,15 @@
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs @ { 
-    self,
-    nixpkgs,
-    home-manager,
-    flake-parts,
-    nixos-flake,
-    systems,
-    ...
-  }:
+  outputs =
+    inputs @ { self
+    , nixpkgs
+    , home-manager
+    , flake-parts
+    , nixos-flake
+    , systems
+    , ...
+    }:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       # systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
       systems = import systems;
