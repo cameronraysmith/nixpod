@@ -20,6 +20,7 @@
 
     # Dev
     gh
+    just
     lazygit
     tmate
   ];
