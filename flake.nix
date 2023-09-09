@@ -9,21 +9,14 @@
 
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-flake.url = "github:srid/nixos-flake";
+
+    # see https://github.com/nix-systems/default/blob/main/default.nix
     systems.url = "github:nix-systems/default";
   };
 
-  outputs =
-    inputs @ { self
-    , nixpkgs
-    , home-manager
-    , flake-parts
-    , nixos-flake
-    , systems
-    , ...
-    }:
+  outputs = inputs:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
-      # systems = [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" "x86_64-darwin" ];
-      systems = import systems;
+      systems = import inputs.systems;
       imports = [
         inputs.nixos-flake.flakeModule
         ./home
@@ -35,21 +28,29 @@
         in
         {
           legacyPackages.homeConfigurations.${myUserName} =
-            self.nixos-flake.lib.mkHomeConfiguration
+            inputs.self.nixos-flake.lib.mkHomeConfiguration
               pkgs
               ({ pkgs, ... }: {
-                imports = [ self.homeModules.default ];
+                imports = [ inputs.self.homeModules.default ];
                 home.username = myUserName;
                 home.homeDirectory = "/${if pkgs.stdenv.isDarwin then "Users" else "home"}/${myUserName}";
                 home.stateVersion = "22.11";
               });
 
+          # Lint with nixpkgs-fmt
+          formatter = pkgs.nixpkgs-fmt;
+
           # Enables 'nix run' to activate.
           apps.default.program = self'.packages.activate-home;
 
-          # Enable 'nix build' to build the home configuration, but without
-          # activating.
+          # Enable 'nix build' to build the home configuration, without activating.
           packages.default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
+
+          # Enable 'nix develop' to activate the development shell.
+          devShells.default = pkgs.mkShell {
+            name = "nixpod-home";
+            nativeBuildInputs = with pkgs; [ just ];
+          };
         };
     };
 }
