@@ -44,6 +44,9 @@
                 home.stateVersion = "22.11";
               });
 
+          # Lint with nixpkgs-fmt
+          formatter = pkgs.nixpkgs-fmt;
+
           # Enables 'nix run' to activate.
           apps.default.program = self'.packages.activate-home;
 

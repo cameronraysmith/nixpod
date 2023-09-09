@@ -11,4 +11,4 @@ help:
 
 # Lint nix files
 lint:
-    nix run nixpkgs#nixpkgs-fmt -- .
+   nix fmt 
