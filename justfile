@@ -12,3 +12,11 @@ help:
 # Lint nix files
 lint:
    nix fmt 
+
+# Check nix flake
+check:
+    nix flake check
+
+# Run nix flake to setup environment
+run: lint check
+    nix run
