@@ -8,16 +8,18 @@
 
 </div>
 
-While this repository contains a [Nix flake](https://zero-to-nix.com/concepts/flakes), it essentially integrates a few parts of [srid/nixos-config](https://github.com/srid/nixos-config) into [juspay/nix-dev-home](https://github.com/juspay/nix-dev-home) that were integrated upstream in [juspay/nix-dev-home#7](https://github.com/juspay/nix-dev-home/pull/7), so you might prefer to look there.
+While this repository contains a [Nix flake](https://zero-to-nix.com/concepts/flakes), it essentially integrates a few parts of [srid/nixos-config](https://github.com/srid/nixos-config) into [juspay/nix-dev-home](https://github.com/juspay/nix-dev-home). These were merged upstream in [juspay/nix-dev-home#7](https://github.com/juspay/nix-dev-home/pull/7), so you might prefer to look there.
 
 The intention of this repository is to provide a reasonably ergonomic, if somewhat heavy-handed, drop-in configuration on any platform where the [nix](https://github.com/NixOS/nix) package manager is, or can be, installed. This is intended to include applications like [kubernetes ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) via images like [netshoot](https://github.com/nicolaka/netshoot), which might be used for debugging purposes adjacent to otherwise minimal container images.
 
 ## Testing
 
 > [!NOTE]
-> This repository also intends to support building containers using [pkgs.dockerTools.buildImage](https://nixos.org/manual/nixpkgs/stable/#ssec-pkgs-dockerTools-buildImage), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Dockerfile](https://github.com/cameronraysmith/nixpod-home/blob/main/testing/Dockerfile).
+> This repository also intends to support building containers using [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Dockerfile](https://github.com/cameronraysmith/nixpod-home/blob/main/testing/Dockerfile).
 
-If you would like to use the [nix dev shell](https://nixos.wiki/wiki/Flakes#Super_fast_nix-shell), which will install [just](https://github.com/casey/just) using nix,  and the [container `builder` specified in the justfile](justfile) is already installed on your `PATH` with necessary daemon available,
+### direnv and dev shell
+
+If you have [direnv](https://github.com/direnv/direnv) installed and configured you probably know what to do. If you do not and you would like to use the [nix dev shell](https://nixos.wiki/wiki/Flakes#Super_fast_nix-shell), which will install [just](https://github.com/casey/just) using nix,  and the [container `builder` specified in the justfile](justfile) is already installed on your `PATH` with necessary daemon running and available,
 
 ```bash
 nix develop
@@ -30,7 +32,7 @@ See comments in the [justfile](justfile) for additional details.
 
 ### macOS
 
-If you have a container image manager compatible with macOS installed, such as docker or rancher desktop, and you prefer not to use the nix dev shell, you can probably (with docker desktop for example)
+If you have a container image manager compatible with macOS installed, such as docker or rancher desktop, and you prefer not to use the [nix dev shell](#direnv-and-dev-shell), you can probably (with docker desktop for example)
 
 ```bash
 open -a Docker
@@ -39,7 +41,7 @@ cargo install just
 just testcontainer-run
 ```
 
-however, please see [rust](https://www.rust-lang.org/tools/install) and [just](https://github.com/casey/just) for details if you prefer another installation method like homebrew.
+however, please see [rust](https://www.rust-lang.org/tools/install) and [just](https://github.com/casey/just#installation) for details if you prefer another installation method like [homebrew](https://formulae.brew.sh/formula/just).
 
 ## Acknowledgements
 
