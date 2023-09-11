@@ -7,8 +7,8 @@ inputs:
   image-name:
     description: 'Image name'
     required: true
-  dockerfile-path:
-    description: 'Dockerfile path'
+  containerfile-path:
+    description: 'Containerfile path'
     required: true
   push-condition:
     description: 'Condition to push'
@@ -67,7 +67,7 @@ runs:
       uses: docker/build-push-action@v4
       with:
         context: .
-        file: ${{ inputs.dockerfile-path }}
+        file: ${{ inputs.containerfile-path }}
         platforms: linux/amd64,linux/arm64
         push: ${{ inputs.push-condition }}
         tags: ${{ steps.meta.outputs.tags }}

@@ -55,10 +55,13 @@ container:
 # The just recipes below are for testing the flake in a container
 #----------------------------------------------------------------
 
-builder := "docker"
+builder := "podman"
 container_user := "runner"
 container_home := "/home" / container_user
 container_work := container_home / "work"
+container_registry := "ghcr.io/cameronraysmith/"
+container_image := "nixpod-home-testing"
+container_tag := "latest"
 
 container_command_type := "runflake"
 # If you want to test the flake manually check
@@ -75,14 +78,17 @@ container_command := if container_command_type == "runflake" {
     error("container_command_type must be either 'runflake' or 'bash'") 
   }
 
+testcontainer-pull:
+  {{builder}} pull {{container_registry}}{{container_image}}:{{container_tag}}
+
 # Build and load container image for testing the flake in a container
 testcontainer-build:
-  {{builder}} build -t debnix:latest -f testing/Dockerfile .
+  {{builder}} build -t {{container_image}}:{{container_tag}} -f testing/Containerfile .
 
 # Run the test container image
 testcontainer-run mount_path="$(pwd)": testcontainer-build
   {{builder}} run -it --entrypoint "/bin/bash" \
-  --rm -v {{mount_path}}:{{container_work}} debnix:latest \
+  --rm -v {{mount_path}}:{{container_work}} {{container_image}}:{{container_tag}} \
   -c '{{container_command}}'
 
 # Get test image digest

@@ -15,7 +15,7 @@ The intention of this repository is to provide a reasonably ergonomic, if somewh
 ## Testing
 
 > [!NOTE]
-> This repository also intends to support building containers using [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Dockerfile](https://github.com/cameronraysmith/nixpod-home/blob/main/testing/Dockerfile).
+> This repository also intends to support building containers using [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Containerfile](https://github.com/cameronraysmith/nixpod-home/blob/main/testing/Containerfile).
 
 ### direnv and dev shell
 
@@ -26,7 +26,7 @@ nix develop
 just testcontainer-run
 ```
 
-should build the container image in [testing/Dockerfile](./testing/Dockerfile) and run the flake in that image.
+should build the container image in [testing/Containerfile](./testing/Containerfile) and run the flake in that image.
 Note that just `just` will print help and you can run `just -n <command>` first for a dry run.
 See comments in the [justfile](justfile) for additional details.
 

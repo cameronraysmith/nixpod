@@ -64,6 +64,6 @@ jobs:
         with:
           registry: ghcr.io
           image-name: ${{ github.repository }}-testing
-          dockerfile-path: "testing/Dockerfile"
+          containerfile-path: "testing/Containerfile"
           push-condition: ${{ github.event_name != 'pull_request' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
