@@ -42,6 +42,15 @@ clean:
 run: lint check
   nix run
 
+# Compile nix flake to OCI json format
+oci:
+  nix build .#container
+
+# Build and copy OCI format container image to docker daemon
+container:
+  docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
+  nix run .#container.copyToDockerDaemon
+
 #----------------------------------------------------------------
 # The just recipes below are for testing the flake in a container
 #----------------------------------------------------------------
@@ -91,15 +100,3 @@ testcontainer-sha256:
   nix-hash --type sha256 --base32 debian_stable_slim.tar
   nix-hash --type sha256 --base64 debian_stable_slim.tar
   rm debian_stable_slim.tar || true
-
-# # Build and Load the Docker Image with nix
-# buildnix:
-#     @echo "Building the Docker image..."
-#     nix build .#dockerImage
-#     @echo "Loading the Docker image into Docker daemon..."
-#     docker load < result
-
-# # Run the Docker Container built by nix
-# runnix: buildnix
-#     @echo "Running the Docker container..."
-#     docker run -it --rm -v $(pwd):/mnt debnix:latest
