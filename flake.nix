@@ -40,7 +40,7 @@
           # Make home-manager configuration
           legacyPackages.homeConfigurations.${myUserName} = homeConfig;
 
-          # Lint with nixpkgs-fmt
+          # Enable 'nix fmt' to lint with nixpkgs-fmt
           formatter = pkgs.nixpkgs-fmt;
 
           # Enable 'nix run' to activate home-manager.
@@ -64,7 +64,8 @@
             ];
             config = {
               Cmd = [
-                "${pkgs.bash}/bin/bash" "-c" 
+                "${pkgs.bash}/bin/bash"
+                "-c"
                 "${self'.packages.activate-home}/bin/activate-home && exec ${pkgs.zsh}/bin/zsh"
               ];
             };
