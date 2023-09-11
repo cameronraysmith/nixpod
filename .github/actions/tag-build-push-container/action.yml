@@ -14,6 +14,9 @@ inputs:
     description: 'Condition to push'
     required: true
     default: 'false'
+  github-token:
+    description: 'GitHub Token for logging in to the container registry'
+    required: true
 
 runs:
   using: composite
@@ -33,9 +36,6 @@ runs:
         echo "             SHA:" "$GITHUB_SHA"
       shell: bash
 
-    - name: Checkout
-      uses: actions/checkout@v4
-
     - name: Set up QEMU
       uses: docker/setup-qemu-action@v2
 
@@ -47,7 +47,7 @@ runs:
       with:
         registry: ${{ inputs.registry }}
         username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        password: ${{ inputs.github-token }}
 
     - name: Extract github metadata for docker labels
       id: meta
