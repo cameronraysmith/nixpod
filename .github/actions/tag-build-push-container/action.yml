@@ -1,0 +1,74 @@
+name: 'Tag, Build, and Push Container'
+description: 'Shared steps to tag, build, and push container'
+inputs:
+  registry:
+    description: 'Container registry'
+    required: true
+  image-name:
+    description: 'Image name'
+    required: true
+  dockerfile-path:
+    description: 'Dockerfile path'
+    required: true
+  push-condition:
+    description: 'Condition to push'
+    required: true
+    default: 'false'
+
+runs:
+  using: composite
+  steps:
+    - name: "Print github context"
+      run: |
+        echo "      EVENT_NAME:" "$GITHUB_EVENT_NAME"
+        echo "             REF:" "$GITHUB_REF"
+        echo "       full_name: ${{ github.event.repository.full_name }}"
+        echo "      repository: ${{ github.repository }}"
+        echo "repository_owner: ${{ github.repository_owner }}"
+        echo "  default_branch: ${{ github.event.repository.default_branch }}"
+        echo "REPOSITORY_OWNER:" "$GITHUB_REPOSITORY_OWNER"
+        echo "        REF_NAME:" "$GITHUB_REF_NAME"
+        echo "        HEAD_REF:" "$GITHUB_HEAD_REF"
+        echo "        BASE_REF:" "$GITHUB_BASE_REF"
+        echo "             SHA:" "$GITHUB_SHA"
+      shell: bash
+
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to container registry
+      uses: docker/login-action@v2
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract github metadata for docker labels
+      id: meta
+      uses: docker/metadata-action@v4
+      with:
+        images: |
+          ${{ inputs.registry }}/${{ inputs.image-name }}
+        tags: |
+          type=raw,value=latest,enable={{is_default_branch}}
+          type=ref,event=branch
+          type=ref,event=pr
+          type=semver,pattern={{version}}
+          type=semver,pattern={{major}}.{{minor}}
+          type=sha,prefix=,format=long
+
+    - name: Build and push
+      uses: docker/build-push-action@v4
+      with:
+        context: .
+        file: ${{ inputs.dockerfile-path }}
+        platforms: linux/amd64,linux/arm64
+        push: ${{ inputs.push-condition }}
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
