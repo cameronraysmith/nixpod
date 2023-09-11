@@ -10,10 +10,10 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    types: [ opened, reopened, labeled, synchronize ]
+    types: [ opened, reopened, synchronize ]
 
 jobs:
-  scanning:
+  scan:
     name: GitGuardian scan
     runs-on: ubuntu-latest
     steps:
@@ -29,8 +29,9 @@ jobs:
           GITHUB_PULL_BASE_SHA:  ${{ github.event.pull_request.base.sha }}
           GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
-  nix:
-    needs: scanning
+
+  nixci:
+    needs: scan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -49,3 +50,20 @@ jobs:
       - name: Build
         run: |
           nix run github:srid/nixci
+
+  test-image:
+    needs: scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository }}-testing
+          dockerfile-path: "testing/Dockerfile"
+          push-condition: ${{ github.event_name != 'pull_request' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}

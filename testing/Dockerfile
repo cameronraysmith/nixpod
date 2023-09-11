@@ -8,7 +8,7 @@ ENV USER=${USER}
 ENV HOME=/home/${USER}
 ENV PATH="${HOME}/.nix-profile/bin:${PATH}"
 ENV NIX_INSTALL_URL="https://install.determinate.systems/nix"
-ENV NIX_INSTALL_ARGS="install linux --extra-conf 'sandbox = false' --init none --no-confirm"
+ENV NIX_INSTALL_ARGS="install linux --extra-conf 'sandbox = false' --extra-conf 'filter-syscalls = false' --init none --no-confirm"
 
 # install primary Debian packages
 RUN apt update -y && \
@@ -28,6 +28,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf \
     -L ${NIX_INSTALL_URL} | \
     sh -s -- install linux \
     --extra-conf "sandbox = false" \
+    --extra-conf "filter-syscalls = false" \
     --init none \
     --no-confirm
 

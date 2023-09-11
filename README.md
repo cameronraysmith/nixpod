@@ -19,7 +19,7 @@ The intention of this repository is to provide a reasonably ergonomic, if somewh
 
 ### direnv and dev shell
 
-If you have [direnv](https://github.com/direnv/direnv) installed and configured you probably know what to do. If you do not and you would like to use the [nix dev shell](https://nixos.wiki/wiki/Flakes#Super_fast_nix-shell), which will install [just](https://github.com/casey/just) using nix,  and the [container `builder` specified in the justfile](justfile) is already installed on your `PATH` with necessary daemon running and available,
+If you have [direnv](https://github.com/direnv/direnv) installed and configured you probably know what to do. If you do not and you would like to use the [nix dev shell](https://nixos.wiki/wiki/Flakes#Super_fast_nix-shell), which will install [just](https://github.com/casey/just) using nix, you can execute `nix develop`.  If the [container `builder` specified in the justfile](justfile) is already installed on your `PATH` with necessary daemon running and available,
 
 ```bash
 nix develop
