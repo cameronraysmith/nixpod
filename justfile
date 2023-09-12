@@ -100,12 +100,17 @@ container-pull:
 
 # Build and load image for running the flake in a container
 container-build: container-pull
-  {{builder}} build -t {{container_image}}:{{container_tag}} -f containers/Containerfile.{{container_image}} .
+  {{builder}} build -t {{container_registry}}{{container_image}}:{{container_tag}} -f containers/Containerfile.{{container_image}} .
+
+# Build the image only if pull fails
+container-pull-or-build:
+  {{builder}} pull {{container_registry}}{{container_image}}:{{container_tag}} || \
+  {{builder}} build -t {{container_registry}}{{container_image}}:{{container_tag}} -f containers/Containerfile.{{container_image}} .
 
 # Run the container image
-container-run mount_path="$(pwd)": container-build
+container-run mount_path="$(pwd)": container-pull-or-build
   {{builder}} run -it \
-  --rm -v {{mount_path}}:{{container_work}} {{container_image}}:{{container_tag}} \
+  --rm -v {{mount_path}}:{{container_work}} {{container_registry}}{{container_image}}:{{container_tag}} \
   -c '{{container_command}}'
 
 # Get base image digest
