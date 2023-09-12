@@ -25,7 +25,7 @@ If you have [direnv](https://github.com/direnv/direnv) installed and configured 
 
 ```bash
 nix develop
-just container-run
+just container_command_type="runflake" container-run
 ```
 
 should pull or build the container image in [containers/Containerfile.debnix](./containers/Containerfile.debnix) and run the flake in that image. If you want to force a local rebuild run `just container-build`.
@@ -40,7 +40,7 @@ If you have a container image manager compatible with macOS installed, such as d
 open -a Docker
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install just
-just container-run
+just container_command_type="runflake" container-run
 ```
 
 however, please see [rust](https://www.rust-lang.org/tools/install) and [just](https://github.com/casey/just#installation) for details if you prefer another installation method like [homebrew](https://formulae.brew.sh/formula/just).
