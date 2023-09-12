@@ -6,16 +6,19 @@
 	<img alt="Nix Flakes Ready" src="https://img.shields.io/static/v1?logo=nixos&logoColor=d8dee9&label=Nix%20Flakes&labelColor=5e81ac&message=In%20Containers&color=d8dee9&style=for-the-badge">
 </a>
 
+**[tl;dr](#experimenting)**
+
 </div>
 
 While this repository contains a [Nix flake](https://zero-to-nix.com/concepts/flakes), it essentially integrates a few parts of [srid/nixos-config](https://github.com/srid/nixos-config) into [juspay/nix-dev-home](https://github.com/juspay/nix-dev-home). These were merged upstream in [juspay/nix-dev-home#7](https://github.com/juspay/nix-dev-home/pull/7), so you might prefer to look there.
 
 The intention of this repository is to provide a reasonably ergonomic, if somewhat heavy-handed, drop-in configuration on any platform where the [nix](https://github.com/NixOS/nix) package manager is, or can be, installed. This is intended to include applications like [kubernetes ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) via images like [netshoot](https://github.com/nicolaka/netshoot), which might be used for debugging purposes adjacent to otherwise minimal container images.
 
+
 ## Testing
 
 > [!NOTE]
-> This repository also intends to support building containers using [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Dockerfile](https://github.com/cameronraysmith/nixpod-home/blob/main/testing/Dockerfile).
+> This repository also intends to support building containers using [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Containerfile](https://github.com/cameronraysmith/nixpod-home/blob/main/testing/Containerfile).
 
 ### direnv and dev shell
 
@@ -23,10 +26,10 @@ If you have [direnv](https://github.com/direnv/direnv) installed and configured 
 
 ```bash
 nix develop
-just testcontainer-run
+just container-run
 ```
 
-should build the container image in [testing/Dockerfile](./testing/Dockerfile) and run the flake in that image.
+should build the container image in [containers/Containerfile.debnix](./containers/Containerfile.debnix) and run the flake in that image.
 Note that just `just` will print help and you can run `just -n <command>` first for a dry run.
 See comments in the [justfile](justfile) for additional details.
 
@@ -38,10 +41,29 @@ If you have a container image manager compatible with macOS installed, such as d
 open -a Docker
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 cargo install just
-just testcontainer-run
+just container-run
 ```
 
 however, please see [rust](https://www.rust-lang.org/tools/install) and [just](https://github.com/casey/just#installation) for details if you prefer another installation method like [homebrew](https://formulae.brew.sh/formula/just).
+
+## Experimenting
+
+If you want to simply run a distribution of this flake in a container image, you can execute
+
+```bash
+just container_type="container" container_command="zsh" containter-run
+```
+
+### docker
+
+If you're using docker as the `builder`, this will execute a series of commands like
+
+```bash
+docker pull ghcr.io/cameronraysmith/nixpod:latest
+docker run -it --rm nixpod:latest
+```
+
+See the [justfile](justfile) for details.
 
 ## Acknowledgements
 
