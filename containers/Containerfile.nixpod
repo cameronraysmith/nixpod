@@ -1,0 +1,14 @@
+FROM ghcr.io/cameronraysmith/debnix:latest
+
+USER root
+COPY . ${HOME}/work/
+RUN chown -R ${USER} ${HOME}/work/
+
+USER ${USER}
+WORKDIR ${HOME}/work
+RUN for file in ${HOME}/.bashrc ${HOME}/.profile; do \
+        mv "$file" "$file.before-nix-run"; \
+    done
+RUN nix run
+
+ENTRYPOINT [ "zsh" ]
