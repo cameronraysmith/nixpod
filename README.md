@@ -14,7 +14,6 @@ While this repository contains a [Nix flake](https://zero-to-nix.com/concepts/fl
 
 The intention of this repository is to provide a reasonably ergonomic, if somewhat heavy-handed, drop-in configuration on any platform where the [nix](https://github.com/NixOS/nix) package manager is, or can be, installed. This is intended to include applications like [kubernetes ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) via images like [netshoot](https://github.com/nicolaka/netshoot), which might be used for debugging purposes adjacent to otherwise minimal container images.
 
-
 ## Testing
 
 > [!NOTE]
@@ -29,7 +28,7 @@ nix develop
 just container-run
 ```
 
-should build the container image in [containers/Containerfile.debnix](./containers/Containerfile.debnix) and run the flake in that image.
+should pull or build the container image in [containers/Containerfile.debnix](./containers/Containerfile.debnix) and run the flake in that image. If you want to force a local rebuild run `just container-build`.
 Note that just `just` will print help and you can run `just -n <command>` first for a dry run.
 See comments in the [justfile](justfile) for additional details.
 
@@ -51,7 +50,7 @@ however, please see [rust](https://www.rust-lang.org/tools/install) and [just](h
 If you want to simply run a distribution of this flake in a container image, you can execute
 
 ```bash
-just container_type="container" container_command="zsh" containter-run
+just container_type="container" container_command="zsh" container-run
 ```
 
 ### docker
@@ -60,7 +59,7 @@ If you're using docker as the `builder`, this will execute a series of commands 
 
 ```bash
 docker pull ghcr.io/cameronraysmith/nixpod:latest
-docker run -it --rm nixpod:latest
+docker run -it --rm ghcr.io/cameronraysmith/nixpod:latest
 ```
 
 See the [justfile](justfile) for details.
