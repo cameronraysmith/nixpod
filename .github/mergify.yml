@@ -27,4 +27,3 @@ queue_rules:
       - check-success=gitguardian
       - check-success=nixci
       - check-success=debnix
-      - check-success=nixpod
