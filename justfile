@@ -5,7 +5,7 @@ default: help
 # Display help
 help:
   @printf "\nRun 'just -n <command>' to print what would be executed...\n\n"
-  @just --list
+  @just --list --unsorted
   @echo "\n...by running 'just <command>'.\n"
   @echo "This message is printed by 'just help' and just 'just'.\n"
 
@@ -70,6 +70,60 @@ container_image := if container_type == "testing" {
     error("container_type must be either 'testing' or 'container'") 
   }
 container_tag := "latest"
+
+architecture := if arch() == "x86_64" {
+    "amd64"
+  } else if arch() == "aarch64" {
+    "arm64"
+  } else {
+    error("unsupported architecture must be amd64 or arm64")
+  }
+
+opsys := if os() == "macos" {
+    "darwin"
+  } else if os() == "linux" {
+    "linux"
+  } else {
+    error("unsupported operating system must be darwin or linux")
+  }
+
+# Install devpod
+[unix]
+install-devpod:
+  curl -L -o devpod \
+  "https://github.com/loft-sh/devpod/releases/latest/download/devpod-{{opsys}}-{{architecture}}" && \
+  sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+
+# Print devpod info
+devpod:
+  devpod version && echo
+  devpod context list
+  devpod provider list
+  devpod list
+
+# Install and use devpod kubernetes provider
+provider:
+  devpod provider add kubernetes --silent || true \
+  && devpod provider use kubernetes
+
+# Run latest container_image in current kube context
+pod:
+  devpod up \
+  --devcontainer-image {{container_registry}}{{container_image}}:{{container_tag}} \
+  --provider kubernetes \
+  --ide vscode \
+  --open-ide \
+  --source git:https://github.com/cameronraysmith/nixpod-home \
+  --provider-option DISK_SIZE=100Gi \
+  {{container_image}}
+
+# Interactively select devpod to stop
+stop: 
+  devpod stop
+
+# Interactively select devpod to delete
+delete: 
+  devpod delete
 
 container_command_type := "sysbash"
 # If you want to 
