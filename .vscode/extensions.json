@@ -1,0 +1,13 @@
+{
+  "recommendations": [
+    "jnoortheen.nix-ide",
+    "arrterian.nix-env-selector",
+    "sclu1034.justfile",
+    "ms-vscode.makefile-tools",
+    "ms-vsliveshare.vsli",
+    "eamodio.gitlens",
+    "github.vscode-github-actions",
+    "vscode-icons-team.vscode-icons",
+    "poimandres.theme-poimandres"
+  ]
+}
