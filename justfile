@@ -87,12 +87,22 @@ opsys := if os() == "macos" {
     error("unsupported operating system must be darwin or linux")
   }
 
+devpod_release := "latest" # or "v0.3.7" or "v0.4.0-alpha.4"
+
+devpod_binary_url := if devpod_release == "latest" {
+  "https://github.com/loft-sh/devpod/releases/latest/download/devpod-" + opsys + "-" + architecture
+} else {
+  "https://github.com/loft-sh/devpod/releases/download/" + devpod_release + "/devpod-" + opsys + "-" + architecture
+}
+
 # Install devpod
 [unix]
 install-devpod:
-  curl -L -o devpod \
-  "https://github.com/loft-sh/devpod/releases/latest/download/devpod-{{opsys}}-{{architecture}}" && \
-  sudo install -c -m 0755 devpod /usr/local/bin && rm -f devpod
+  curl -L -o devpod {{devpod_binary_url}} && \
+  sudo install -c -m 0755 devpod /usr/local/bin && \
+  rm -f devpod
+  which devpod
+  devpod version
 
 # Print devpod info
 devpod:
