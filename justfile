@@ -197,3 +197,27 @@ basecontainer-sha256:
 checknix:
   nix run nixpkgs#hello # 30s
   nix run github:srid/nix-health # 3m
+
+# Docker command to run sethvargo/ratchet to pin GitHub Actions workflows version tags to commit hashes
+ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/sethvargo/ratchet:0.9.2"
+
+# List of GitHub Actions workflows
+gha_workflows := ".github/actions/tag-build-push-container/action.yml .github/workflows/ci.yaml .github/workflows/cd.yml .github/workflows/update-flake-lock.yml"
+
+# Pin all workflow versions to hash values (requires Docker)
+ratchet-pin:
+  @for workflow in {{gha_workflows}}; do \
+    eval "{{ratchet_base}} pin $workflow"; \
+  done
+
+# Unpin hashed workflow versions to semantic values (requires Docker)
+ratchet-unpin:
+  @for workflow in {{gha_workflows}}; do \
+    eval "{{ratchet_base}} unpin $workflow"; \
+  done
+
+# Update GitHub Actions workflows to the latest version (requires Docker)
+ratchet-update:
+  @for workflow in {{gha_workflows}}; do \
+    eval "{{ratchet_base}} update $workflow"; \
+  done
