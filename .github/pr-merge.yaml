@@ -1,0 +1,20 @@
+name: PR Fast-forward Merge
+on:
+  issue_comment:
+    types: [created, edited]
+jobs:
+  fast-forward:
+    if: ${{ contains(github.event.comment.body, '/fast-forward') && github.event.issue.pull_request }}
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: fast-forward merge
+        uses: sequoia-pgp/fast-forward@042cd23fbf9d5ed1400497a106c8abe4b45408ab # ratchet:sequoia-pgp/fast-forward@main
+        with:
+          merge: true
+          comment: on-error

@@ -1,0 +1,19 @@
+name: PR Check Fast-forward
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+jobs:
+  check-fast-forward:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+
+    steps:
+      - name: check fast-forward merge is possible
+        uses: sequoia-pgp/fast-forward@042cd23fbf9d5ed1400497a106c8abe4b45408ab # ratchet:sequoia-pgp/fast-forward@main
+        with:
+          merge: false
+          comment: on-error
