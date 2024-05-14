@@ -49,7 +49,7 @@ jobs:
         if: ${{ inputs.debug_enabled }}
       - name: Build
         run: |
-          nix run github:srid/nixci
+          nix run github:srid/nixci -- build
 
   debnix:
     needs: scan
