@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Draft the release notes
-        uses: release-drafter/release-drafter@v5.24.0
+        uses: release-drafter/release-drafter@65c5fb495d1e69aa8c08a3317bc44ff8aabe9772 # ratchet:release-drafter/release-drafter@v5.24.0
         with:
           publish: false
           tag: v0.1.0
@@ -24,9 +24,9 @@ jobs:
       id-token: "write"
       contents: "read"
     steps:
-      - uses: "actions/checkout@v4"
-      - uses: "DeterminateSystems/nix-installer-action@main"
-      - uses: "DeterminateSystems/flakehub-push@main"
+      - uses: "actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b" # ratchet:actions/checkout@v4
+      - uses: "DeterminateSystems/nix-installer-action@8cdf194da984e4f12b2f8c36d1fa107c1dd67f5c" # ratchet:DeterminateSystems/nix-installer-action@main
+      - uses: "DeterminateSystems/flakehub-push@925b381813a62a3ff2075fb58e1263965d086f6b" # ratchet:DeterminateSystems/flakehub-push@main
         with:
           visibility: "public"
           rolling: true
