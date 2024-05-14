@@ -22,7 +22,7 @@ jobs:
         with:
           fetch-depth: 0 # fetch all history so multiple commits can be scanned
       - name: GitGuardian scan
-        uses: GitGuardian/ggshield-action@9074c0893e8ee86ccd6418177a0eb3e5aa02262a # ratchet:GitGuardian/ggshield-action@v1.22.0
+        uses: GitGuardian/ggshield-action@e8eef84fc3419d2a7e7beb15ab96c95b3ce2da24 # ratchet:GitGuardian/ggshield-action@v1.27.0
         env:
           GITHUB_PUSH_BEFORE_SHA: ${{ github.event.before }}
           GITHUB_PUSH_BASE_SHA: ${{ github.event.base }}
@@ -41,7 +41,7 @@ jobs:
           extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
       # - name: Run the Magic Nix Cache
       #   uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: cachix/cachix-action@6a2e08b5ebf7a9f285ff57b1870a4262b06e0bee # ratchet:cachix/cachix-action@v13
+      - uses: cachix/cachix-action@18cf96c7c98e048e10a83abd92116114cd8504be # ratchet:cachix/cachix-action@v14
         with:
           name: srid
       - name: Setup tmate debug session

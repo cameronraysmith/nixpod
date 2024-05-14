@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # ratchet:actions/checkout@v4
 
       - name: Run Labeler
-        uses: crazy-max/ghaction-github-labeler@v5.0.0
+        uses: crazy-max/ghaction-github-labeler@de749cf181958193cb7debf1a9c5bb28922f3e1b # ratchet:crazy-max/ghaction-github-labeler@v5
         with:
           skip-delete: true
           github-token: ${{ secrets.GITHUB_TOKEN }}

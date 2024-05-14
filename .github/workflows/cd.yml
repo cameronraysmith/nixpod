@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Draft the release notes
-        uses: release-drafter/release-drafter@65c5fb495d1e69aa8c08a3317bc44ff8aabe9772 # ratchet:release-drafter/release-drafter@v5.24.0
+        uses: release-drafter/release-drafter@3f0f87098bd6b5c5b9a36d49c41d998ea58f9348 # ratchet:release-drafter/release-drafter@v6
         with:
           publish: false
           tag: v0.1.0
