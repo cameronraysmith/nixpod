@@ -18,11 +18,8 @@ pull_request_rules:
       - label!=work-in-progress
     actions:
       queue:
-        method: squash
         name: default
 queue_rules:
   - name: default
-    conditions:
-      - check-success=gitguardian
-      - check-success=nixci
-      - check-success=debnix
+    merge_method: fast-forward
+    update_method: rebase
