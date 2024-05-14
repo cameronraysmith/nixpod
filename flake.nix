@@ -5,12 +5,27 @@
     # Principle inputs (updated by `nix run .#update`)
     # nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
-    home-manager.url = "github:nix-community/home-manager/release-23.11";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
-
+    home-manager = {
+      url = "github:nix-community/home-manager/release-23.11";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
+    flake-utils = {
+      url = github:numtide/flake-utils;
+      inputs = {
+        systems.follows = "systems";
+      };
+    };
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-flake.url = "github:srid/nixos-flake";
-    nix2container.url = "github:nlewo/nix2container";
+    nix2container = {
+      url = "github:nlewo/nix2container";
+      inputs = {
+        flake-utils.follows = "flake-utils";
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
 
     # see https://github.com/nix-systems/default/blob/main/default.nix
     systems.url = "github:nix-systems/default";
