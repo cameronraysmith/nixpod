@@ -41,7 +41,7 @@ jobs:
           extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
       # - name: Run the Magic Nix Cache
       #   uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: cachix/cachix-action@18cf96c7c98e048e10a83abd92116114cd8504be # ratchet:cachix/cachix-action@v14
+      - uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
         with:
           name: srid
       - name: Setup tmate debug session
