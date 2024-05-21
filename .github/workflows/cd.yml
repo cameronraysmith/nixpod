@@ -25,7 +25,7 @@ jobs:
       contents: "read"
     steps:
       - uses: "actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29" # v4
-      - uses: "DeterminateSystems/nix-installer-action@8cdf194da984e4f12b2f8c36d1fa107c1dd67f5c" # ratchet:DeterminateSystems/nix-installer-action@main
+      - uses: "DeterminateSystems/nix-installer-action@75ffa7fc743135e1db864b699d78402ccc8ed988" # ratchet:DeterminateSystems/nix-installer-action@main
       - uses: "DeterminateSystems/flakehub-push@925b381813a62a3ff2075fb58e1263965d086f6b" # ratchet:DeterminateSystems/flakehub-push@main
         with:
           visibility: "public"
