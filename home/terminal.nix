@@ -21,6 +21,7 @@
     gh
     just
     lazygit
+    (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
     ratchet
     tmate
   ];
@@ -31,6 +32,8 @@
     lg = "lazygit";
     t = "tree";
   };
+
+  fonts.fontconfig.enable = true;
 
   programs = {
     autojump.enable = false;
