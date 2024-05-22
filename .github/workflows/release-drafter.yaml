@@ -1,0 +1,22 @@
+name: "Release Drafter"
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - "main"
+
+jobs:
+  release:
+    if: github.ref_type == 'branch' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Draft the release notes
+        uses: release-drafter/release-drafter@3f0f87098bd6b5c5b9a36d49c41d998ea58f9348 # ratchet:release-drafter/release-drafter@v6
+        with:
+          publish: false
+          tag: v0.2.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
