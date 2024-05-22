@@ -1,5 +1,4 @@
 { pkgs, ... }:
-
 # Platform-independent terminal setup
 {
   home.packages = with pkgs; [
@@ -22,6 +21,7 @@
     gh
     just
     lazygit
+    ratchet
     tmate
   ];
 
