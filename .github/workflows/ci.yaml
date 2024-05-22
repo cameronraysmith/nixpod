@@ -55,6 +55,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    concurrency:
+      group: debnix-${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Tag Build and Push Testing Container
@@ -72,6 +74,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+    concurrency:
+      group: nixpod-${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Tag Build and Push Testing Container
