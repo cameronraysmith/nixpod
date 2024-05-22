@@ -33,18 +33,19 @@
   };
 
   programs = {
-    bat.enable = true;
     autojump.enable = false;
-    zoxide.enable = true;
+    bat.enable = true;
     fzf.enable = true;
+    git.enable = true;
+    htop.enable = true;
     jq.enable = true;
     nix-index.enable = true;
-    htop.enable = true;
+    zoxide.enable = true;
 
     bash = {
       enable = true;
       initExtra = ''
-        # Make Nix and home-manager installed things available in PATH.
+        # Ensure all nix and home-manager installed files are available in PATH.
         export PATH=/run/current-system/sw/bin/:/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:$PATH
       '';
     };
@@ -52,7 +53,7 @@
     zsh = {
       enable = true;
       envExtra = ''
-        # Make Nix and home-manager installed things available in PATH.
+        # Ensure all nix and home-manager installed files are available in PATH.
         export PATH=/run/current-system/sw/bin/:/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:$PATH
       '';
     };
