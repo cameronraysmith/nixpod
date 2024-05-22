@@ -46,7 +46,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
       - uses: "DeterminateSystems/nix-installer-action@75ffa7fc743135e1db864b699d78402ccc8ed988" # ratchet:DeterminateSystems/nix-installer-action@main
-      - uses: "DeterminateSystems/flakehub-push@925b381813a62a3ff2075fb58e1263965d086f6b" # ratchet:DeterminateSystems/flakehub-push@main
+      - uses: "DeterminateSystems/flakehub-push@114496f7d11f17ceb7d1466a8aaeaef496b1041f" # ratchet:DeterminateSystems/flakehub-push@main
         with:
           visibility: "public"
           tag: ${{ needs.release.outputs.git-tag }}
