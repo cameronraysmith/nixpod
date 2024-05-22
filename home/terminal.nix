@@ -35,6 +35,7 @@
   programs = {
     autojump.enable = false;
     bat.enable = true;
+    btop.enable = true;
     fzf.enable = true;
     git.enable = true;
     htop.enable = true;
