@@ -7,8 +7,6 @@ on:
         required: true
         type: boolean
         default: false
-  push:
-    branches: [main]
   pull_request:
     types: [opened, reopened, synchronize]
 
