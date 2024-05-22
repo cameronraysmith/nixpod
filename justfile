@@ -202,7 +202,7 @@ checknix:
 ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/sethvargo/ratchet:0.9.2"
 
 # List of GitHub Actions workflows
-gha_workflows := ".github/actions/tag-build-push-container/action.yml .github/workflows/ci.yaml .github/workflows/cd.yml .github/workflows/update-flake-lock.yml .github/workflows/labeler.yml"
+gha_workflows := ".github/actions/tag-build-push-container/action.yml .github/workflows/ci.yaml .github/workflows/cd.yml .github/workflows/update-flake-lock.yml .github/workflows/labeler.yml .github/workflows/release-drafter.yaml"
 
 # Pin all workflow versions to hash values (requires Docker)
 ratchet-pin:
