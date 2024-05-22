@@ -53,6 +53,7 @@ runs:
       id: meta
       uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # ratchet:docker/metadata-action@v5
       with:
+        context: git
         images: |
           ${{ inputs.registry }}/${{ inputs.image-name }}
         tags: |
