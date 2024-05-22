@@ -8,6 +8,7 @@ on:
       - "v?[0-9]+.[0-9]+.[0-9]+*"
 jobs:
   release:
+    if: github.ref_type == 'branch' && github.ref == 'refs/heads/main'
     permissions:
       contents: write
       pull-requests: write
@@ -20,6 +21,7 @@ jobs:
           tag: v0.2.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   publish:
     runs-on: "ubuntu-latest"
     if: startsWith(github.ref, 'refs/tags/')
@@ -34,3 +36,42 @@ jobs:
       - uses: "DeterminateSystems/flakehub-push@925b381813a62a3ff2075fb58e1263965d086f6b" # ratchet:DeterminateSystems/flakehub-push@main
         with:
           visibility: "public"
+
+  debnix:
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          push-condition: ${{ github.event_name != 'pull_request' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  nixpod:
+    needs: [debnix]
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          ref: ${{ github.ref }}
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          push-condition: ${{ github.event_name != 'pull_request' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
