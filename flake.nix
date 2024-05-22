@@ -4,6 +4,7 @@
   inputs = {
     # Principle inputs (updated by `nix run .#update`)
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    catppuccin.url = "github:catppuccin/nix";
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs = {
@@ -52,7 +53,10 @@
           homeConfig = inputs.self.nixos-flake.lib.mkHomeConfiguration
             pkgs
             ({ pkgs, ... }: {
-              imports = [ inputs.self.homeModules.default ];
+              imports = [
+                inputs.self.homeModules.default
+                inputs.catppuccin.homeManagerModules.catppuccin
+              ];
               home.username = myUserName;
               home.homeDirectory = homeDir;
               home.stateVersion = "23.11";

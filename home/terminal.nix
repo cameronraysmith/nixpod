@@ -34,6 +34,8 @@
   };
 
   fonts.fontconfig.enable = true;
+  catppuccin.flavor = "mocha";
+  catppuccin.enable = true;
 
   programs = {
     autojump.enable = false;
