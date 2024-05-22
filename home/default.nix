@@ -7,6 +7,7 @@
         # options used inside these imported modules.
         imports = [
           ./neovim
+          ./git.nix
           ./starship.nix
           ./terminal.nix
         ];

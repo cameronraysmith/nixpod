@@ -42,7 +42,6 @@
     bat.enable = true;
     btop.enable = true;
     fzf.enable = true;
-    git.enable = true;
     htop.enable = true;
     jq.enable = true;
     nix-index.enable = true;
