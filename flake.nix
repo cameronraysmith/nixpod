@@ -76,7 +76,11 @@
           # Enable 'nix develop' to activate the development shell.
           devShells.default = pkgs.mkShell {
             name = "nixpod-home";
-            nativeBuildInputs = with pkgs; [ just ];
+            nativeBuildInputs = with pkgs; [ 
+              act
+              just 
+              ratchet
+            ];
           };
 
           # Enable 'nix build' to build the home configuration, without activating.
