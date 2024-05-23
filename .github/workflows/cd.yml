@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "main"
+      - "beta"
 
 jobs:
 
@@ -15,6 +16,7 @@ jobs:
     outputs: 
       version: ${{ steps.semantic-release.outputs.new_release_version }}
       git-tag: ${{ steps.semantic-release.outputs.new_release_git_tag }}
+      released: ${{ steps.semantic-release.outputs.new_release_published }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -38,6 +40,7 @@ jobs:
   publish:
     needs: [release]
     runs-on: "ubuntu-latest"
+    if: ${{ needs.release.outputs.released == 'true' }}
     permissions:
       id-token: "write"
       contents: "read"
@@ -54,6 +57,7 @@ jobs:
   debnix:
     needs: [release]
     runs-on: ubuntu-latest
+    if: ${{ needs.release.outputs.released == 'true' }}
     permissions:
       contents: read
       packages: write
