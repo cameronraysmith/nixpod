@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.9-beta.1](https://github.com/cameronraysmith/nixpod-home/compare/v0.2.8...v0.2.9-beta.1) (2024-05-23)
+
+
+### Bug Fixes
+
+* **cd:** conditionally execute release job dependencies ([19a144f](https://github.com/cameronraysmith/nixpod-home/commit/19a144f12eba9a326f645d68a722015ee9ba2264))
+
 ## [0.2.8](https://github.com/cameronraysmith/nixpod-home/compare/v0.2.7...v0.2.8) (2024-05-23)
 
 
