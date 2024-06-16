@@ -39,8 +39,8 @@
       perSystem = { self', inputs', pkgs, system, ... }:
         let
           myUserName = "runner";
-          myUserUid = 1001;
-          myUserGid = 121;
+          myUserUid = "1001";
+          myUserGid = "121";
           homeDir =
             if myUserName == "root"
             then "/root"
