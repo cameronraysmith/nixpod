@@ -115,7 +115,7 @@
               name = "nixpod";
               tag = "latest";
               fromImage = nixImage;
-              maxLayers = 50;
+              maxLayers = 100;
               contents = with pkgs; [ 
                 sudo
                 default
