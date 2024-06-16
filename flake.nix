@@ -136,7 +136,7 @@
                 trusted-users = root ${myUserName}
                 EOF
 
-                echo "hosts: files dns" > /etc/nsswitch.conf
+                echo "hosts: files dns" >> /etc/nsswitch.conf
 
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
