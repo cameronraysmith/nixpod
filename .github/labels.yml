@@ -67,3 +67,15 @@
 - name: work-in-progress
   description: Work in progress that should not be auto-merged
   color: ffffff
+- name: build-images
+  description: Control image build on PRs
+  color: fef2c0
+- name: skip-ci
+  description: Skip CI workflow
+  color: 35539d
+- name: skip-tests
+  description: Skip Tests in CI workflow
+  color: 1dd225
+- name: actions-debug
+  description: Enable debugging in actions execution
+  color: "923411"
