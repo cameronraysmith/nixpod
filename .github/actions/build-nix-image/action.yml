@@ -13,6 +13,9 @@ inputs:
   nixCommand:
     description: "Nix command to build the image"
     required: true
+  releaseVersion:
+    description: "Release version"
+    required: true
   # gcpProjectId:
   #   description: "Google Cloud Project ID"
   #   required: true
@@ -21,10 +24,10 @@ inputs:
   #   required: true
   cachixCacheName:
     description: "Name of the Cachix cache"
-    required: false
+    required: true
   cachixAuthToken:
     description: "Cachix authentication token"
-    required: false
+    required: true
 
 runs:
   using: "composite"
@@ -107,8 +110,9 @@ runs:
         GH_TOKEN: ${{ github.token }}
         # GCP_PROJECT_ID: ${{ inputs.gcpProjectId }}
         # ENCODED_GAR_SA_CREDS: ${{ inputs.encodedGARCredentials }}
+        VERSION: ${{ inputs.releaseVersion }}
 
-    - name: Clean Nix Store
+    - name: Check Nix Store usage
       shell: bash
       run: |
         set -euxo pipefail
