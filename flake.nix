@@ -97,12 +97,12 @@
               tag = "latest";
               copyToRoot = pkgs.buildEnv {
                 name = "niximage-root";
-                pathsToLink = [ "/bin" ];
+                pathsToLink = [ "/bin" "/etc" "/share" ];
                 paths = with pkgs; [
                   bashInteractive
                   coreutils
-                  nix
                   dockerTools.caCertificates
+                  nix
                   su
                   sudo
                 ];
@@ -115,6 +115,7 @@
                 # usermod -aG wheel root
                 # but dockerTools.shadowSetup
                 # sets the root group to 0
+                groupmod -n wheel root
 
                 groupadd -g 30000 nixbld
 
@@ -124,6 +125,7 @@
 
                 mkdir -p /tmp
                 mkdir -p /root
+                mkdir -p /var/empty
 
                 mkdir -p /etc/nix
                 cat > /etc/nix/nix.conf <<EOF
@@ -131,7 +133,7 @@
                 experimental-features = nix-command flakes
                 max-jobs = auto
                 extra-nix-path = nixpkgs=flake:nixpkgs
-                trusted-users = root
+                trusted-users = root ${myUserName}
                 EOF
 
                 echo "hosts: files dns" > /etc/nsswitch.conf
@@ -139,12 +141,13 @@
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
                 useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -aG root ${myUserName}
+                usermod -aG wheel ${myUserName}
                 chown -R ${myUserUid}:${myUserGid} ${homeDir}
               '';
               config = {
                 Env = [
                   "NIX_PAGER=cat"
+                  "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
                   "USER=root"
                 ];
               };
