@@ -1,0 +1,118 @@
+name: "Build Nix Docker Image"
+description: "Builds a Docker image using Nix"
+inputs:
+  triggerEventName:
+    description: "The name of the event that triggered the workflow"
+    required: true
+  imageName:
+    description: "Name of the Docker image"
+    required: true
+  imageFQN:
+    description: "Fully Qualified Name of the Docker image"
+    required: true
+  nixCommand:
+    description: "Nix command to build the image"
+    required: true
+  # gcpProjectId:
+  #   description: "Google Cloud Project ID"
+  #   required: true
+  # encodedGARCredentials:
+  #   description: "Base64 encoded Google Artifact Registry Service Account credentials"
+  #   required: true
+  cachixCacheName:
+    description: "Name of the Cachix cache"
+    required: false
+  cachixAuthToken:
+    description: "Cachix authentication token"
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Setup QEMU
+      uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # ratchet:docker/setup-qemu-action@v3
+      with:
+        platforms: arm64
+
+    - name: Install Skopeo
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -yq skopeo
+        sudo apt-get clean
+
+    - name: Install Nix
+      uses: DeterminateSystems/nix-installer-action@7993355175c2765e5733dae74f3e0786fe0e5c4f # ratchet:DeterminateSystems/nix-installer-action@v12
+      with:
+        extra-conf: |
+          extra-platforms = aarch64-linux
+
+    # - name: Setup Local Nix Cache
+    #   uses: DeterminateSystems/magic-nix-cache-action@b46e247b898aa56e6d2d2e728dc6df6c84fdb738 # ratchet:DeterminateSystems/magic-nix-cache-action@v7
+
+    - name: Setup Remote Nix Cache
+      uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # ratchet:cachix/cachix-action@v15
+      with:
+        name: "${{ inputs.cachixCacheName }}"
+        authToken: "${{ inputs.cachixAuthToken }}"
+
+    - name: Set GitHub CI Slug Variables
+      uses: rlespinasse/github-slug-action@797d68864753cbceedc271349d402da4590e6302 # ratchet:rlespinasse/github-slug-action@v4
+      with:
+        prefix: CI_
+
+    - name: Set git variables
+      shell: bash
+      run: |
+        echo "GIT_REPO_NAME=$CI_GITHUB_REPOSITORY_NAME_PART" >> $GITHUB_ENV
+        echo "GIT_REF=$CI_GITHUB_REF_NAME" >> $GITHUB_ENV
+        if [ "${{ inputs.triggerEventName }}" == "pull_request" ]; then
+          echo "GIT_SHA=$CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA" >> $GITHUB_ENV
+          echo "GIT_SHA_SHORT=$CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA_SHORT" >> $GITHUB_ENV
+        else
+          echo "GIT_SHA=$CI_GITHUB_SHA" >> $GITHUB_ENV
+          echo "GIT_SHA_SHORT=$CI_GITHUB_SHA_SHORT" >> $GITHUB_ENV
+        fi
+
+    - name: Set nix variables
+      shell: bash
+      run: |
+        echo "NIX_IMAGE_SYSTEMS=x86_64-linux" >> $GITHUB_ENV
+
+    - name: Build and Push Docker Image
+      shell: bash
+      run: |
+        set -euxo pipefail
+
+        echo "Using Git Repository Name: $GIT_REPO_NAME"
+        echo "Using Git Reference: $GIT_REF"
+        echo "Using Git SHA: $GIT_SHA"
+        echo "Using Git SHA Short: $GIT_SHA_SHORT"
+        FQN_GIT_SHA="${{ inputs.imageFQN }}:$GIT_SHA"
+        echo "Image FQN with Git SHA: $FQN_GIT_SHA"
+        df -h
+        if SKOPEO_OUTPUT=$(skopeo inspect "docker://$FQN_GIT_SHA" 2>&1); then
+          echo "Image $FQN_GIT_SHA already exists. Skipping build."
+        else
+          if echo "$SKOPEO_OUTPUT" | grep -q 'manifest unknown'; then
+            echo "Image $FQN_GIT_SHA does not exist. Building."
+            ${{ inputs.nixCommand }}
+          else
+            echo "Failed to inspect image with error: $SKOPEO_OUTPUT"
+            exit 1
+          fi
+        fi
+        df -h
+      env:
+        GH_TOKEN: ${{ github.token }}
+        # GCP_PROJECT_ID: ${{ inputs.gcpProjectId }}
+        # ENCODED_GAR_SA_CREDS: ${{ inputs.encodedGARCredentials }}
+
+    - name: Clean Nix Store
+      shell: bash
+      run: |
+        set -euxo pipefail
+
+        df -h
+        nix store gc --dry-run --debug
+        df -h
