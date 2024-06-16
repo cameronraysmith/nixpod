@@ -115,12 +115,13 @@
                 # usermod -aG wheel root
                 # but dockerTools.shadowSetup
                 # sets the root group to 0
-                groupmod -n wheel root
-                usermod -aG wheel root
+                # groupmod -n wheel root
+                # usermod -aG wheel root
 
                 chmod +s /sbin/sudo
                 cat >> /etc/sudoers <<EOF
                 root     ALL=(ALL:ALL)    SETENV: ALL
+                %root  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
                 %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
                 ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL
                 EOF
@@ -149,7 +150,7 @@
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
                 useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -aG wheel ${myUserName}
+                usermod -aG root ${myUserName}
                 chown -R ${myUserUid}:${myUserGid} ${homeDir}
               '';
               config = {
