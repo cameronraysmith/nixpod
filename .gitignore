@@ -1,3 +1,4 @@
 result
 .direnv
 *.qcow2
+.env
