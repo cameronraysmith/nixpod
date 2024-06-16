@@ -1,0 +1,10 @@
+providers:
+  google_secretmanager_1:
+    kind: google_secretmanager
+    maps:
+    - id: gsm
+      path: projects/{{ get_env(name="GCP_PROJECT_ID", default="default") }}
+      # Bootstrap google secrets manager, for example, with
+      # $ just create-and-populate-separate-secrets google.env
+      keys:
+        CACHIX_AUTH_TOKEN: ==
