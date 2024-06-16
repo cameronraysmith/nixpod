@@ -45,6 +45,7 @@ jobs:
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
 
   set-variables:
+    needs: scan
     runs-on: ubuntu-latest
     outputs:
       debug: ${{ steps.set-variables.outputs.debug }}
@@ -89,7 +90,7 @@ jobs:
           echo "CHECKOUT_REF=$CHECKOUT_REF" >> $GITHUB_OUTPUT
 
   nixci:
-    needs: scan
+    needs: set-variables
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -155,7 +156,7 @@ jobs:
 
 
   debnix:
-    needs: scan
+    needs: set-variables
     runs-on: ubuntu-latest
     permissions:
       contents: read
