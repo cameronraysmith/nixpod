@@ -115,6 +115,11 @@
                 useradd -u 65534 -g 65534 -d /var/empty nobody
                 usermod -aG nixbld nobody
 
+                echo "hosts: files dns" > $out/etc/nsswitch.conf
+
+                mkdir -p $out/tmp
+                mkdir -p $out/root
+
                 mkdir -p $out/etc/nix
                 cat > $out/etc/nix/nix.conf <<EOF
                 build-users-group = nixbld
@@ -146,12 +151,36 @@
               fakeRootCommands = ''
                 ${pkgs.dockerTools.shadowSetup}
 
+                groupadd -g 0 wheel
+                usermod -aG wheel root
+
+                groupadd -g 30000 nixbld
+
+                groupadd -g 65534 nobody
+                useradd -u 65534 -g 65534 -d /var/empty nobody
+                usermod -aG nixbld nobody
+
+                echo "hosts: files dns" > $out/etc/nsswitch.conf
+
+                mkdir -p $out/tmp
+                mkdir -p $out/root
+
+                mkdir -p $out/etc/nix
+                cat > $out/etc/nix/nix.conf <<EOF
+                build-users-group = nixbld
+                experimental-features = nix-command flakes
+                max-jobs = auto
+                extra-nix-path = nixpkgs=flake:nixpkgs
+                trusted-users = root
+                EOF
+
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
                 useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
                 usermod -aG wheel ${myUserName}
                 chown -R ${myUserUid}:${myUserGid} ${homeDir}
 
+                cd ${homeDir} && \
                 sudo -u ${myUserName} ${self'.packages.activate-home}/bin/activate-home
               '';
               enableFakechroot = true;
