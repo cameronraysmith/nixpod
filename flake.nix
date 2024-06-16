@@ -97,7 +97,7 @@
               tag = "latest";
               copyToRoot = pkgs.buildEnv {
                 name = "niximage-root";
-                pathsToLink = [ "/bin" "/etc" "/share" ];
+                # pathsToLink = [ "/bin" "/etc" "/share" ];
                 paths = with pkgs; [
                   bashInteractive
                   coreutils
@@ -116,6 +116,14 @@
                 # but dockerTools.shadowSetup
                 # sets the root group to 0
                 groupmod -n wheel root
+                usermod -aG wheel root
+
+                chmod +s /sbin/sudo
+                cat >> /etc/sudoers <<EOF
+                root     ALL=(ALL:ALL)    SETENV: ALL
+                %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
+                ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL
+                EOF
 
                 groupadd -g 30000 nixbld
 
