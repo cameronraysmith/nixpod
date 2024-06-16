@@ -90,24 +90,15 @@
             # activating it.
             default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
 
-            # Enable 'nix run .#nixImage' to build an OCI tarball containing 
-            # a nix store.
-            nixImage = pkgs.dockerTools.buildImageWithNixDb {
-              name = "niximage";
+            sudoImage = pkgs.dockerTools.buildImage {
+              name = "sudoimage";
               tag = "latest";
-              copyToRoot = pkgs.buildEnv {
-                name = "niximage-root";
-                # pathsToLink = [ "/bin" "/etc" "/share" ];
-                paths = with pkgs; [
-                  bashInteractive
-                  coreutils
-                  dockerTools.caCertificates
-                  nix
-                  su
-                  sudo
-                ];
-              };
+
+              copyToRoot = pkgs.sudo;
+
               runAsRoot = ''
+                #!${pkgs.runtimeShell}
+
                 ${pkgs.dockerTools.shadowSetup}
 
                 # normally 
@@ -117,14 +108,6 @@
                 # sets the root group to 0
                 # groupmod -n wheel root
                 # usermod -aG wheel root
-
-                # chmod +s /sbin/sudo
-                # cat >> /etc/sudoers <<EOF
-                # root     ALL=(ALL:ALL)    SETENV: ALL
-                # %root  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
-                # %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
-                # ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL
-                # EOF
 
                 groupadd -g 30000 nixbld
 
@@ -136,6 +119,39 @@
                 mkdir -p /root
                 mkdir -p /var/empty
 
+                mkdir -p ${homeDir}
+                groupadd -g ${myUserGid} ${myUserName}
+                useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
+                usermod -aG root ${myUserName}
+                chown -R ${myUserUid}:${myUserGid} ${homeDir}
+
+                chmod +s /sbin/sudo
+                echo "root     ALL=(ALL:ALL)    SETENV: ALL" >> /etc/sudoers
+                echo "%root  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL" >> /etc/sudoers
+                echo "${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL" >> /etc/sudoers
+              '';
+            };
+
+
+            # Enable 'nix run .#nixImage' to build an OCI tarball containing 
+            # a nix store.
+            nixImage = pkgs.dockerTools.buildImageWithNixDb {
+              name = "niximage";
+              tag = "latest";
+              fromImage = sudoImage;
+              copyToRoot = pkgs.buildEnv {
+                name = "niximage-root";
+                # pathsToLink = [ "/bin" "/etc" "/share" ];
+                paths = with pkgs; [
+                  bashInteractive
+                  coreutils
+                  dockerTools.caCertificates
+                  nix
+                  su
+                  shadow
+                ];
+              };
+              runAsRoot = ''
                 mkdir -p /etc/nix
                 cat > /etc/nix/nix.conf <<EOF
                 build-users-group = nixbld
@@ -146,12 +162,6 @@
                 EOF
 
                 echo "hosts: files dns" >> /etc/nsswitch.conf
-
-                mkdir -p ${homeDir}
-                groupadd -g ${myUserGid} ${myUserName}
-                useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -aG root ${myUserName}
-                chown -R ${myUserUid}:${myUserGid} ${homeDir}
               '';
               config = {
                 Env = [
