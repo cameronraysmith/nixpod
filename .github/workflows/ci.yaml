@@ -7,8 +7,24 @@ on:
         required: true
         type: boolean
         default: false
+      run_build_images:
+        description: "Run build-images job"
+        required: false
+        type: boolean
+        default: false
+      run_execute_workflow:
+        description: "Run execute-workflow job"
+        required: false
+        type: boolean
+        default: false
   pull_request:
-    types: [opened, reopened, synchronize]
+    types: [opened, labeled, reopened, synchronize]
+    paths-ignore:
+      - "testing/**"
+      - "**.md"
+      - "*"
+      - "!flake.nix"
+      - "!flake.lock"
 
 jobs:
   scan:
@@ -27,6 +43,50 @@ jobs:
           GITHUB_PULL_BASE_SHA: ${{ github.event.pull_request.base.sha }}
           GITHUB_DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GITGUARDIAN_API_KEY: ${{ secrets.GITGUARDIAN_API_KEY }}
+
+  set-variables:
+    runs-on: ubuntu-latest
+    outputs:
+      debug: ${{ steps.set-variables.outputs.debug }}
+      skip_ci: ${{ steps.set-variables.outputs.skip_ci }}
+      skip_tests: ${{ steps.set-variables.outputs.skip_tests }}
+      checkout_ref: ${{ steps.set-variables.outputs.checkout_ref }}
+        
+    steps:
+      - name: Set action variables
+        id: set-variables
+        run: |
+          DEBUG="false"
+          SKIP_CI="false"
+          SKIP_TESTS="false"
+        
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            DEBUG="${{ inputs.debug_enabled }}"
+          fi
+        
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            if ${{ contains(github.event.pull_request.labels.*.name, 'skip-ci') }}; then
+              SKIP_CI="true"
+            fi
+            if ${{ contains(github.event.pull_request.labels.*.name, 'skip-tests') }}; then
+              SKIP_TESTS="true"
+            fi
+            if ${{ contains(github.event.pull_request.labels.*.name, 'actions-debug') }}; then
+              DEBUG="true"
+            fi
+            CHECKOUT_REF="${{ github.event.pull_request.head.ref }}"
+          else
+            CHECKOUT_REF="${{ github.ref }}"
+          fi
+        
+          echo "DEBUG=$DEBUG"
+          echo "SKIP_CI=$SKIP_CI"
+          echo "SKIP_TESTS=$SKIP_TESTS"
+        
+          echo "DEBUG=$DEBUG" >> $GITHUB_OUTPUT
+          echo "SKIP_CI=$SKIP_CI" >> $GITHUB_OUTPUT
+          echo "SKIP_TESTS=$SKIP_TESTS" >> $GITHUB_OUTPUT
+          echo "CHECKOUT_REF=$CHECKOUT_REF" >> $GITHUB_OUTPUT
 
   nixci:
     needs: scan
@@ -49,6 +109,51 @@ jobs:
         run: |
           nix run github:srid/nixci -- build
 
+  build-nixpod-image:
+    runs-on: ubuntu-latest
+    needs: [set-variables]
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && ( contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images) || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) ) }}
+        
+    concurrency:
+      group: bnphi-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      packages: write
+    # environment:
+    #   name: development
+    #   url: "https://ghcr.io/cameronraysmith/nixpod"
+    steps:
+      - name: Maximize build space
+        # uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # ratchet:easimon/maximize-build-space@v10
+        uses: cameronraysmith/maximize-build-space@fdf0c06b18d92be98aa64cb68ae4ea4c9bc4794d # ratchet:cameronraysmith/maximize-build-space@print-usage
+        with:
+          build-mount-path: /nix
+          build-mount-path-ownership: "root:root"
+          root-reserve-mb: 34816
+          swap-size-mb: 1024
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      - name: Setup build environment
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # ratchet:actions/checkout@v4
+        with:
+          ref: ${{ needs.set-variables.outputs.checkout_ref }}
+      - name: Build nixpod image
+        uses: ./.github/actions/build-nix-image
+        with:
+          triggerEventName: ${{ github.event_name }}
+          imageName: "nixpod"
+          imageFQN: "ghcr.io/cameronraysmith/nixpod"
+          nixCommand: "nix run .#containerManifest --impure --accept-flake-config"
+          releaseVersion: ""
+          # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
+          # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
+          cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
+          cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+
   debnix:
     needs: scan
     runs-on: ubuntu-latest
@@ -68,21 +173,21 @@ jobs:
           push-condition: ${{ github.event_name != 'pull_request' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  nixpod:
-    needs: [scan, debnix]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    concurrency:
-      group: nixpod-${{ github.workflow }}-${{ github.ref }}
-    steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-      - name: Tag Build and Push Testing Container
-        uses: ./.github/actions/tag-build-push-container
-        with:
-          registry: ghcr.io
-          image-name: ${{ github.repository_owner }}/${{ github.job }}
-          containerfile-path: "containers/Containerfile.${{ github.job }}"
-          push-condition: ${{ github.event_name != 'pull_request' }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+  # nixpod:
+  #   needs: [scan, debnix]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   concurrency:
+  #     group: nixpod-${{ github.workflow }}-${{ github.ref }}
+  #   steps:
+  #     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+  #     - name: Tag Build and Push Testing Container
+  #       uses: ./.github/actions/tag-build-push-container
+  #       with:
+  #         registry: ghcr.io
+  #         image-name: ${{ github.repository_owner }}/${{ github.job }}
+  #         containerfile-path: "containers/Containerfile.${{ github.job }}"
+  #         push-condition: ${{ github.event_name != 'pull_request' }}
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
