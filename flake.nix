@@ -95,16 +95,12 @@
               name = "nix";
               tag = "latest";
               maxLayers = 50;
-              copyToRoot = pkgs.buildEnv {
-                name = "image-root";
-                pathsToLink = [ "/bin" ];
-                paths = with pkgs; [
-                  coreutils
-                  nix
-                  bashInteractive
-                  dockerTools.caCertificates
-                ];
-              };
+              contents = with pkgs; [
+                coreutils
+                nix
+                bashInteractive
+                dockerTools.caCertificates
+              ];
               config = {
                 Env = [
                   "NIX_PAGER=cat"
@@ -120,15 +116,11 @@
               tag = "latest";
               fromImage = nixImage;
               maxLayers = 50;
-              copyToRoot = pkgs.buildEnv {
-                name = "image-home";
-                pathsToLink = [ "/bin" ];
-                paths = with pkgs; [ 
-                  sudo
-                  default
-                  # homeConfig.activationPackage
-                ];
-              };
+              contents = with pkgs; [ 
+                sudo
+                default
+                # homeConfig.activationPackage
+              ];
               fakeRootCommands = ''
                 ${pkgs.dockerTools.shadowSetup}
 
