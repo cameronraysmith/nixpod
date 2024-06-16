@@ -135,7 +135,7 @@
               enableFakechroot = true;
               config = {
                 Cmd = [
-                  "${pkgs.bash}/bin/bash"
+                  "${pkgs.bashInteractive}/bin/bash"
                   "-c"
                   "exec ${pkgs.zsh}/bin/zsh"
                 ];
