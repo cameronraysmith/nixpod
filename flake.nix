@@ -11,37 +11,36 @@
         nixpkgs.follows = "nixpkgs";
       };
     };
-    flake-utils = {
-      url = github:numtide/flake-utils;
-      inputs = {
-        systems.follows = "systems";
-      };
-    };
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-flake.url = "github:srid/nixos-flake";
-    nix2container = {
-      url = "github:nlewo/nix2container";
-      inputs = {
-        flake-utils.follows = "flake-utils";
-        nixpkgs.follows = "nixpkgs";
-      };
+    flocken = {
+      url = "github:mirkolenz/flocken/v2";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-parts.follows = "flake-parts";
+      inputs.systems.follows = "systems";
     };
 
     # see https://github.com/nix-systems/default/blob/main/default.nix
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs:
-    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
+  outputs = inputs @ {
+    self,
+    flake-parts,
+    ...
+  }:
+    flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
         inputs.nixos-flake.flakeModule
         ./home
       ];
 
-      perSystem = { self', pkgs, system, ... }:
+      perSystem = { self', inputs', pkgs, system, ... }:
         let
           myUserName = "runner";
+          myUserUid = 1001;
+          myUserGid = 121;
           homeDir =
             if myUserName == "root"
             then "/root"
@@ -61,12 +60,14 @@
               home.homeDirectory = homeDir;
               home.stateVersion = "23.11";
             });
-          inherit (inputs.nix2container.packages.${system}.nix2container) buildImage;
+          includedSystems = let
+            envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
+          in
+            if envVar == ""
+            then ["x86_64-linux" "aarch64-linux"]
+            else builtins.filter (sys: sys != "") (builtins.split " " envVar);
         in
         {
-          # Make home-manager configuration
-          legacyPackages.homeConfigurations.${myUserName} = homeConfig;
-
           # Enable 'nix fmt' to lint with nixpkgs-fmt
           formatter = pkgs.nixpkgs-fmt;
 
@@ -83,21 +84,105 @@
             ];
           };
 
-          # Enable 'nix build' to build the home configuration, without activating.
-          packages.default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
+          packages = rec { 
+            # Enable 'nix build' to build the home configuration, without
+            # activating it.
+            default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
 
-          # Enable 'nix run .#container to compile the home configuration into OCI json.
-          packages.container = buildImage {
-            name = "nixpod-home";
-            tag = "latest";
-            copyToRoot = [
-              homeConfig.activationPackage
-            ];
-            config = {
-              Cmd = [
-                "${pkgs.bash}/bin/bash"
-                "-c"
-                "${self'.packages.activate-home}/bin/activate-home && exec ${pkgs.zsh}/bin/zsh"
+            # Enable 'nix run .#nixImage' to build an OCI tarball containing 
+            # a nix store.
+            nixImage = pkgs.dockerTools.buildLayeredImageWithNixDb {
+              name = "nix";
+              tag = "latest";
+              maxLayers = 50;
+              copyToRoot = pkgs.buildEnv {
+                name = "image-root";
+                pathsToLink = [ "/bin" ];
+                paths = with pkgs; [
+                  coreutils
+                  nix
+                  bashInteractive
+                  dockerTools.caCertificates
+                ];
+              };
+              config = {
+                Env = [
+                  "NIX_PAGER=cat"
+                  "USER=nobody"
+                ];
+              };
+            };
+
+            # Enable 'nix run .#container to build an OCI tarball with the 
+            # home configuration activated.
+            container = pkgs.dockerTools.buildLayeredImage {
+              name = "nixpod-home";
+              tag = "latest";
+              fromImage = nixImage;
+              maxLayers = 50;
+              copyToRoot = pkgs.buildEnv {
+                name = "image-home";
+                pathsToLink = [ "/bin" ];
+                paths = with pkgs; [ 
+                  sudo
+                  default
+                  # homeConfig.activationPackage
+                ];
+              };
+              fakeRootCommands = ''
+                ${pkgs.dockerTools.shadowSetup}
+
+                mkdir -p ${homeDir}
+                groupadd -g ${myUserGid} ${myUserName}
+                useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
+                usermod -a -G ${myUserName} wheel
+                chown -R ${myUserUid}:${myUserGid} ${homeDir}
+
+                sudo -u ${myUserName} ${self'.packages.activate-home}/bin/activate-home
+              '';
+              enableFakechroot = true;
+              config = {
+                Cmd = [
+                  "${pkgs.bash}/bin/bash"
+                  "-c"
+                  "exec ${pkgs.zsh}/bin/zsh"
+                ];
+                ENV = [
+                  "USER=${myUserName}"
+                  "HOME=${homeDir}"
+                ];
+              };
+            };
+          };
+
+          legacyPackages = {
+            # Make home-manager configuration
+            homeConfigurations.${myUserName} = homeConfig;
+
+            # Combine OCI json for includedSystems and push to registries
+            containerManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+              github = {
+                enable = true;
+                enableRegistry = false;
+                token = "$GH_TOKEN";
+              };
+              autoTags = {
+                branch = false;
+              };
+              registries = {
+                "ghcr.io" = {
+                  enable = true;
+                  repo = "cameronraysmith/nixpod-home";
+                  username = builtins.getEnv "GITHUB_ACTOR";
+                  password = "$GH_TOKEN";
+                };
+              };
+              version = builtins.getEnv "VERSION";
+              images = builtins.map (sys: self.packages.${sys}.container) includedSystems;
+              tags = [
+                (builtins.getEnv "GIT_SHA_SHORT")
+                (builtins.getEnv "GIT_SHA")
+                (builtins.getEnv "GIT_REF")
               ];
             };
           };
