@@ -24,11 +24,11 @@
     systems.url = "github:nix-systems/default";
   };
 
-  outputs = inputs @ {
-    self,
-    flake-parts,
-    ...
-  }:
+  outputs =
+    inputs @ { self
+    , flake-parts
+    , ...
+    }:
     flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
@@ -60,11 +60,12 @@
               home.homeDirectory = homeDir;
               home.stateVersion = "23.11";
             });
-          includedSystems = let
-            envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
-          in
+          includedSystems =
+            let
+              envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
+            in
             if envVar == ""
-            then ["x86_64-linux" "aarch64-linux"]
+            then [ "x86_64-linux" "aarch64-linux" ]
             else builtins.filter (sys: sys != "") (builtins.split " " envVar);
         in
         {
@@ -77,37 +78,43 @@
           # Enable 'nix develop' to activate the development shell.
           devShells.default = pkgs.mkShell {
             name = "nixpod-home";
-            nativeBuildInputs = with pkgs; [ 
+            nativeBuildInputs = with pkgs; [
               act
-              just 
+              just
               ratchet
             ];
           };
 
-          packages = rec { 
+          packages = rec {
             # Enable 'nix build' to build the home configuration, without
             # activating it.
             default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
 
             # Enable 'nix run .#nixImage' to build an OCI tarball containing 
             # a nix store.
-            nixImage = pkgs.dockerTools.buildLayeredImageWithNixDb {
+            nixImage = pkgs.dockerTools.buildImageWithNixDb {
               name = "niximage";
               tag = "latest";
-              maxLayers = 50;
-              contents = with pkgs; [
-                bashInteractive
-                coreutils
-                nix
-                dockerTools.caCertificates
-                su
-                sudo
-              ];
-              fakeRootCommands = ''
+              copyToRoot = pkgs.buildEnv {
+                name = "niximage-root";
+                pathsToLink = [ "/bin" ];
+                paths = with pkgs; [
+                  bashInteractive
+                  coreutils
+                  nix
+                  dockerTools.caCertificates
+                  su
+                  sudo
+                ];
+              };
+              runAsRoot = ''
                 ${pkgs.dockerTools.shadowSetup}
 
-                groupadd -g 0 wheel
-                usermod -aG wheel root
+                # normally 
+                # groupadd -g 0 wheel
+                # usermod -aG wheel root
+                # but dockerTools.shadowSetup
+                # sets the root group to 0
 
                 groupadd -g 30000 nixbld
 
@@ -115,19 +122,25 @@
                 useradd -u 65534 -g 65534 -d /var/empty nobody
                 usermod -aG nixbld nobody
 
-                echo "hosts: files dns" > $out/etc/nsswitch.conf
+                mkdir -p /tmp
+                mkdir -p /root
 
-                mkdir -p $out/tmp
-                mkdir -p $out/root
-
-                mkdir -p $out/etc/nix
-                cat > $out/etc/nix/nix.conf <<EOF
+                mkdir -p /etc/nix
+                cat > /etc/nix/nix.conf <<EOF
                 build-users-group = nixbld
                 experimental-features = nix-command flakes
                 max-jobs = auto
                 extra-nix-path = nixpkgs=flake:nixpkgs
                 trusted-users = root
                 EOF
+
+                echo "hosts: files dns" > /etc/nsswitch.conf
+
+                mkdir -p ${homeDir}
+                groupadd -g ${myUserGid} ${myUserName}
+                useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
+                usermod -aG root ${myUserName}
+                chown -R ${myUserUid}:${myUserGid} ${homeDir}
               '';
               config = {
                 Env = [
@@ -144,42 +157,11 @@
               tag = "latest";
               fromImage = nixImage;
               maxLayers = 100;
-              contents = with pkgs; [ 
+              contents = with pkgs; [
                 default
                 # homeConfig.activationPackage
               ];
               fakeRootCommands = ''
-                ${pkgs.dockerTools.shadowSetup}
-
-                groupadd -g 0 wheel
-                usermod -aG wheel root
-
-                groupadd -g 30000 nixbld
-
-                groupadd -g 65534 nobody
-                useradd -u 65534 -g 65534 -d /var/empty nobody
-                usermod -aG nixbld nobody
-
-                echo "hosts: files dns" > $out/etc/nsswitch.conf
-
-                mkdir -p $out/tmp
-                mkdir -p $out/root
-
-                mkdir -p $out/etc/nix
-                cat > $out/etc/nix/nix.conf <<EOF
-                build-users-group = nixbld
-                experimental-features = nix-command flakes
-                max-jobs = auto
-                extra-nix-path = nixpkgs=flake:nixpkgs
-                trusted-users = root
-                EOF
-
-                mkdir -p ${homeDir}
-                groupadd -g ${myUserGid} ${myUserName}
-                useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -aG wheel ${myUserName}
-                chown -R ${myUserUid}:${myUserGid} ${homeDir}
-
                 cd ${homeDir} && \
                 sudo -u ${myUserName} ${self'.packages.activate-home}/bin/activate-home
               '';
