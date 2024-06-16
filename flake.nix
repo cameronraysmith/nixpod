@@ -92,19 +92,42 @@
             # Enable 'nix run .#nixImage' to build an OCI tarball containing 
             # a nix store.
             nixImage = pkgs.dockerTools.buildLayeredImageWithNixDb {
-              name = "nix";
+              name = "niximage";
               tag = "latest";
               maxLayers = 50;
               contents = with pkgs; [
+                bashInteractive
                 coreutils
                 nix
-                bashInteractive
                 dockerTools.caCertificates
+                su
+                sudo
               ];
+              fakeRootCommands = ''
+                ${pkgs.dockerTools.shadowSetup}
+
+                groupadd -g 0 wheel
+                usermod -aG wheel root
+
+                groupadd -g 30000 nixbld
+
+                groupadd -g 65534 nobody
+                useradd -u 65534 -g 65534 -d /var/empty nobody
+                usermod -aG nixbld nobody
+
+                mkdir -p $out/etc/nix
+                cat > $out/etc/nix/nix.conf <<EOF
+                build-users-group = nixbld
+                experimental-features = nix-command flakes
+                max-jobs = auto
+                extra-nix-path = nixpkgs=flake:nixpkgs
+                trusted-users = root
+                EOF
+              '';
               config = {
                 Env = [
                   "NIX_PAGER=cat"
-                  "USER=nobody"
+                  "USER=root"
                 ];
               };
             };
@@ -117,7 +140,6 @@
               fromImage = nixImage;
               maxLayers = 100;
               contents = with pkgs; [ 
-                sudo
                 default
                 # homeConfig.activationPackage
               ];
@@ -127,7 +149,7 @@
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
                 useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -a -G ${myUserName} wheel
+                usermod -aG wheel ${myUserName}
                 chown -R ${myUserUid}:${myUserGid} ${homeDir}
 
                 sudo -u ${myUserName} ${self'.packages.activate-home}/bin/activate-home
@@ -139,7 +161,7 @@
                   "-c"
                   "exec ${pkgs.zsh}/bin/zsh"
                 ];
-                ENV = [
+                Env = [
                   "USER=${myUserName}"
                   "HOME=${homeDir}"
                 ];
