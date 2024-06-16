@@ -147,7 +147,7 @@ jobs:
           triggerEventName: ${{ github.event_name }}
           imageName: "nixpod"
           imageFQN: "ghcr.io/cameronraysmith/nixpod"
-          nixCommand: "nix run .#containerManifest --impure --accept-flake-config"
+          nixCommand: "nix run .#containerManifest --impure --accept-flake-config --print-build-logs --show-trace"
           releaseVersion: ""
           # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
           # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
