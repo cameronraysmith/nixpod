@@ -6,47 +6,57 @@ default: help
 help:
   @printf "\nRun 'just -n <command>' to print what would be executed...\n\n"
   @just --list --unsorted
-  @echo "\n...by running 'just <command>'.\n"
-  @echo "This message is printed by 'just help' and just 'just'.\n"
+  @printf "\n...by running 'just <command>'.\n"
+  @printf "This message is printed by 'just help' and just 'just'.\n"
 
 # Print nix flake inputs and outputs
+[group('nix')]
 io:
   nix flake metadata
   nix flake show
 
 # Update nix flake
+[group('nix')]
 update:
   nix flake update
 
 # Lint nix files
+[group('nix')]
 lint:
   nix fmt 
 
 # Check nix flake
+[group('nix')]
 check:
   nix flake check
 
 # Manually enter dev shell
+[group('nix')]
 dev:
   nix develop
 
 # Build nix flake
+[group('nix')]
 build: lint check
   nix build
 
 # Remove build output link (no garbage collection)
+[group('nix')]
 clean:
   rm -f ./result
 
 # Run nix flake to setup environment
+[group('nix')]
 run: lint check
   nix run
 
 # Compile nix flake to OCI json format
+[group('nix')]
 oci:
   nix build .#container
 
 # Build and copy OCI format container image to docker daemon
+[group('nix')]
 nixcontainer:
   docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
   nix run .#container.copyToDockerDaemon
@@ -194,9 +204,12 @@ basecontainer-sha256:
   rm debian_stable_slim.tar || true
 
 # Run nixpkgs hello and nix-health
+[group('nix')]
 checknix:
   nix run nixpkgs#hello # 30s
   nix run github:srid/nix-health # 3m
+
+## CI/CD
 
 # Docker command to run sethvargo/ratchet to pin GitHub Actions workflows version tags to commit hashes
 ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/sethvargo/ratchet:0.9.2"
@@ -205,19 +218,121 @@ ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/
 gha_workflows := ".github/actions/tag-build-push-container/action.yml .github/workflows/ci.yaml .github/workflows/cd.yml .github/workflows/update-flake-lock.yml .github/workflows/labeler.yml .github/workflows/release-drafter.yaml"
 
 # Pin all workflow versions to hash values (requires Docker)
+[group('CI/CD')]
 ratchet-pin:
   @for workflow in {{gha_workflows}}; do \
     eval "{{ratchet_base}} pin $workflow"; \
   done
 
 # Unpin hashed workflow versions to semantic values (requires Docker)
+[group('CI/CD')]
 ratchet-unpin:
   @for workflow in {{gha_workflows}}; do \
     eval "{{ratchet_base}} unpin $workflow"; \
   done
 
 # Update GitHub Actions workflows to the latest version (requires Docker)
+[group('CI/CD')]
 ratchet-update:
   @for workflow in {{gha_workflows}}; do \
     eval "{{ratchet_base}} update $workflow"; \
   done
+
+# Update github vars for repo from environment variables
+[group('CI/CD')]
+ghvars repo="cameronraysmith/nixpod-home":
+  @echo "vars before updates:"
+  @echo
+  PAGER=cat gh variable list --repo={{ repo }}
+  @echo
+  gh variable set CACHIX_CACHE_NAME --repo={{ repo }} --body="$CACHIX_CACHE_NAME"
+  @echo
+  @echo vars after updates:
+  @echo
+  PAGER=cat gh variable list --repo={{ repo }}
+
+# Update github secrets for repo from environment variables
+[group('CI/CD')]
+ghsecrets repo="cameronraysmith/nixpod-home":
+  @echo "secrets before updates:"
+  @echo
+  PAGER=cat gh secret list --repo={{ repo }}
+  @echo
+  eval "$(teller sh)" && \
+  gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN"
+  @echo
+  @echo secrets after updates:
+  @echo
+  PAGER=cat gh secret list --repo={{ repo }}
+
+# List available workflows and associated jobs.
+[group('CI/CD')]
+list-workflows:
+  @act -l
+
+## secrets
+
+# Define the project variable
+gcp_project_id := env_var_or_default('GCP_PROJECT_ID', 'development')
+
+# Show existing secrets
+[group('secrets')]
+show:
+  @teller show
+
+# Create a secret with the given name
+[group('secrets')]
+create-secret name:
+  @gcloud secrets create {{name}} --replication-policy="automatic" --project {{gcp_project_id}}
+
+# Populate a single secret with the contents of a dotenv-formatted file
+[group('secrets')]
+populate-single-secret name path:
+  @gcloud secrets versions add {{name}} --data-file={{path}} --project {{gcp_project_id}}
+
+# Populate each line of a dotenv-formatted file as a separate secret
+[group('secrets')]
+populate-separate-secrets path:
+  @while IFS= read -r line; do \
+     KEY=$(echo $line | cut -d '=' -f 1); \
+     VALUE=$(echo $line | cut -d '=' -f 2); \
+     gcloud secrets create $KEY --replication-policy="automatic" --project {{gcp_project_id}} 2>/dev/null; \
+     printf "$VALUE" | gcloud secrets versions add $KEY --data-file=- --project {{gcp_project_id}}; \
+   done < {{path}}
+
+# Complete process: Create a secret and populate it with the entire contents of a dotenv file
+[group('secrets')]
+create-and-populate-single-secret name path:
+  @just create-secret {{name}}
+  @just populate-single-secret {{name}} {{path}}
+
+# Complete process: Create and populate separate secrets for each line in the dotenv file
+[group('secrets')]
+create-and-populate-separate-secrets path:
+  @just populate-separate-secrets {{path}}
+
+# Retrieve the contents of a given secret
+[group('secrets')]
+get-secret name:
+  @gcloud secrets versions access latest --secret={{name}} --project={{gcp_project_id}}
+
+# Create empty dotenv from template
+[group('secrets')]
+seed-dotenv:
+  @cp .template.env .env
+
+# Export unique secrets to dotenv format
+[group('secrets')]
+export:
+  @teller export env | sort | uniq | grep -v '^$' > .secrets.env
+
+# Check secrets are available in teller shell.
+[group('secrets')]
+check-secrets:
+  @printf "Check teller environment for secrets\n\n"
+  @teller run -s -- env | grep -E 'GITHUB|CACHIX' | teller redact
+
+# Save KUBECONFIG to file
+[group('secrets')]
+get-kubeconfig:
+  @teller run -s -- printenv KUBECONFIG > kubeconfig.yaml
