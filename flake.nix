@@ -116,7 +116,7 @@
             # Enable 'nix run .#container to build an OCI tarball with the 
             # home configuration activated.
             container = pkgs.dockerTools.buildLayeredImage {
-              name = "nixpod-home";
+              name = "nixpod";
               tag = "latest";
               fromImage = nixImage;
               maxLayers = 50;
@@ -172,7 +172,7 @@
               registries = {
                 "ghcr.io" = {
                   enable = true;
-                  repo = "cameronraysmith/nixpod-home";
+                  repo = "cameronraysmith/nixpod";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
