@@ -5,7 +5,7 @@
 , bundleNixpkgs ? true
 , channelName ? "nixpkgs"
 , channelURL ? "https://nixos.org/channels/nixpkgs-unstable"
-, extraPkgs ? [ ]
+, extraPkgs ? [ pkgs.s6 ]
 , maxLayers ? 100
 , nixConf ? { }
 , flake-registry ? null
@@ -52,7 +52,6 @@ let
   };
 
   users = {
-
     root = {
       uid = 0;
       shell = "${pkgs.bashInteractive}/bin/bash";
@@ -70,7 +69,6 @@ let
       groups = [ "nobody" ];
       description = "Unprivileged account (don't use!)";
     };
-
   } // nonRootUsers
   // lib.listToAttrs (
     map
@@ -177,14 +175,11 @@ let
       "${n} = ${vStr}")
     (defaultNixConf // nixConf))) + "\n";
 
-  createUserDirectories = pkgs.writeScript "create-user-directories" ''
-    #!${pkgs.runtimeShell}
-    set -euo pipefail
-
+  nonRootUserDirectories = pkgs.runCommand "create-user-directories" { } ''
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: attrs:
       ''
-      mkdir -p ${attrs.home}
-      chown -R ${toString attrs.uid}:${toString attrs.gid} ${attrs.home}
+      mkdir -p $out/${attrs.home}
+      chown -R ${toString attrs.uid}:${toString attrs.gid} $out/${attrs.home}
       ''
     ) nonRootUsers)}
   '';
@@ -236,6 +231,14 @@ let
           "${flake-registry}/flake-registry.json"
         else
           flake-registry;
+      s6EntrypointScript = pkgs.writeShellScript "entrypoint.sh" ''
+        #!${pkgs.runtimeShell}
+        exec ${pkgs.s6}/bin/s6-svscan /etc/services.d
+      '';
+      nixDaemonService = pkgs.writeShellScript "nix-daemon-run" ''
+        #!${pkgs.runtimeShell}
+        exec ${pkgs.nix}/bin/nix-daemon
+      '';
     in
     pkgs.runCommand "base-system"
       {
@@ -296,6 +299,11 @@ let
         ln -s ${pkgs.coreutils}/bin/env $out/usr/bin/env
         ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
 
+        mkdir -p $out/opt/scripts
+        ln -s ${s6EntrypointScript} $out/opt/scripts/entrypoint.sh
+
+        mkdir -p $out/etc/services.d/nix-daemon
+        ln -s ${nixDaemonService} $out/etc/services.d/nix-daemon/run
       '' + (lib.optionalString (flake-registry-path != null) ''
         nixCacheDir="/root/.cache/nix"
         mkdir -p $out$nixCacheDir
@@ -311,7 +319,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag maxLayers fromImage;
 
-  contents = [ baseSystem ];
+  contents = [ baseSystem nonRootUserDirectories ];
 
   extraCommands = ''
     rm -rf nix-support
@@ -320,7 +328,6 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   fakeRootCommands = ''
     chmod 1777 tmp
     chmod 1777 var/tmp
-    ${createUserDirectories}/bin/create-user-directories
   '';
 
   config = {
