@@ -182,7 +182,7 @@ let
       ''
       if [ "${name}" != "root" ] && [ "${name}" != "nobody" ]; then
         mkdir -p ${attrs.home}
-        chown -R ${attrs.uid}:${attrs.gid} ${attrs.home}
+        chown -R ${toString attrs.uid}:${toString attrs.gid} ${attrs.home}
       fi
       ''
     ) users)}
