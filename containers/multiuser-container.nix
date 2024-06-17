@@ -31,17 +31,7 @@ let
     openssh
   ] ++ extraPkgs;
 
-  users = {
-
-    root = {
-      uid = 0;
-      shell = "${pkgs.bashInteractive}/bin/bash";
-      home = "/root";
-      gid = 0;
-      groups = [ "root" ];
-      description = "System administrator";
-    };
-
+  nonRootUsers = {
     jovyan = {
       uid = 1000;
       shell = "${pkgs.bashInteractive}/bin/bash";
@@ -59,6 +49,18 @@ let
       groups = [ "root" "runner" "wheel" ];
       description = "Privileged GitHub Actions user";
     };
+  };
+
+  users = {
+
+    root = {
+      uid = 0;
+      shell = "${pkgs.bashInteractive}/bin/bash";
+      home = "/root";
+      gid = 0;
+      groups = [ "root" ];
+      description = "System administrator";
+    };
 
     nobody = {
       uid = 65534;
@@ -69,7 +71,8 @@ let
       description = "Unprivileged account (don't use!)";
     };
 
-  } // lib.listToAttrs (
+  } // nonRootUsers
+  // lib.listToAttrs (
     map
       (
         n: {
@@ -180,12 +183,10 @@ let
 
     ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: attrs:
       ''
-      if [ "${name}" != "root" ] && [ "${name}" != "nobody" ]; then
-        mkdir -p ${attrs.home}
-        chown -R ${toString attrs.uid}:${toString attrs.gid} ${attrs.home}
-      fi
+      mkdir -p ${attrs.home}
+      chown -R ${toString attrs.uid}:${toString attrs.gid} ${attrs.home}
       ''
-    ) users)}
+    ) nonRootUsers)}
   '';
 
   baseSystem =
