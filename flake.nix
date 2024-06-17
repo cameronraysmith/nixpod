@@ -338,9 +338,14 @@
               fromImage = sudoImage;
               extraPkgs = with pkgs; [
                 s6
+                su
+                sudo
               ];
               nixConf = {
+                allowed-users = [ "*" ];
                 experimental-features = [ "nix-command" "flakes" ];
+                max-jobs = [ "auto" ];
+                trusted-users = [ "root" "jovyan" "runner" ];
               };
             };
 
