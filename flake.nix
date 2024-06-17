@@ -108,6 +108,56 @@
             # activating it.
             default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
 
+            manualNixImage = pkgs.dockerTools.buildImageWithNixDb {
+              name = "niximage";
+              tag = "latest";
+              fromImage = sudoImage;
+              copyToRoot = pkgs.buildEnv {
+                name = "niximage-root";
+                pathsToLink = [ "/bin" "/etc" "/share" ];
+                paths = with pkgs; [
+                  bashInteractive
+                  coreutils
+                  dockerTools.caCertificates
+                  nix
+                  su
+                  shadow
+                ];
+              };
+              runAsRoot = ''
+                echo "hosts: files dns" >> /etc/nsswitch.conf
+
+                mkdir -p /etc/nix
+                cat > /etc/nix/nix.conf <<EOF
+                build-users-group = nixbld
+                experimental-features = nix-command flakes
+                max-jobs = auto
+                extra-nix-path = nixpkgs=flake:nixpkgs
+                trusted-users = root ${myUserName}
+                EOF
+
+                mkdir -p /opt/scripts
+                cat > /opt/scripts/entrypoint.sh <<EOF
+                #!{pkgs.runtimeShell}
+
+                ${pkgs.nix}/bin/nix daemon &> /dev/null &
+              
+                DEFAULT_USER="root"
+                USER_TO_SWITCH=''${1:-$DEFAULT_USER}
+                shift
+                exec su -l $USER_TO_SWITCH -c "$@"
+                EOF
+                chmod +x /opt/scripts/entrypoint.sh
+              '';
+              config = {
+                Env = [
+                  "NIX_PAGER=cat"
+                  "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+                  "USER=root"
+                ];
+              };
+            };
+
             sudoImage = pkgs.dockerTools.buildImage {
               name = "sudoimage";
               tag = "latest";
@@ -122,7 +172,7 @@
                 groupadd -g 1 wheel
                 usermod -aG wheel root
 
-                groupadd -r nixbld
+                groupadd -g 30000 nixbld
                 for n in $(seq 1 10); do useradd -c "Nix build user $n" \
                     -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" \
                     nixbld$n; done
@@ -132,8 +182,8 @@
                 mkdir -p /root
                 mkdir -p /var/empty
 
-                # groupadd -g 65534 nobody
-                # useradd -u 65534 -g 65534 -d /var/empty nobody
+                groupadd -g 65534 nobody
+                useradd -u 65534 -g 65534 -d /var/empty nobody
                 # usermod -aG nixbld nobody
 
                 mkdir -p ${homeDir}
@@ -168,66 +218,35 @@
                 chmod +s /sbin/sudo
 
                 cat >> /etc/sudoers <<EOF
-                root     ALL=(ALL:ALL)    SETENV: ALL
+                root     ALL=(ALL:ALL)    NPASSWD:SETENV: ALL
                 %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
                 ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL
                 EOF
               '';
-            };
-
-
-            # Enable 'nix run .#nixImage' to build an OCI tarball containing 
-            # a nix store.
-            nixImage = pkgs.dockerTools.buildImageWithNixDb {
-              name = "niximage";
-              tag = "latest";
-              fromImage = sudoImage;
-              copyToRoot = pkgs.buildEnv {
-                name = "niximage-root";
-                pathsToLink = [ "/bin" "/etc" "/share" ];
-                paths = with pkgs; [
-                  bashInteractive
-                  coreutils
-                  dockerTools.caCertificates
-                  nix
-                  su
-                  shadow
-                ];
-              };
-              runAsRoot = ''
-                mkdir -p /etc/nix
-                cat > /etc/nix/nix.conf <<EOF
-                build-users-group = nixbld
-                experimental-features = nix-command flakes
-                max-jobs = auto
-                extra-nix-path = nixpkgs=flake:nixpkgs
-                trusted-users = root ${myUserName}
-                EOF
-
-                echo "hosts: files dns" >> /etc/nsswitch.conf
-
-                mkdir -p /opt/scripts
-                cat > /opt/scripts/entrypoint.sh <<EOF
-                #!/bin/bash
-
-                /bin/nix daemon &> /dev/null &
-              
-                DEFAULT_USER="root"
-                USER_TO_SWITCH=''${1:-$DEFAULT_USER}
-                shift
-                exec su -l $USER_TO_SWITCH -c "$@"
-                EOF
-                chmod +x /opt/scripts/entrypoint.sh
-              '';
               config = {
                 Env = [
                   "NIX_PAGER=cat"
-                  "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                  "USER=root"
+                  "USER=nobody"
                 ];
               };
             };
 
+            nixImage = (import ./containers/multiuser-container.nix){
+              inherit pkgs;
+              name = "multiusernix";
+              tag = "latest";
+              maxLayers = 70;
+              extraPkgs = with pkgs; [
+                s6
+                su
+              ];
+              nixConf = {
+                experimental-features = ["nix-command" "flakes"];
+              };
+            };
+
+            # Enable 'nix run .#nixImage' to build an OCI tarball containing 
+            # a nix store.
             # Enable 'nix run .#container to build an OCI tarball with the 
             # home configuration activated.
             container = pkgs.dockerTools.buildLayeredImage {
@@ -235,29 +254,30 @@
               tag = "latest";
               created = "now";
               fromImage = nixImage;
-              maxLayers = 100;
+              maxLayers = 111;
               contents = with pkgs; [
                 default
                 # homeConfig.activationPackage
               ];
               fakeRootCommands = ''
-                /bin/nix daemon &> /dev/null &
-                su -l ${myUserName} -c "${self'.packages.activate-home}/bin/activate-home"
+                # nohup /bin/nix daemon &> /dev/null &
+                # su -l ${myUserName} -c "${self'.packages.activate-home}/bin/activate-home"
               '';
-              enableFakechroot = true;
+              # enableFakechroot = true;
               config = {
                 # Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-                Cmd = [
-                  # "${myUserName}"
-                  "${pkgs.bashInteractive}/bin/bash"
-                  "-c"
-                  "exec ${pkgs.zsh}/bin/zsh"
-                ];
-                Env = [
-                  "HOME=${homeDir}"
-                  "NIX_REMOTE=daemon"
-                  "USER=${myUserName}"
-                ];
+                # Cmd = [
+                #   # "${myUserName}"
+                #   "${pkgs.bashInteractive}/bin/bash"
+                #   "-c"
+                #   "exec ${pkgs.zsh}/bin/zsh"
+                # ];
+                Cmd = [ "/root/.nix-profile/bin/bash" ];
+                # Env = [
+                #   "HOME=${homeDir}"
+                #   "NIX_REMOTE=daemon"
+                #   "USER=${myUserName}"
+                # ];
               };
             };
           };
