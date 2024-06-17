@@ -121,6 +121,7 @@
 
                 groupadd -g 1 wheel
                 groupadd -g 30000 nixbld
+                usermod -aG wheel root
 
                 mkdir -p /tmp
                 chmod 1777 /tmp
@@ -148,6 +149,16 @@
                 #session        required    pam_unix.so
                 session     required    pam_permit.so
                 password    required    pam_permit.so
+                EOF
+
+                cat > /etc/pam.d/system-auth <<EOF
+                #%PAM-1.0
+                auth        required      pam_env.so
+                auth        sufficient    pam_unix.so try_first_pass nullok
+                auth        required      pam_deny.so
+                account     required      pam_unix.so
+                password    required      pam_unix.so
+                session     required      pam_unix.so
                 EOF
 
                 chmod +s /sbin/sudo
