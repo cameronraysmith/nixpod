@@ -120,17 +120,21 @@
                 ${pkgs.dockerTools.shadowSetup}
 
                 groupadd -g 1 wheel
-                groupadd -g 30000 nixbld
                 usermod -aG wheel root
+
+                groupadd -r nixbld
+                for n in $(seq 1 10); do useradd -c "Nix build user $n" \
+                    -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" \
+                    nixbld$n; done
 
                 mkdir -p /tmp
                 chmod 1777 /tmp
                 mkdir -p /root
                 mkdir -p /var/empty
 
-                groupadd -g 65534 nobody
-                useradd -u 65534 -g 65534 -d /var/empty nobody
-                usermod -aG nixbld nobody
+                # groupadd -g 65534 nobody
+                # useradd -u 65534 -g 65534 -d /var/empty nobody
+                # usermod -aG nixbld nobody
 
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
@@ -201,6 +205,19 @@
                 EOF
 
                 echo "hosts: files dns" >> /etc/nsswitch.conf
+
+                mkdir -p /opt/scripts
+                cat > /opt/scripts/entrypoint.sh <<EOF
+                #!/bin/bash
+
+                /bin/nix daemon &> /dev/null &
+              
+                DEFAULT_USER="root"
+                USER_TO_SWITCH=''${1:-$DEFAULT_USER}
+                shift
+                exec su -l $USER_TO_SWITCH -c "$@"
+                EOF
+                chmod +x /opt/scripts/entrypoint.sh
               '';
               config = {
                 Env = [
@@ -224,18 +241,22 @@
                 # homeConfig.activationPackage
               ];
               fakeRootCommands = ''
-                sudo -u ${myUserName} sudo ${self'.packages.activate-home}/bin/activate-home
+                /bin/nix daemon &> /dev/null &
+                su -l ${myUserName} -c "${self'.packages.activate-home}/bin/activate-home"
               '';
               enableFakechroot = true;
               config = {
+                Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
                 Cmd = [
+                  "${myUserName}"
                   "${pkgs.bashInteractive}/bin/bash"
                   "-c"
                   "exec ${pkgs.zsh}/bin/zsh"
                 ];
                 Env = [
-                  "USER=${myUserName}"
                   "HOME=${homeDir}"
+                  "NIX_REMOTE=daemon"
+                  "USER=${myUserName}"
                 ];
               };
             };
