@@ -5,9 +5,9 @@
 , bundleNixpkgs ? true
 , channelName ? "nixpkgs"
 , channelURL ? "https://nixos.org/channels/nixpkgs-unstable"
-, extraPkgs ? []
+, extraPkgs ? [ ]
 , maxLayers ? 100
-, nixConf ? {}
+, nixConf ? { }
 , flake-registry ? null
 , fromImage ? null
 }:
@@ -166,11 +166,27 @@ let
     trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
   };
 
-  nixConfContents = (lib.concatStringsSep "\n" (lib.mapAttrsFlatten (n: v:
-    let
-      vStr = if builtins.isList v then lib.concatStringsSep " " v else v;
-    in
-      "${n} = ${vStr}") (defaultNixConf // nixConf))) + "\n";
+  nixConfContents = (lib.concatStringsSep "\n" (lib.mapAttrsFlatten
+    (n: v:
+      let
+        vStr = if builtins.isList v then lib.concatStringsSep " " v else v;
+      in
+      "${n} = ${vStr}")
+    (defaultNixConf // nixConf))) + "\n";
+
+  createUserDirectories = pkgs.writeScript "create-user-directories" ''
+    #!${pkgs.runtimeShell}
+    set -euo pipefail
+
+    ${lib.concatStringsSep "\n" (lib.mapAttrsToList (name: attrs:
+      ''
+      if [ "${name}" != "root" ] && [ "${name}" != "nobody" ]; then
+        mkdir -p ${attrs.home}
+        chown -R ${attrs.uid}:${attrs.gid} ${attrs.home}
+      fi
+      ''
+    ) users)}
+  '';
 
   baseSystem =
     let
@@ -212,12 +228,13 @@ let
         cp -a ${rootEnv}/* $out/
         ln -s ${manifest} $out/manifest.nix
       '';
-      flake-registry-path = if (flake-registry == null) then
-        null
-      else if (builtins.readFileType (toString flake-registry)) == "directory" then
-        "${flake-registry}/flake-registry.json"
-      else
-        flake-registry;
+      flake-registry-path =
+        if (flake-registry == null) then
+          null
+        else if (builtins.readFileType (toString flake-registry)) == "directory" then
+          "${flake-registry}/flake-registry.json"
+        else
+          flake-registry;
     in
     pkgs.runCommand "base-system"
       {
@@ -230,62 +247,63 @@ let
         ];
         allowSubstitutes = false;
         preferLocalBuild = true;
-      } (''
-      env
-      set -x
-      mkdir -p $out/etc
+      }
+      (''
+        env
+        set -x
+        mkdir -p $out/etc
 
-      mkdir -p $out/etc/ssl/certs
-      ln -s /nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt $out/etc/ssl/certs
+        mkdir -p $out/etc/ssl/certs
+        ln -s /nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt $out/etc/ssl/certs
 
-      cat $passwdContentsPath > $out/etc/passwd
-      echo "" >> $out/etc/passwd
+        cat $passwdContentsPath > $out/etc/passwd
+        echo "" >> $out/etc/passwd
 
-      cat $groupContentsPath > $out/etc/group
-      echo "" >> $out/etc/group
+        cat $groupContentsPath > $out/etc/group
+        echo "" >> $out/etc/group
 
-      cat $shadowContentsPath > $out/etc/shadow
-      echo "" >> $out/etc/shadow
+        cat $shadowContentsPath > $out/etc/shadow
+        echo "" >> $out/etc/shadow
 
-      mkdir -p $out/usr
-      ln -s /nix/var/nix/profiles/share $out/usr/
+        mkdir -p $out/usr
+        ln -s /nix/var/nix/profiles/share $out/usr/
 
-      mkdir -p $out/nix/var/nix/gcroots
+        mkdir -p $out/nix/var/nix/gcroots
 
-      mkdir $out/tmp
+        mkdir $out/tmp
 
-      mkdir -p $out/var/tmp
+        mkdir -p $out/var/tmp
 
-      mkdir -p $out/etc/nix
-      cat $nixConfContentsPath > $out/etc/nix/nix.conf
+        mkdir -p $out/etc/nix
+        cat $nixConfContentsPath > $out/etc/nix/nix.conf
 
-      mkdir -p $out/root
-      mkdir -p $out/nix/var/nix/profiles/per-user/root
+        mkdir -p $out/root
+        mkdir -p $out/nix/var/nix/profiles/per-user/root
 
-      ln -s ${profile} $out/nix/var/nix/profiles/default-1-link
-      ln -s $out/nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/default
-      ln -s /nix/var/nix/profiles/default $out/root/.nix-profile
+        ln -s ${profile} $out/nix/var/nix/profiles/default-1-link
+        ln -s $out/nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/default
+        ln -s /nix/var/nix/profiles/default $out/root/.nix-profile
 
-      ln -s ${channel} $out/nix/var/nix/profiles/per-user/root/channels-1-link
-      ln -s $out/nix/var/nix/profiles/per-user/root/channels-1-link $out/nix/var/nix/profiles/per-user/root/channels
+        ln -s ${channel} $out/nix/var/nix/profiles/per-user/root/channels-1-link
+        ln -s $out/nix/var/nix/profiles/per-user/root/channels-1-link $out/nix/var/nix/profiles/per-user/root/channels
 
-      mkdir -p $out/root/.nix-defexpr
-      ln -s $out/nix/var/nix/profiles/per-user/root/channels $out/root/.nix-defexpr/channels
-      echo "${channelURL} ${channelName}" > $out/root/.nix-channels
+        mkdir -p $out/root/.nix-defexpr
+        ln -s $out/nix/var/nix/profiles/per-user/root/channels $out/root/.nix-defexpr/channels
+        echo "${channelURL} ${channelName}" > $out/root/.nix-channels
 
-      mkdir -p $out/bin $out/usr/bin
-      ln -s ${pkgs.coreutils}/bin/env $out/usr/bin/env
-      ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
+        mkdir -p $out/bin $out/usr/bin
+        ln -s ${pkgs.coreutils}/bin/env $out/usr/bin/env
+        ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
 
-    '' + (lib.optionalString (flake-registry-path != null) ''
-      nixCacheDir="/root/.cache/nix"
-      mkdir -p $out$nixCacheDir
-      globalFlakeRegistryPath="$nixCacheDir/flake-registry.json"
-      ln -s ${flake-registry-path} $out$globalFlakeRegistryPath
-      mkdir -p $out/nix/var/nix/gcroots/auto
-      rootName=$(${pkgs.nix}/bin/nix --extra-experimental-features nix-command hash file --type sha1 --base32 <(echo -n $globalFlakeRegistryPath))
-      ln -s $globalFlakeRegistryPath $out/nix/var/nix/gcroots/auto/$rootName
-    ''));
+      '' + (lib.optionalString (flake-registry-path != null) ''
+        nixCacheDir="/root/.cache/nix"
+        mkdir -p $out$nixCacheDir
+        globalFlakeRegistryPath="$nixCacheDir/flake-registry.json"
+        ln -s ${flake-registry-path} $out$globalFlakeRegistryPath
+        mkdir -p $out/nix/var/nix/gcroots/auto
+        rootName=$(${pkgs.nix}/bin/nix --extra-experimental-features nix-command hash file --type sha1 --base32 <(echo -n $globalFlakeRegistryPath))
+        ln -s $globalFlakeRegistryPath $out/nix/var/nix/gcroots/auto/$rootName
+      ''));
 
 in
 pkgs.dockerTools.buildLayeredImageWithNixDb {
@@ -301,6 +319,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   fakeRootCommands = ''
     chmod 1777 tmp
     chmod 1777 var/tmp
+    ${createUserDirectories}/bin/create-user-directories
   '';
 
   config = {
