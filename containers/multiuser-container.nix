@@ -9,6 +9,7 @@
 , maxLayers ? 100
 , nixConf ? {}
 , flake-registry ? null
+, fromImage ? null
 }:
 let
   defaultPkgs = with pkgs; [
@@ -289,7 +290,7 @@ let
 in
 pkgs.dockerTools.buildLayeredImageWithNixDb {
 
-  inherit name tag maxLayers;
+  inherit name tag maxLayers fromImage;
 
   contents = [ baseSystem ];
 
