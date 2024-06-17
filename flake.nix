@@ -246,9 +246,9 @@
               '';
               enableFakechroot = true;
               config = {
-                Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
+                # Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
                 Cmd = [
-                  "${myUserName}"
+                  # "${myUserName}"
                   "${pkgs.bashInteractive}/bin/bash"
                   "-c"
                   "exec ${pkgs.zsh}/bin/zsh"
