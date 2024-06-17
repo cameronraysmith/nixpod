@@ -38,6 +38,24 @@
 
       perSystem = { self', inputs', pkgs, system, ... }:
         let
+          # users = {
+          #   root = {
+          #     name = "root";
+          #     uid = "0";
+          #     gid = "0";
+          #   };
+          #   runner = {
+          #     name = "runner";
+          #     uid = "1001";
+          #     gid = "121";
+          #   };
+          #   jovyan = {
+          #     name = "jovyan";
+          #     uid = "1000";
+          #     gid = "100";
+          #   };
+          # };
+          users = [ "root" "jovyan" "runner" ];
           myUserName = "runner";
           myUserUid = "1001";
           myUserGid = "121";
@@ -135,9 +153,9 @@
                 chmod +s /sbin/sudo
 
                 cat >> /etc/sudoers <<EOF
-                root     ALL=(ALL:ALL)    SETENV: ALL"
-                %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL"
-                ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL"
+                root     ALL=(ALL:ALL)    SETENV: ALL
+                %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
+                ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL
                 EOF
               '';
             };
@@ -151,12 +169,13 @@
               fromImage = sudoImage;
               copyToRoot = pkgs.buildEnv {
                 name = "niximage-root";
-                # pathsToLink = [ "/bin" "/etc" "/share" ];
+                pathsToLink = [ "/bin" "/etc" "/share" ];
                 paths = with pkgs; [
                   bashInteractive
                   coreutils
                   dockerTools.caCertificates
                   nix
+                  su
                   shadow
                 ];
               };
@@ -186,6 +205,7 @@
             container = pkgs.dockerTools.buildLayeredImage {
               name = "nixpod";
               tag = "latest";
+              created = "now";
               fromImage = nixImage;
               maxLayers = 100;
               contents = with pkgs; [
@@ -193,7 +213,7 @@
                 # homeConfig.activationPackage
               ];
               fakeRootCommands = ''
-                sudo -u ${myUserName} ${self'.packages.activate-home}/bin/activate-home
+                sudo -u ${myUserName} sudo ${self'.packages.activate-home}/bin/activate-home
               '';
               enableFakechroot = true;
               config = {
