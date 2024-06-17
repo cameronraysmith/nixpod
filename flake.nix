@@ -119,10 +119,26 @@
                 usermod -aG wheel ${myUserName}
                 chown -R ${myUserUid}:${myUserGid} ${homeDir}
 
+                cat > /etc/pam.d/sudo <<EOF
+                #%PAM-1.0
+                auth        sufficient  pam_rootok.so
+                #auth       required    pam_unix.so
+                auth        required    pam_permit.so
+                #account        required    pam_unix.so
+                account     required    pam_permit.so
+                account     required    pam_warn.so
+                #session        required    pam_unix.so
+                session     required    pam_permit.so
+                password    required    pam_permit.so
+                EOF
+
                 chmod +s /sbin/sudo
-                echo "root     ALL=(ALL:ALL)    SETENV: ALL" >> /etc/sudoers
-                echo "%wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL" >> /etc/sudoers
-                echo "${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL" >> /etc/sudoers
+
+                cat >> /etc/sudoers <<EOF
+                root     ALL=(ALL:ALL)    SETENV: ALL"
+                %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL"
+                ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL"
+                EOF
               '';
             };
 
@@ -141,7 +157,6 @@
                   coreutils
                   dockerTools.caCertificates
                   nix
-                  su
                   shadow
                 ];
               };
@@ -178,7 +193,6 @@
                 # homeConfig.activationPackage
               ];
               fakeRootCommands = ''
-                cd ${homeDir} && \
                 sudo -u ${myUserName} ${self'.packages.activate-home}/bin/activate-home
               '';
               enableFakechroot = true;
