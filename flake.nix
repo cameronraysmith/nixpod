@@ -101,33 +101,27 @@
 
                 ${pkgs.dockerTools.shadowSetup}
 
-                # normally 
-                # groupadd -g 0 wheel
-                # usermod -aG wheel root
-                # but dockerTools.shadowSetup
-                # sets the root group to 0
-                # groupmod -n wheel root
-                # usermod -aG wheel root
-
+                groupadd -g 1 wheel
                 groupadd -g 30000 nixbld
+
+                mkdir -p /tmp
+                chmod 1777 /tmp
+                mkdir -p /root
+                mkdir -p /var/empty
 
                 groupadd -g 65534 nobody
                 useradd -u 65534 -g 65534 -d /var/empty nobody
                 usermod -aG nixbld nobody
 
-                mkdir -p /tmp
-                mkdir -p /root
-                mkdir -p /var/empty
-
                 mkdir -p ${homeDir}
                 groupadd -g ${myUserGid} ${myUserName}
                 useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -aG root ${myUserName}
+                usermod -aG wheel ${myUserName}
                 chown -R ${myUserUid}:${myUserGid} ${homeDir}
 
                 chmod +s /sbin/sudo
                 echo "root     ALL=(ALL:ALL)    SETENV: ALL" >> /etc/sudoers
-                echo "%root  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL" >> /etc/sudoers
+                echo "%wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL" >> /etc/sudoers
                 echo "${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL" >> /etc/sudoers
               '';
             };
