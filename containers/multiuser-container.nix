@@ -281,6 +281,8 @@ let
         mkdir -p $out/etc/nix
         cat $nixConfContentsPath > $out/etc/nix/nix.conf
 
+        mkdir -p $out/home/jovyan
+        mkdir -p $out/home/runner
         mkdir -p $out/root
         mkdir -p $out/nix/var/nix/profiles/per-user/root
 
@@ -319,7 +321,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag maxLayers fromImage;
 
-  contents = [ baseSystem nonRootUserDirectories ];
+  contents = [ baseSystem ];
 
   extraCommands = ''
     rm -rf nix-support
@@ -328,6 +330,8 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   fakeRootCommands = ''
     chmod 1777 tmp
     chmod 1777 var/tmp
+    chown -R runner:runner home/runner
+    chown -R jovyan:jovyan home/jovyan
   '';
 
   config = {
