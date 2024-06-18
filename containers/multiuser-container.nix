@@ -257,7 +257,7 @@ let
       '';
       nixDaemonService = pkgs.writeShellScript "nix-daemon-run" ''
         #!${pkgs.runtimeShell}
-        exec ${pkgs.nix}/bin/nix-daemon
+        ${pkgs.nix}/bin/nix-daemon > /dev/null 2>&1
       '';
       nixProfileScript = pkgs.writeShellScript "nix.sh" ''
         # Nix
@@ -358,12 +358,13 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
   '';
   fakeRootCommands = ''
+    chown -R root:wheel /
     chmod 1777 /tmp
     chmod 1777 /var/tmp
     chown -R jovyan:jovyan /home/jovyan
     chown -R runner:runner /home/runner
-    chown -R root:wheel /nix
     chown -R root:nixbld /nix/store
+    chmod 1775 /nix/store
   '';
   enableFakechroot = true;
 
