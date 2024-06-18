@@ -37,7 +37,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/home/jovyan";
       gid = 100;
-      groups = [ "root" "jovyan" "wheel" ];
+      groups = [ "jovyan" "wheel" ];
       description = "Privileged Jupyter user";
     };
 
@@ -46,7 +46,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/home/runner";
       gid = 121;
-      groups = [ "root" "runner" "wheel" ];
+      groups = [ "runner" "wheel" ];
       description = "Privileged GitHub Actions user";
     };
   };
@@ -57,7 +57,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/root";
       gid = 0;
-      groups = [ "root" ];
+      groups = [ "wheel" ];
       description = "System administrator";
     };
 
@@ -87,8 +87,7 @@ let
   );
 
   groups = {
-    root.gid = 0;
-    wheel.gid = 1;
+    wheel.gid = 0;
     jovyan.gid = 100;
     runner.gid = 121;
     nixbld.gid = 30000;
@@ -257,7 +256,7 @@ let
       '';
       nixDaemonService = pkgs.writeShellScript "nix-daemon-run" ''
         #!${pkgs.runtimeShell}
-        ${pkgs.nix}/bin/nix-daemon > /dev/null 2>&1
+        exec ${pkgs.nix}/bin/nix-daemon > /dev/null
       '';
       nixProfileScript = pkgs.writeShellScript "nix.sh" ''
         # Nix
@@ -358,7 +357,6 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
   '';
   fakeRootCommands = ''
-    chown -R root:wheel /
     chmod 1777 /tmp
     chmod 1777 /var/tmp
     chown -R jovyan:jovyan /home/jovyan
@@ -369,6 +367,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   enableFakechroot = true;
 
   config = {
+    Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
     Cmd = [ "/root/.nix-profile/bin/bash" ];
     Env = [
       "USER=root"
