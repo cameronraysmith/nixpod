@@ -233,7 +233,27 @@ let
           flake-registry;
       s6EntrypointScript = pkgs.writeShellScript "entrypoint.sh" ''
         #!${pkgs.runtimeShell}
-        exec ${pkgs.s6}/bin/s6-svscan /etc/services.d
+
+        term_handler() {
+          echo "Termination signal received, stopping s6-svscan..."
+          kill -TERM "$S6_PID"
+          wait "$S6_PID"
+          echo "s6-svscan stopped, exiting."
+          exit 0
+        }
+
+        trap 'term_handler' SIGTERM SIGINT
+
+        ${pkgs.s6}/bin/s6-svscan /etc/services.d &
+        S6_PID=$!
+
+        if [ $# -gt 0 ]; then
+          exec "$@"
+        else
+          exec /root/.nix-profile/bin/bash
+        fi
+
+        wait "$S6_PID"
       '';
       nixDaemonService = pkgs.writeShellScript "nix-daemon-run" ''
         #!${pkgs.runtimeShell}
@@ -313,6 +333,9 @@ let
 
         mkdir -p $out/etc/services.d/nix-daemon
         ln -s ${nixDaemonService} $out/etc/services.d/nix-daemon/run
+
+        mkdir -p $out/etc/profile.d
+        ln -s ${nixProfileScript} $out/etc/profile.d/nix.sh
       '' + (lib.optionalString (flake-registry-path != null) ''
         nixCacheDir="/root/.cache/nix"
         mkdir -p $out$nixCacheDir
@@ -335,11 +358,14 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
   '';
   fakeRootCommands = ''
-    chmod 1777 tmp
-    chmod 1777 var/tmp
-    chown -R runner:runner home/runner
-    chown -R jovyan:jovyan home/jovyan
+    chmod 1777 /tmp
+    chmod 1777 /var/tmp
+    chown -R jovyan:jovyan /home/jovyan
+    chown -R runner:runner /home/runner
+    chown -R root:wheel /nix
+    chown -R root:nixbld /nix/store
   '';
+  enableFakechroot = true;
 
   config = {
     Cmd = [ "/root/.nix-profile/bin/bash" ];
