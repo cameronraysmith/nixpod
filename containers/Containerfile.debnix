@@ -28,6 +28,7 @@ RUN curl --proto '=https' --tlsv1.2 -sSf \
     sh -s -- install linux \
     --extra-conf "sandbox = false" \
     --extra-conf "filter-syscalls = false" \
+    --extra-conf "trusted-users = root ${USER}" \
     --init none \
     --no-confirm
 
