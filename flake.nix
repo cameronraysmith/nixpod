@@ -108,129 +108,6 @@
             # activating it.
             default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
 
-            manualNixImage = pkgs.dockerTools.buildImageWithNixDb {
-              name = "niximage";
-              tag = "latest";
-              fromImage = sudoImage;
-              copyToRoot = pkgs.buildEnv {
-                name = "niximage-root";
-                pathsToLink = [ "/bin" "/etc" "/share" ];
-                paths = with pkgs; [
-                  bashInteractive
-                  coreutils
-                  dockerTools.caCertificates
-                  nix
-                  su
-                  shadow
-                ];
-              };
-              runAsRoot = ''
-                echo "hosts: files dns" >> /etc/nsswitch.conf
-
-                mkdir -p /etc/nix
-                cat > /etc/nix/nix.conf <<EOF
-                build-users-group = nixbld
-                experimental-features = nix-command flakes
-                max-jobs = auto
-                extra-nix-path = nixpkgs=flake:nixpkgs
-                trusted-users = root ${myUserName}
-                EOF
-
-                mkdir -p /opt/scripts
-                cat > /opt/scripts/entrypoint.sh <<EOF
-                #!{pkgs.runtimeShell}
-
-                ${pkgs.nix}/bin/nix daemon &> /dev/null &
-              
-                DEFAULT_USER="root"
-                USER_TO_SWITCH=''${1:-$DEFAULT_USER}
-                shift
-                exec su -l $USER_TO_SWITCH -c "$@"
-                EOF
-                chmod +x /opt/scripts/entrypoint.sh
-              '';
-              config = {
-                Env = [
-                  "NIX_PAGER=cat"
-                  "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
-                  "USER=root"
-                ];
-              };
-            };
-
-            manualSudoImage = pkgs.dockerTools.buildImage {
-              name = "sudoimage";
-              tag = "latest";
-
-              copyToRoot = pkgs.sudo;
-
-              runAsRoot = ''
-                #!${pkgs.runtimeShell}
-
-                ${pkgs.dockerTools.shadowSetup}
-
-                groupadd -g 1 wheel
-                usermod -aG wheel root
-
-                groupadd -g 30000 nixbld
-                for n in $(seq 1 10); do useradd -c "Nix build user $n" \
-                    -d /var/empty -g nixbld -G nixbld -M -N -r -s "$(which nologin)" \
-                    nixbld$n; done
-
-                mkdir -p /tmp
-                chmod 1777 /tmp
-                mkdir -p /root
-                mkdir -p /var/empty
-
-                groupadd -g 65534 nobody
-                useradd -u 65534 -g 65534 -d /var/empty nobody
-                # usermod -aG nixbld nobody
-
-                mkdir -p ${homeDir}
-                groupadd -g ${myUserGid} ${myUserName}
-                useradd -u ${myUserUid} -g ${myUserGid} -d ${homeDir} ${myUserName}
-                usermod -aG wheel ${myUserName}
-                chown -R ${myUserUid}:${myUserGid} ${homeDir}
-
-                cat > /etc/pam.d/sudo <<EOF
-                #%PAM-1.0
-                auth        sufficient  pam_rootok.so
-                #auth       required    pam_unix.so
-                auth        required    pam_permit.so
-                #account        required    pam_unix.so
-                account     required    pam_permit.so
-                account     required    pam_warn.so
-                #session        required    pam_unix.so
-                session     required    pam_permit.so
-                password    required    pam_permit.so
-                EOF
-
-                cat > /etc/pam.d/system-auth <<EOF
-                #%PAM-1.0
-                auth        required      pam_env.so
-                auth        sufficient    pam_unix.so try_first_pass nullok
-                auth        required      pam_deny.so
-                account     required      pam_unix.so
-                password    required      pam_unix.so
-                session     required      pam_unix.so
-                EOF
-
-                chmod +s /sbin/sudo
-
-                cat >> /etc/sudoers <<EOF
-                root     ALL=(ALL:ALL)    NPASSWD:SETENV: ALL
-                %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
-                ${myUserName}     ALL=(ALL:ALL)    NOPASSWD: ALL
-                EOF
-              '';
-              config = {
-                Env = [
-                  "NIX_PAGER=cat"
-                  "USER=nobody"
-                ];
-              };
-            };
-
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
               tag = "latest";
@@ -322,12 +199,6 @@
                 %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
                 EOF
               '';
-              config = {
-                # Env = [
-                #   "NIX_PAGER=cat"
-                #   "USER=nobody"
-                # ];
-              };
             };
 
             nixImage = (import ./containers/multiuser-container.nix) {
@@ -337,9 +208,12 @@
               maxLayers = 70;
               fromImage = sudoImage;
               extraPkgs = with pkgs; [
+                ps
                 s6
                 su
                 sudo
+                tree
+                vim
               ];
               nixConf = {
                 allowed-users = [ "*" ];
@@ -350,8 +224,6 @@
               };
             };
 
-            # Enable 'nix run .#nixImage' to build an OCI tarball containing 
-            # a nix store.
             # Enable 'nix run .#container to build an OCI tarball with the 
             # home configuration activated.
             container = pkgs.dockerTools.buildLayeredImage {
@@ -362,27 +234,14 @@
               maxLayers = 111;
               contents = with pkgs; [
                 default
-                # homeConfig.activationPackage
               ];
-              # fakeRootCommands = ''
-              #   # su -l ${myUserName} -c "${self'.packages.activate-home}/bin/activate-home"
-              # '';
-              # enableFakechroot = true;
-              # config = {
-              #   Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-              #   # Cmd = [
-              #   #   # "${myUserName}"
-              #   #   "${pkgs.bashInteractive}/bin/bash"
-              #   #   "-c"
-              #   #   "exec ${pkgs.zsh}/bin/zsh"
-              #   # ];
-              #   Cmd = [ "/root/.nix-profile/bin/bash" ];
-              #   Env = [
-              #     #   "HOME=${homeDir}"
-              #     #   "NIX_REMOTE=daemon"
-              #     #   "USER=${myUserName}"
-              #   ];
-              # };
+              config = {
+                Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
+                Cmd = [ "/root/.nix-profile/bin/bash" ];
+                Env = [
+                  #   "NIX_REMOTE=daemon"
+                ];
+              };
             };
           };
 
