@@ -256,6 +256,8 @@ let
       '';
       nixDaemonService = pkgs.writeShellScript "nix-daemon-run" ''
         #!${pkgs.runtimeShell}
+        export SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
+        export CURL_CA_BUNDLE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
         exec ${pkgs.nix}/bin/nix-daemon > /dev/null
       '';
       nixProfileScript = pkgs.writeShellScript "nix.sh" ''
@@ -299,6 +301,7 @@ let
         ln -s /nix/var/nix/profiles/share $out/usr/
 
         mkdir -p $out/nix/var/nix/gcroots
+        mkdir -p $out/nix/var/nix/gcroots/per-user
 
         mkdir $out/tmp
 
@@ -311,10 +314,15 @@ let
         mkdir -p $out/home/runner
         mkdir -p $out/root
         mkdir -p $out/nix/var/nix/profiles/per-user/root
+        mkdir -p $out/nix/var/nix/profiles/per-user/jovyan
+        mkdir -p $out/nix/var/nix/profiles/per-user/runner
 
         ln -s ${profile} $out/nix/var/nix/profiles/default-1-link
         ln -s $out/nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/default
         ln -s /nix/var/nix/profiles/default $out/root/.nix-profile
+
+        cp -r $out/nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/per-user/runner/profile-1-link
+        cp -r $out/nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/per-user/jovyan/profile-1-link
 
         ln -s ${channel} $out/nix/var/nix/profiles/per-user/root/channels-1-link
         ln -s $out/nix/var/nix/profiles/per-user/root/channels-1-link $out/nix/var/nix/profiles/per-user/root/channels
@@ -361,8 +369,10 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     chmod 1777 /var/tmp
     chown -R jovyan:jovyan /home/jovyan
     chown -R runner:runner /home/runner
-    chown -R root:nixbld /nix/store
     chmod 1775 /nix/store
+    chown -R root:nixbld /nix/store
+    chmod 1777 /nix/var/nix/profiles/per-user
+    chmod 1777 /nix/var/nix/gcroots/per-user
   '';
   enableFakechroot = true;
 
@@ -372,15 +382,21 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     Env = [
       "USER=root"
       "PATH=${lib.concatStringsSep ":" [
-        "/root/.nix-profile/bin"
-        "/nix/var/nix/profiles/default/bin"
-        "/nix/var/nix/profiles/default/sbin"
+        "/run/wrappers/bin"
+        "/root/.nix-profile/bin" # single-user nix
+        "/nix/profile/bin"
+        "/root/.local/state/nix/profile/bin"
+        "/etc/profiles/per-user/root/bin"
+        "/nix/var/nix/profiles/default/bin" # single-user nix
+        "/nix/var/nix/profiles/default/sbin" # single-user nix
+        "/run/current-system/sw/bin"
       ]}"
       "MANPATH=${lib.concatStringsSep ":" [
         "/root/.nix-profile/share/man"
         "/nix/var/nix/profiles/default/share/man"
       ]}"
       "SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
+      "CURL_CA_BUNDLE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
