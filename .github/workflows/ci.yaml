@@ -157,7 +157,6 @@ jobs:
           cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
           cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
-
   debnix:
     needs: set-variables
     runs-on: ubuntu-latest
@@ -176,6 +175,29 @@ jobs:
           containerfile-path: "containers/Containerfile.${{ github.job }}"
           push-condition: ${{ github.event_name != 'pull_request' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  jupnix:
+    needs: set-variables
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: jupnix-${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.debnix"
+          push-condition: ${{ github.event_name != 'pull_request' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-args: |
+            USER=jovyan
+            UID=1000
+            GID=100
 
   # nixpod:
   #   needs: [scan, debnix]
