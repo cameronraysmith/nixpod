@@ -239,6 +239,13 @@ let
         #!${pkgs.runtimeShell}
         exec ${pkgs.nix}/bin/nix-daemon
       '';
+      nixProfileScript = pkgs.writeShellScript "nix.sh" ''
+        # Nix
+        if [ -e '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh' ]; then
+            . '/nix/var/nix/profiles/default/etc/profile.d/nix-daemon.sh'
+        fi
+        # End Nix
+      '';
     in
     pkgs.runCommand "base-system"
       {
