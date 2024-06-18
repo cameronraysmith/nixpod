@@ -17,6 +17,10 @@ inputs:
   github-token:
     description: 'GitHub Token for logging in to the container registry'
     required: true
+  build-args:
+    description: 'Build arguments'
+    required: false
+    default: ''
 
 runs:
   using: composite
@@ -79,3 +83,4 @@ runs:
         push: ${{ inputs.push-condition }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
+        build-args: ${{ inputs.build-args }}
