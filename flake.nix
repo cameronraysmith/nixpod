@@ -345,6 +345,7 @@
                 allowed-users = [ "*" ];
                 experimental-features = [ "nix-command" "flakes" ];
                 max-jobs = [ "auto" ];
+                sandbox = "false";
                 trusted-users = [ "root" "jovyan" "runner" ];
               };
             };
@@ -369,7 +370,7 @@
               '';
               # enableFakechroot = true;
               config = {
-                # Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
+                Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
                 # Cmd = [
                 #   # "${myUserName}"
                 #   "${pkgs.bashInteractive}/bin/bash"
@@ -377,11 +378,11 @@
                 #   "exec ${pkgs.zsh}/bin/zsh"
                 # ];
                 Cmd = [ "/root/.nix-profile/bin/bash" ];
-                # Env = [
+                Env = [
                 #   "HOME=${homeDir}"
-                #   "NIX_REMOTE=daemon"
+                  "NIX_REMOTE=daemon"
                 #   "USER=${myUserName}"
-                # ];
+                ];
               };
             };
           };
