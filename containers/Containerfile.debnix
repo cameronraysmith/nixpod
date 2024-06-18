@@ -16,7 +16,9 @@ RUN apt update -y && \
     rm -rf /var/lib/apt/lists/*
 
 # create user and grant sudo privileges
-RUN groupadd --gid=${GID} ${USER} && \
+RUN if ! getent group ${GID} > /dev/null 2>&1; then \
+        groupadd --gid ${GID} ${USER}; \
+    fi && \ 
     useradd --create-home --shell=/bin/bash --uid=${UID} --gid=${GID} ${USER} && \
     echo "${USER} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/"${USER}"
 
