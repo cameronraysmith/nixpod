@@ -173,7 +173,7 @@ jobs:
           registry: ghcr.io
           image-name: ${{ github.repository_owner }}/${{ github.job }}
           containerfile-path: "containers/Containerfile.${{ github.job }}"
-          push-condition: ${{ github.event_name != 'pull_request' }}
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   jupnix:
@@ -192,7 +192,7 @@ jobs:
           registry: ghcr.io
           image-name: ${{ github.repository_owner }}/${{ github.job }}
           containerfile-path: "containers/Containerfile.debnix"
-          push-condition: ${{ github.event_name != 'pull_request' }}
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           build-args: |
             USER=jovyan
@@ -215,5 +215,5 @@ jobs:
   #         registry: ghcr.io
   #         image-name: ${{ github.repository_owner }}/${{ github.job }}
   #         containerfile-path: "containers/Containerfile.${{ github.job }}"
-  #         push-condition: ${{ github.event_name != 'pull_request' }}
+  #         push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
   #         github-token: ${{ secrets.GITHUB_TOKEN }}
