@@ -364,26 +364,25 @@
                 default
                 # homeConfig.activationPackage
               ];
-              fakeRootCommands = ''
-                # nohup /bin/nix daemon &> /dev/null &
-                # su -l ${myUserName} -c "${self'.packages.activate-home}/bin/activate-home"
-              '';
+              # fakeRootCommands = ''
+              #   # su -l ${myUserName} -c "${self'.packages.activate-home}/bin/activate-home"
+              # '';
               # enableFakechroot = true;
-              config = {
-                Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-                # Cmd = [
-                #   # "${myUserName}"
-                #   "${pkgs.bashInteractive}/bin/bash"
-                #   "-c"
-                #   "exec ${pkgs.zsh}/bin/zsh"
-                # ];
-                Cmd = [ "/root/.nix-profile/bin/bash" ];
-                Env = [
-                #   "HOME=${homeDir}"
-                  "NIX_REMOTE=daemon"
-                #   "USER=${myUserName}"
-                ];
-              };
+              # config = {
+              #   Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
+              #   # Cmd = [
+              #   #   # "${myUserName}"
+              #   #   "${pkgs.bashInteractive}/bin/bash"
+              #   #   "-c"
+              #   #   "exec ${pkgs.zsh}/bin/zsh"
+              #   # ];
+              #   Cmd = [ "/root/.nix-profile/bin/bash" ];
+              #   Env = [
+              #     #   "HOME=${homeDir}"
+              #     #   "NIX_REMOTE=daemon"
+              #     #   "USER=${myUserName}"
+              #   ];
+              # };
             };
           };
 
