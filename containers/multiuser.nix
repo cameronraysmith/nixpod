@@ -49,7 +49,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/home/jovyan";
       gid = 100;
-      groups = [ "jovyan" "wheel" ];
+      groups = [ "jovyan" "users" "wheel" ];
       description = "Privileged Jupyter user";
     };
 
@@ -58,7 +58,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/home/runner";
       gid = 121;
-      groups = [ "runner" "wheel" ];
+      groups = [ "runner" "docker" "users" "wheel" ];
       description = "Privileged GitHub Actions user";
     };
   };
@@ -100,8 +100,10 @@ let
 
   groups = {
     wheel.gid = 0;
-    jovyan.gid = 100;
-    runner.gid = 121;
+    users.gid = 100;
+    docker.gid = 121;
+    jovyan.gid = 1000;
+    runner.gid = 1001;
     nixbld.gid = 30000;
     nobody.gid = 65534;
   };
@@ -385,9 +387,11 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     chmod 775 /home/jovyan
     chmod 775 /home/runner
     chmod 1775 /nix/store
-    # chown -R root:nixbld /nix/store
     chmod 1777 /nix/var/nix/profiles/per-user
     chmod 1777 /nix/var/nix/gcroots/per-user
+    ## Note: for multi-user nix with nix-daemon
+    ## /nix/store should be owned by root:nixbld
+    # chown -R root:nixbld /nix/store
   '' + extraFakeRootCommands;
   enableFakechroot = true;
 
