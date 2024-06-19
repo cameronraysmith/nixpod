@@ -137,7 +137,7 @@ jobs:
     if: ${{ needs.set-variables.outputs.skip_ci != 'true' && ( contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images) || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) ) }}
         
     concurrency:
-      group: ${{ matrix.image }}-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+      group: bni-${{ matrix.image }}-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     permissions:
       contents: read
@@ -183,13 +183,14 @@ jobs:
           # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
 
   debnix:
-    needs: set-variables
     runs-on: ubuntu-latest
+    needs: set-variables
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && ( contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images) || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) ) }}
     permissions:
       contents: read
       packages: write
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}
+      group: debnix-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -203,13 +204,14 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
   debjupnix:
-    needs: set-variables
     runs-on: ubuntu-latest
+    needs: set-variables
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && ( contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images) || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) ) }}
     permissions:
       contents: read
       packages: write
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}
+      group: debjupnix-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -227,13 +229,13 @@ jobs:
             GID=100
 
   debnixpod:
-    needs: [scan, debnix]
     runs-on: ubuntu-latest
+    needs: [scan, debnix]
     permissions:
       contents: read
       packages: write
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}
+      group: debnixpod-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -305,7 +307,7 @@ jobs:
     runs-on: "ubuntu-latest"
     if: ${{ needs.release.outputs.released == 'true' }}
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      group: publish-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     permissions:
       id-token: "write"
@@ -326,7 +328,7 @@ jobs:
     if: ${{ needs.release.outputs.released == 'true' }}
         
     concurrency:
-      group: ${{ matrix.image }}-${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      group: pni-${{ matrix.image }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     permissions:
       contents: read
@@ -379,7 +381,7 @@ jobs:
       contents: read
       packages: write
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      group: publish-debnix-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -402,7 +404,7 @@ jobs:
       contents: read
       packages: write
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      group: publish-debjupnix-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
@@ -429,7 +431,7 @@ jobs:
       contents: read
       packages: write
     concurrency:
-      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      group: publish-debnixpod-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
       cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
