@@ -194,7 +194,7 @@
               inherit pkgs suImage;
             };
 
-            nixImage = (import ./containers/multiuser-container.nix) {
+            nixImage = (import ./containers/multiuser.nix) {
               inherit pkgs;
               name = "multiusernix";
               tag = "latest";
