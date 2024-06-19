@@ -270,6 +270,16 @@ ghsecrets repo="cameronraysmith/nixpod-home":
 list-workflows:
   @act -l
 
+# Execute flake.yaml workflow.
+[group('CI/CD')]
+test-flake-workflow:
+  @teller run -s -- \
+  act workflow_dispatch \
+  -W '.github/workflows/ci.yaml' \
+  -j nixci \
+  -s GITHUB_TOKEN -s CACHIX_AUTH_TOKEN \
+  --matrix os:ubuntu-latest
+
 ## secrets
 
 # Define the project variable
