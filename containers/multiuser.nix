@@ -10,6 +10,11 @@
 , nixConf ? { }
 , flake-registry ? null
 , fromImage ? null
+, extraContents ? [ ]
+, extraFakeRootCommands ? ""
+, entrypoint ? [ "/opt/scripts/entrypoint.sh" ]
+, cmd ? [ "/root/.nix-profile/bin/bash" ]
+, extraEnv ? [ ]
 }:
 let
   defaultPkgs = with pkgs; [
@@ -358,7 +363,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag maxLayers fromImage;
 
-  contents = [ baseSystem ];
+  contents = [ baseSystem ] ++ extraContents;
 
   extraCommands = ''
     rm -rf nix-support
@@ -373,12 +378,12 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     chown -R root:nixbld /nix/store
     chmod 1777 /nix/var/nix/profiles/per-user
     chmod 1777 /nix/var/nix/gcroots/per-user
-  '';
+  '' + extraFakeRootCommands;
   enableFakechroot = true;
 
   config = {
-    Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-    Cmd = [ "/root/.nix-profile/bin/bash" ];
+    Entrypoint = entrypoint;
+    Cmd = cmd;
     Env = [
       "USER=root"
       "PATH=${lib.concatStringsSep ":" [
@@ -400,7 +405,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
       "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
-    ];
+    ] ++ extraEnv;
   };
 
 }
