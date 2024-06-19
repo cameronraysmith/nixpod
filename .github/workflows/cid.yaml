@@ -276,7 +276,7 @@ jobs:
   release:
     runs-on: ubuntu-latest
     needs: [nixci]
-    if: ${{ github.repository_owner == 'pinellolab' && github.event_name == 'push' }}
+    if: ${{ github.repository_owner == 'cameronraysmith' && github.event_name == 'push' }}
     permissions:
       contents: write
     outputs: 
