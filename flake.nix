@@ -64,6 +64,7 @@
             if envVar == ""
             then [ "x86_64-linux" "aarch64-linux" ]
             else builtins.filter (sys: sys != "") (builtins.split " " envVar);
+          buildMultiUserNixImage = import ./containers/multiuser.nix;
         in
         {
           legacyPackages = {
@@ -194,7 +195,7 @@
               inherit pkgs suImage;
             };
 
-            nixImage = (import ./containers/multiuser.nix) {
+            nixImage = buildMultiUserNixImage {
               inherit pkgs;
               name = "multiusernix";
               tag = "latest";
@@ -237,53 +238,85 @@
               };
             };
 
-            ghanix = pkgs.dockerTools.buildImage {
+            ghanix = buildMultiUserNixImage {
+              inherit pkgs;
               name = "ghanix";
               tag = "latest";
-              created = "now";
-              fromImage = nixImage;
-              runAsRoot = ''
+              maxLayers = 111;
+              fromImage = sudoImage;
+              extraPkgs = with pkgs; [
+                ps
+                s6
+                su
+                sudo
+                tree
+                vim
+              ];
+              extraFakeRootCommands = ''
                 chown -R runner:wheel /nix
-                ${pkgs.sudo} -u runner \
+                /root/.nix-profile/bin/su runner -c \
                 ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
               '';
-              config = {
-                Cmd = [
-                  "/root/.nix-profile/bin/bash"
-                  "-c"
-                  "su -l runner"
-                ];
-                Env = [
-                  #   "NIX_REMOTE=daemon"
-                ];
+              nixConf = {
+                allowed-users = [ "*" ];
+                experimental-features = [ "nix-command" "flakes" ];
+                max-jobs = [ "auto" ];
+                sandbox = "false";
+                trusted-users = [ "root" "jovyan" "runner" ];
               };
+              cmd = [
+                "/root/.nix-profile/bin/bash"
+                "-c"
+                "su -l runner"
+              ];
             };
-
-            #   ghanix = pkgs.dockerTools.buildLayeredImage {
-            #     name = "ghanix";
-            #     tag = "latest";
-            #     created = "now";
-            #     fromImage = nixImage;
-            #     maxLayers = 111;
-            #     # contents = with pkgs; [
-            #     # ];
-            #     fakeRootCommands = ''
-            #       chown -R runner:wheel /nix
-            #       ${pkgs.sudo} -u runner \
-            #       ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
-            #     '';
-            #     enableFakechroot = true;
-            #     config = {
-            #       Cmd = [
-            #         "/root/.nix-profile/bin/bash"
-            #         "-c"
-            #         "su -l runner"
-            #       ];
-            #       Env = [
-            #         #   "NIX_REMOTE=daemon"
-            #       ];
-            #     };
+            # ghanix = pkgs.dockerTools.buildImage {
+            #   name = "ghanix";
+            #   tag = "latest";
+            #   created = "now";
+            #   fromImage = nixImage;
+            #   runAsRoot = ''
+            #     chown -R runner:wheel /nix
+            #     ${pkgs.sudo} -u runner \
+            #     ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
+            #   '';
+            #   config = {
+            #     Cmd = [
+            #       "/root/.nix-profile/bin/bash"
+            #       "-c"
+            #       "su -l runner"
+            #     ];
+            #     Env = [
+            #       #   "NIX_REMOTE=daemon"
+            #     ];
             #   };
+            # };
+
+            # ghanix = pkgs.dockerTools.buildLayeredImage {
+            #   name = "ghanix";
+            #   tag = "latest";
+            #   created = "now";
+            #   fromImage = nixImage;
+            #   maxLayers = 111;
+            #   # contents = with pkgs; [
+            #   # ];
+            #   fakeRootCommands = ''
+            #     chown -R runner:wheel /nix
+            #     ${pkgs.sudo} -u runner \
+            #     ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
+            #   '';
+            #   enableFakechroot = true;
+            #   config = {
+            #     Cmd = [
+            #       "/root/.nix-profile/bin/bash"
+            #       "-c"
+            #       "su -l runner"
+            #     ];
+            #     Env = [
+            #       #   "NIX_REMOTE=daemon"
+            #     ];
+            #   };
+            # };
           };
 
           # `nix run .#update` vs `nix flake update`
