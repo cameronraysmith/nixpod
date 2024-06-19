@@ -11,10 +11,17 @@
 , flake-registry ? null
 , fromImage ? null
 , extraContents ? [ ]
+, extraExtraCommands ? ""
 , extraFakeRootCommands ? ""
 , entrypoint ? [ "/opt/scripts/entrypoint.sh" ]
 , cmd ? [ "/root/.nix-profile/bin/bash" ]
 , extraEnv ? [ ]
+, storeOwner ? {
+    uid = 0;
+    gid = 0;
+    uname = "root";
+    gname = "wheel";
+  }
 }:
 let
   defaultPkgs = with pkgs; [
@@ -362,20 +369,23 @@ in
 pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag maxLayers fromImage;
+  inherit (storeOwner) uid gid uname gname;
 
   contents = [ baseSystem ] ++ extraContents;
 
   extraCommands = ''
     rm -rf nix-support
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
-  '';
+  '' + extraExtraCommands;
   fakeRootCommands = ''
     chmod 1777 /tmp
     chmod 1777 /var/tmp
-    chown -R jovyan:jovyan /home/jovyan
-    chown -R runner:runner /home/runner
+    chown -R jovyan:wheel /home/jovyan
+    chown -R runner:wheel /home/runner
+    chmod 775 /home/jovyan
+    chmod 775 /home/runner
     chmod 1775 /nix/store
-    chown -R root:nixbld /nix/store
+    # chown -R root:nixbld /nix/store
     chmod 1777 /nix/var/nix/profiles/per-user
     chmod 1777 /nix/var/nix/gcroots/per-user
   '' + extraFakeRootCommands;
@@ -383,6 +393,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   config = {
     Entrypoint = entrypoint;
+    User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
     Cmd = cmd;
     Env = [
       "USER=root"
