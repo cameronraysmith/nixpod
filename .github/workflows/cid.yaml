@@ -1,4 +1,4 @@
-name: "CI"
+name: "CID"
 on:
   workflow_dispatch:
     inputs:
