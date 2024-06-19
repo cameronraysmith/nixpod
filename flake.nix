@@ -119,6 +119,32 @@
                 (builtins.getEnv "GIT_REF")
               ];
             };
+
+            ghapodManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+              github = {
+                enable = true;
+                enableRegistry = false;
+                token = "$GH_TOKEN";
+              };
+              autoTags = {
+                branch = false;
+              };
+              registries = {
+                "ghcr.io" = {
+                  enable = true;
+                  repo = "cameronraysmith/ghapod";
+                  username = builtins.getEnv "GITHUB_ACTOR";
+                  password = "$GH_TOKEN";
+                };
+              };
+              version = builtins.getEnv "VERSION";
+              images = builtins.map (sys: self.packages.${sys}.ghapod) includedSystems;
+              tags = [
+                (builtins.getEnv "GIT_SHA_SHORT")
+                (builtins.getEnv "GIT_SHA")
+                (builtins.getEnv "GIT_REF")
+              ];
+            };
           };
 
           # Enable 'nix fmt' to lint with nixpkgs-fmt
@@ -205,6 +231,32 @@
               config = {
                 Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
                 Cmd = [ "/root/.nix-profile/bin/bash" ];
+                Env = [
+                  #   "NIX_REMOTE=daemon"
+                ];
+              };
+            };
+
+            ghapod = pkgs.dockerTools.buildLayeredImage {
+              name = "ghapod";
+              tag = "latest";
+              created = "now";
+              fromImage = nixImage;
+              maxLayers = 111;
+              contents = with pkgs; [
+              ];
+              fakeRootCommands = ''
+                chown -R runner:wheel /nix
+                sudo -u runner \
+                nix run ${self'.legacyPackages.homeConfigurations.runner.activationPackage}
+              '';
+              enableFakechroot = true;
+              config = {
+                Cmd = [
+                  "/root/.nix-profile/bin/bash"
+                  "-c"
+                  "su -l runner"
+                ];
                 Env = [
                   #   "NIX_REMOTE=daemon"
                 ];
