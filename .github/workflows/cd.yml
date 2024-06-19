@@ -1,12 +1,58 @@
 name: "CD"
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - "main"
-      - "beta"
+    inputs:
+      debug_enabled:
+        description: "Run the workflow with tmate.io debugging enabled"
+        required: true
+        type: boolean
+        default: false
+      run_build_images:
+        description: "Run build-images job"
+        required: false
+        type: boolean
+        default: false
+      run_execute_workflow:
+        description: "Run execute-workflow job"
+        required: false
+        type: boolean
+        default: false
+  # push:
+  #   branches:
+  #     - "main"
+  #     - "beta"
+  #   paths-ignore:
+  #     - "testing/**"
+  #     - "**.md"
+  #     - "*"
+  #     - "!flake.nix"
+  #     - "!flake.lock"
 
 jobs:
+  set-variables:
+    runs-on: ubuntu-latest
+    outputs:
+      debug: ${{ steps.set-variables.outputs.debug }}
+      checkout_ref: ${{ steps.set-variables.outputs.checkout_ref }}
+        
+    steps:
+      - name: Set action variables
+        id: set-variables
+        run: |
+          DEBUG="false"
+          SKIP_CI="false"
+          SKIP_TESTS="false"
+        
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            DEBUG="${{ inputs.debug_enabled }}"
+          fi
+        
+          CHECKOUT_REF="${{ github.ref }}"
+        
+          echo "DEBUG=$DEBUG"
+        
+          echo "DEBUG=$DEBUG" >> $GITHUB_OUTPUT
+          echo "CHECKOUT_REF=$CHECKOUT_REF" >> $GITHUB_OUTPUT
 
   release:
     permissions:
@@ -17,8 +63,9 @@ jobs:
       version: ${{ steps.semantic-release.outputs.new_release_version }}
       git-tag: ${{ steps.semantic-release.outputs.new_release_git_tag }}
       released: ${{ steps.semantic-release.outputs.new_release_published }}
+      git-head: ${{ steps.semantic-release.outputs.new_release_git_head }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
         with:
           fetch-depth: '0'
       
@@ -29,7 +76,7 @@ jobs:
 
       - name: Run semantic-release
         id: semantic-release
-        uses: cycjimmy/semantic-release-action@v4
+        uses: cycjimmy/semantic-release-action@cb425203a562475bca039ba4dbf90c7f9ac790f4 # v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -54,6 +101,50 @@ jobs:
           visibility: "public"
           tag: ${{ needs.release.outputs.git-tag }}
 
+  publish-nixpod-home-image:
+    runs-on: ubuntu-latest
+    needs: [set-variables, release]
+                
+    concurrency:
+      group: pnphi-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      packages: write
+    # environment:
+    #   name: development
+    #   url: "https://ghcr.io/cameronraysmith/nixpod-home"
+    steps:
+      - name: Maximize build space
+        # uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # ratchet:easimon/maximize-build-space@v10
+        uses: cameronraysmith/maximize-build-space@fdf0c06b18d92be98aa64cb68ae4ea4c9bc4794d # ratchet:cameronraysmith/maximize-build-space@print-usage
+        with:
+          build-mount-path: /nix
+          build-mount-path-ownership: "root:root"
+          root-reserve-mb: 34816
+          swap-size-mb: 1024
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+      - name: Setup build environment
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # ratchet:actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.git-head }}
+      - name: Build nixpod-home image
+        uses: ./.github/actions/build-nix-image
+        with:
+          triggerEventName: ${{ github.event_name }}
+          imageName: "nixpod-home"
+          imageFQN: "ghcr.io/cameronraysmith/nixpod-home"
+          nixCommand: "nix run .#containerManifest --impure --accept-flake-config"
+          releaseVersion: ${{ needs.release.outputs.version }}
+          # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
+          # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
+          cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
+          cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+
   debnix:
     needs: [release]
     runs-on: ubuntu-latest
@@ -74,21 +165,21 @@ jobs:
           push-condition: ${{ github.event_name != 'pull_request' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-  nixpod:
-    needs: [release, debnix]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-        with:
-          ref: ${{ needs.release.outputs.git-tag }}
-      - name: Tag Build and Push Testing Container
-        uses: ./.github/actions/tag-build-push-container
-        with:
-          registry: ghcr.io
-          image-name: ${{ github.repository_owner }}/${{ github.job }}
-          containerfile-path: "containers/Containerfile.${{ github.job }}"
-          push-condition: ${{ github.event_name != 'pull_request' }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
+  # nixpod:
+  #   needs: [release, debnix]
+  #   runs-on: ubuntu-latest
+  #   permissions:
+  #     contents: read
+  #     packages: write
+  #   steps:
+  #     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+  #       with:
+  #         ref: ${{ needs.release.outputs.git-tag }}
+  #     - name: Tag Build and Push Testing Container
+  #       uses: ./.github/actions/tag-build-push-container
+  #       with:
+  #         registry: ghcr.io
+  #         image-name: ${{ github.repository_owner }}/${{ github.job }}
+  #         containerfile-path: "containers/Containerfile.${{ github.job }}"
+  #         push-condition: ${{ github.event_name != 'pull_request' }}
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
