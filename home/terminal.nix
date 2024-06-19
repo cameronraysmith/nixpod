@@ -44,20 +44,15 @@
     fzf.enable = true;
     htop.enable = true;
     jq.enable = true;
-    nix-index.enable = true;
+    nix-index = {
+      enable = true;
+      enableZshIntegration = true;
+    };
     zoxide.enable = true;
 
     bash = {
       enable = true;
       initExtra = ''
-        # Ensure all nix and home-manager installed files are available in PATH.
-        export PATH=/run/current-system/sw/bin/:/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:$PATH
-      '';
-    };
-
-    zsh = {
-      enable = true;
-      envExtra = ''
         # Ensure all nix and home-manager installed files are available in PATH.
         export PATH=/run/current-system/sw/bin/:/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:$PATH
       '';
