@@ -17,7 +17,7 @@ The intention of this repository is to provide a reasonably ergonomic, if somewh
 ## Testing
 
 > [!NOTE]
-> This repository also intends to support building containers using [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nix2container](https://github.com/nlewo/nix2container), and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter), but here we explain how to build the testing image with a [Containerfile](https://github.com/cameronraysmith/nixpod/blob/main/containers/Containerfile.debnix).
+> This repository previously supported building containers exclusively via [Containerfile](https://github.com/cameronraysmith/nixpod/blob/main/containers/Containerfile.debnix). Currently it uses [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools) and the Containerfiles are only retained for comparison. Other excellent tools for building container images with nix that may be supported in the future are [nix2container](https://github.com/nlewo/nix2container) and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter).
 
 ### direnv and dev shell
 
