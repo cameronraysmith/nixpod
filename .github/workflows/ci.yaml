@@ -25,6 +25,24 @@ on:
       - "*"
       - "!flake.nix"
       - "!flake.lock"
+  push:
+    branches:
+      - "main"
+      - "beta"
+    paths-ignore:
+      - "testing/**"
+      - "**.md"
+      - "*"
+      - "!flake.nix"
+      - "!flake.lock"
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  actions: write
+  contents: read
 
 jobs:
   scan:
@@ -171,7 +189,8 @@ jobs:
       contents: read
       packages: write
     concurrency:
-      group: debnix-${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Tag Build and Push Testing Container
@@ -190,7 +209,8 @@ jobs:
       contents: read
       packages: write
     concurrency:
-      group: debjupnix-${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Tag Build and Push Testing Container
@@ -213,7 +233,8 @@ jobs:
       contents: read
       packages: write
     concurrency:
-      group: debnixpod-${{ github.workflow }}-${{ github.ref }}
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Tag Build and Push Testing Container
@@ -247,3 +268,178 @@ jobs:
   #         push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
   #         github-token: ${{ secrets.GITHUB_TOKEN }}
   #         build-args: ${{ matrix.job == 'debjupnix' && 'USER=jovyan\nUID=1000\nGID=100' || '' }}
+
+  release:
+    runs-on: ubuntu-latest
+    needs: [nixci]
+    if: ${{ github.repository_owner == 'pinellolab' && github.event_name == 'push' }}
+    permissions:
+      contents: write
+    outputs: 
+      version: ${{ steps.semantic-release.outputs.new_release_version }}
+      git-tag: ${{ steps.semantic-release.outputs.new_release_git_tag }}
+      released: ${{ steps.semantic-release.outputs.new_release_published }}
+      git-head: ${{ steps.semantic-release.outputs.new_release_git_head }}
+    steps:
+      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
+        with:
+          fetch-depth: '0'
+      
+      - name: Get semantic-release version
+        shell: sh
+        id: semantic-release-version
+        run: echo version=$(npm view @cihelper/semanticrelease-preset-generic dependencies.semantic-release) >> $GITHUB_OUTPUT
+
+      - name: Run semantic-release
+        id: semantic-release
+        uses: cycjimmy/semantic-release-action@cb425203a562475bca039ba4dbf90c7f9ac790f4 # v4
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          semantic_version: ${{ steps.semantic-release-version.outputs.version }}
+          extra_plugins: "@cihelper/semanticrelease-preset-generic@1"
+          extends: "@cihelper/semanticrelease-preset-generic"
+
+  publish:
+    needs: [release]
+    runs-on: "ubuntu-latest"
+    if: ${{ needs.release.outputs.released == 'true' }}
+    concurrency:
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      cancel-in-progress: true
+    permissions:
+      id-token: "write"
+      contents: "read"
+    steps:
+      - uses: "actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29" # v4
+        with:
+          ref: ${{ needs.release.outputs.git-head }}
+      - uses: "DeterminateSystems/nix-installer-action@75ffa7fc743135e1db864b699d78402ccc8ed988" # ratchet:DeterminateSystems/nix-installer-action@main
+      - uses: "DeterminateSystems/flakehub-push@114496f7d11f17ceb7d1466a8aaeaef496b1041f" # ratchet:DeterminateSystems/flakehub-push@main
+        with:
+          visibility: "public"
+          tag: ${{ needs.release.outputs.version }}
+
+  publish-nix-images:
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: ${{ needs.release.outputs.released == 'true' }}
+        
+    concurrency:
+      group: ${{ matrix.image }}-${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      cancel-in-progress: true
+    permissions:
+      contents: read
+      packages: write
+    # environment:
+    #   name: development
+    #   url: "https://ghcr.io/cameronraysmith/nixpod"
+        
+    strategy:
+      matrix:
+        image: [nixpod, ghanix, jupnix]
+              
+    steps:
+      - name: Maximize build space
+        # uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # ratchet:easimon/maximize-build-space@v10
+        uses: cameronraysmith/maximize-build-space@fdf0c06b18d92be98aa64cb68ae4ea4c9bc4794d # ratchet:cameronraysmith/maximize-build-space@print-usage
+        with:
+          build-mount-path: /nix
+          build-mount-path-ownership: "root:root"
+          root-reserve-mb: 34816
+          swap-size-mb: 1024
+          remove-dotnet: "true"
+          remove-android: "true"
+          remove-codeql: "true"
+          remove-docker-images: "true"
+                  
+      - name: Setup build environment
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # ratchet:actions/checkout@v4
+        with:
+          ref: ${{ needs.release.outputs.git-head }}
+        
+      - name: Build ${{ matrix.image }} image
+        uses: ./.github/actions/build-nix-image
+        with:
+          triggerEventName: ${{ github.event_name }}
+          imageName: "${{ matrix.image }}"
+          imageFQN: "ghcr.io/cameronraysmith/${{ matrix.image }}"
+          nixCommand: "nix run .#${{ matrix.image }}Manifest --impure --accept-flake-config --print-build-logs --show-trace"
+          releaseVersion: ${{ needs.release.outputs.version }}
+          cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
+          cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
+          # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
+
+  publish-debnix:
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: ${{ needs.release.outputs.released == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          ref: ${{ needs.release.outputs.git-tag }}
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  publish-debjupnix:
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: ${{ needs.release.outputs.released == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          ref: ${{ needs.release.outputs.git-tag }}
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.debnix"
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-args: |
+            USER=jovyan
+            UID=1000
+            GID=100
+
+  publish-debnixpod:
+    runs-on: ubuntu-latest
+    needs: [release]
+    if: ${{ needs.release.outputs.released == 'true' }}
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: ${{ github.job }}-${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+        with:
+          ref: ${{ needs.release.outputs.git-tag }}
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
