@@ -23,6 +23,15 @@
     systems.url = "github:nix-systems/default";
   };
 
+  nixConfig = {
+    extra-trusted-public-keys = [
+      "sciexp.cachix.org-1:HaliIGqJrFN7CDrzYVHqWS4uSISorWAY1bWNmNl8T08="
+    ];
+    extra-substituters = [
+      "https://sciexp.cachix.org"
+    ];
+  };
+
   outputs =
     inputs @ { self
     , ...
