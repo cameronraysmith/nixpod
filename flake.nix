@@ -237,20 +237,16 @@
               };
             };
 
-            ghapod = pkgs.dockerTools.buildLayeredImage {
+            ghapod = pkgs.dockerTools.buildImage {
               name = "ghapod";
               tag = "latest";
               created = "now";
               fromImage = nixImage;
-              maxLayers = 111;
-              contents = with pkgs; [
-              ];
-              fakeRootCommands = ''
+              runAsRoot = ''
                 chown -R runner:wheel /nix
-                sudo -u runner \
-                nix run ${self'.legacyPackages.homeConfigurations.runner.activationPackage}
+                ${pkgs.sudo} -u runner \
+                ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
               '';
-              enableFakechroot = true;
               config = {
                 Cmd = [
                   "/root/.nix-profile/bin/bash"
@@ -262,6 +258,32 @@
                 ];
               };
             };
+
+          #   ghapod = pkgs.dockerTools.buildLayeredImage {
+          #     name = "ghapod";
+          #     tag = "latest";
+          #     created = "now";
+          #     fromImage = nixImage;
+          #     maxLayers = 111;
+          #     # contents = with pkgs; [
+          #     # ];
+          #     fakeRootCommands = ''
+          #       chown -R runner:wheel /nix
+          #       ${pkgs.sudo} -u runner \
+          #       ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
+          #     '';
+          #     enableFakechroot = true;
+          #     config = {
+          #       Cmd = [
+          #         "/root/.nix-profile/bin/bash"
+          #         "-c"
+          #         "su -l runner"
+          #       ];
+          #       Env = [
+          #         #   "NIX_REMOTE=daemon"
+          #       ];
+          #     };
+          #   };
           };
 
           # `nix run .#update` vs `nix flake update`
