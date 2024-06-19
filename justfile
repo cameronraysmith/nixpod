@@ -133,7 +133,7 @@ pod:
   --provider kubernetes \
   --ide vscode \
   --open-ide \
-  --source git:https://github.com/cameronraysmith/nixpod-home \
+  --source git:https://github.com/cameronraysmith/nixpod \
   --provider-option DISK_SIZE=100Gi \
   {{container_image}}
 
@@ -240,7 +240,7 @@ ratchet-update:
 
 # Update github vars for repo from environment variables
 [group('CI/CD')]
-ghvars repo="cameronraysmith/nixpod-home":
+ghvars repo="cameronraysmith/nixpod":
   @echo "vars before updates:"
   @echo
   PAGER=cat gh variable list --repo={{ repo }}
@@ -253,7 +253,7 @@ ghvars repo="cameronraysmith/nixpod-home":
 
 # Update github secrets for repo from environment variables
 [group('CI/CD')]
-ghsecrets repo="cameronraysmith/nixpod-home":
+ghsecrets repo="cameronraysmith/nixpod":
   @echo "secrets before updates:"
   @echo
   PAGER=cat gh secret list --repo={{ repo }}

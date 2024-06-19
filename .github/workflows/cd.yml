@@ -101,7 +101,7 @@ jobs:
           visibility: "public"
           tag: ${{ needs.release.outputs.git-tag }}
 
-  publish-nixpod-home-image:
+  publish-nixpod-image:
     runs-on: ubuntu-latest
     needs: [set-variables, release]
                 
@@ -113,7 +113,7 @@ jobs:
       packages: write
     # environment:
     #   name: development
-    #   url: "https://ghcr.io/cameronraysmith/nixpod-home"
+    #   url: "https://ghcr.io/cameronraysmith/nixpod"
     steps:
       - name: Maximize build space
         # uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # ratchet:easimon/maximize-build-space@v10
@@ -131,12 +131,12 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # ratchet:actions/checkout@v4
         with:
           ref: ${{ needs.release.outputs.git-head }}
-      - name: Build nixpod-home image
+      - name: Build nixpod image
         uses: ./.github/actions/build-nix-image
         with:
           triggerEventName: ${{ github.event_name }}
-          imageName: "nixpod-home"
-          imageFQN: "ghcr.io/cameronraysmith/nixpod-home"
+          imageName: "nixpod"
+          imageFQN: "ghcr.io/cameronraysmith/nixpod"
           nixCommand: "nix run .#containerManifest --impure --accept-flake-config"
           releaseVersion: ${{ needs.release.outputs.version }}
           # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
