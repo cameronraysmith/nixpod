@@ -2,7 +2,6 @@
   description = "A portable flake for Nix-based development when you cannot necessarily use NixOS";
 
   inputs = {
-    # Principle inputs (updated by `nix run .#update`)
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     catppuccin.url = "github:catppuccin/nix";
     home-manager = {
@@ -26,10 +25,9 @@
 
   outputs =
     inputs @ { self
-    , flake-parts
     , ...
     }:
-    flake-parts.lib.mkFlake { inherit inputs; } {
+    inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
         inputs.nixos-flake.flakeModule
@@ -59,25 +57,6 @@
           myUserName = "runner";
           myUserUid = "1001";
           myUserGid = "121";
-          homeDir =
-            if myUserName == "root"
-            then "/root"
-            else "/${
-            if pkgs.stdenv.isDarwin
-            then "Users"
-            else "home"
-          }/${myUserName}";
-          homeConfig = inputs.self.nixos-flake.lib.mkHomeConfiguration
-            pkgs
-            ({ pkgs, ... }: {
-              imports = [
-                inputs.self.homeModules.default
-                inputs.catppuccin.homeManagerModules.catppuccin
-              ];
-              home.username = myUserName;
-              home.homeDirectory = homeDir;
-              home.stateVersion = "23.11";
-            });
           includedSystems =
             let
               envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
@@ -87,6 +66,61 @@
             else builtins.filter (sys: sys != "") (builtins.split " " envVar);
         in
         {
+          legacyPackages = {
+            # Make home-manager configuration
+            # homeConfigurations.${myUserName} = homeConfig;
+            homeConfigurations = builtins.listToAttrs (map
+              (user: {
+                name = user;
+                value = self.nixos-flake.lib.mkHomeConfiguration
+                  pkgs
+                  ({ pkgs, ... }: {
+                    imports = [
+                      inputs.self.homeModules.default
+                      inputs.catppuccin.homeManagerModules.catppuccin
+                    ];
+                    home.username = user;
+                    home.homeDirectory =
+                      if user == "root"
+                      then "/root"
+                      else "/${
+                      if pkgs.stdenv.isDarwin
+                      then "Users"
+                      else "home"
+                      }/${user}";
+                    home.stateVersion = "23.11";
+                  });
+              })
+              users);
+
+            # Combine OCI json for includedSystems and push to registries
+            containerManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+              github = {
+                enable = true;
+                enableRegistry = false;
+                token = "$GH_TOKEN";
+              };
+              autoTags = {
+                branch = false;
+              };
+              registries = {
+                "ghcr.io" = {
+                  enable = true;
+                  repo = "cameronraysmith/nixpod";
+                  username = builtins.getEnv "GITHUB_ACTOR";
+                  password = "$GH_TOKEN";
+                };
+              };
+              version = builtins.getEnv "VERSION";
+              images = builtins.map (sys: self.packages.${sys}.container) includedSystems;
+              tags = [
+                (builtins.getEnv "GIT_SHA_SHORT")
+                (builtins.getEnv "GIT_SHA")
+                (builtins.getEnv "GIT_REF")
+              ];
+            };
+          };
+
           # Enable 'nix fmt' to lint with nixpkgs-fmt
           formatter = pkgs.nixpkgs-fmt;
 
@@ -107,6 +141,7 @@
             # Enable 'nix build' to build the home configuration, without
             # activating it.
             default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
+            activate = self'.packages.activate-home;
 
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
@@ -129,76 +164,8 @@
               copyToRoot = pkgs.su;
             };
 
-            sudoImage = pkgs.dockerTools.buildImage {
-              name = "sudoimage";
-              tag = "latest";
-              fromImage = suImage;
-
-              copyToRoot = pkgs.sudo;
-
-              runAsRoot = ''
-                #!${pkgs.runtimeShell}
-
-                mkdir -p /etc/pam.d/backup
-                ${pkgs.findutils}/bin/find /etc/pam.d -type f -exec mv {} /etc/pam.d/backup/ \; 2>/dev/null || true
-
-                cat > /etc/pam.d/sudo <<EOF
-                #%PAM-1.0
-                auth        sufficient  pam_rootok.so
-                auth        sufficient  pam_permit.so
-                account     sufficient  pam_permit.so
-                account     required    pam_warn.so
-                session     required    pam_permit.so
-                password    sufficient  pam_permit.so
-                EOF
-
-                cat > /etc/pam.d/su <<EOF
-                #%PAM-1.0
-                auth        sufficient  pam_rootok.so
-                auth        sufficient  pam_permit.so
-                account     sufficient  pam_permit.so
-                account     required    pam_warn.so
-                session     required    pam_permit.so
-                password    sufficient  pam_permit.so
-                EOF
-
-                cat > /etc/pam.d/system-auth <<EOF
-                #%PAM-1.0
-                auth        required      pam_env.so
-                auth        sufficient    pam_rootok.so
-                auth        sufficient    pam_permit.so
-                auth        sufficient    pam_unix.so try_first_pass nullok
-                auth        required      pam_deny.so
-                account     sufficient    pam_permit.so
-                account     required      pam_unix.so
-                password    sufficient    pam_permit.so
-                password    required      pam_unix.so
-                session     required      pam_unix.so
-                session     optional      pam_permit.so
-                EOF
-
-                cat > /etc/pam.d/login <<EOF
-                #%PAM-1.0
-                auth        required      pam_env.so
-                auth        sufficient    pam_rootok.so
-                auth        sufficient    pam_permit.so
-                auth        sufficient    pam_unix.so try_first_pass nullok
-                auth        required      pam_deny.so
-                account     sufficient    pam_permit.so
-                account     required      pam_unix.so
-                password    sufficient    pam_permit.so
-                password    required      pam_unix.so
-                session     required      pam_unix.so
-                session     optional      pam_permit.so
-                EOF
-
-                chmod +s /sbin/sudo
-
-                cat >> /etc/sudoers <<EOF
-                root     ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
-                %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
-                EOF
-              '';
+            sudoImage = import ./containers/sudoimage.nix {
+              inherit pkgs suImage;
             };
 
             nixImage = (import ./containers/multiuser-container.nix) {
@@ -245,36 +212,13 @@
             };
           };
 
-          legacyPackages = {
-            # Make home-manager configuration
-            homeConfigurations.${myUserName} = homeConfig;
-
-            # Combine OCI json for includedSystems and push to registries
-            containerManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
-              github = {
-                enable = true;
-                enableRegistry = false;
-                token = "$GH_TOKEN";
-              };
-              autoTags = {
-                branch = false;
-              };
-              registries = {
-                "ghcr.io" = {
-                  enable = true;
-                  repo = "cameronraysmith/nixpod";
-                  username = builtins.getEnv "GITHUB_ACTOR";
-                  password = "$GH_TOKEN";
-                };
-              };
-              version = builtins.getEnv "VERSION";
-              images = builtins.map (sys: self.packages.${sys}.container) includedSystems;
-              tags = [
-                (builtins.getEnv "GIT_SHA_SHORT")
-                (builtins.getEnv "GIT_SHA")
-                (builtins.getEnv "GIT_REF")
-              ];
-            };
+          # `nix run .#update` vs `nix flake update`
+          nixos-flake = {
+            primary-inputs = [
+              "nixpkgs"
+              "home-manager"
+              "nixos-flake"
+            ];
           };
         };
     };
