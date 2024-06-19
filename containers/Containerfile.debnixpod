@@ -9,6 +9,6 @@ WORKDIR ${HOME}/work
 RUN for file in ${HOME}/.bashrc ${HOME}/.profile; do \
         mv "$file" "$file.before-nix-run"; \
     done
-RUN nix run
+RUN nix run --accept-flake-config --print-build-logs --show-trace
 
 ENTRYPOINT [ "zsh" ]
