@@ -393,7 +393,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   config = {
     Entrypoint = entrypoint;
-    User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
+    # User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
     Cmd = cmd;
     Env = [
       "USER=root"

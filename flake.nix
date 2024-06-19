@@ -244,6 +244,12 @@
               tag = "latest";
               maxLayers = 111;
               fromImage = sudoImage;
+              storeOwner = {
+                uid = 1001;
+                gid = 0;
+                uname = "runner";
+                gname = "wheel";
+              };
               extraPkgs = with pkgs; [
                 ps
                 s6
@@ -252,11 +258,14 @@
                 tree
                 vim
               ];
-              extraFakeRootCommands = ''
-                chown -R runner:wheel /nix
-                /root/.nix-profile/bin/su runner -c \
+              extraExtraCommands = ''
                 ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
               '';
+              # extraFakeRootCommands = ''
+              #   chown -R runner:wheel /nix
+              #   /root/.nix-profile/bin/su runner -c \
+              #   ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
+              # '';
               nixConf = {
                 allowed-users = [ "*" ];
                 experimental-features = [ "nix-command" "flakes" ];
