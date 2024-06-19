@@ -120,7 +120,7 @@
               ];
             };
 
-            ghapodManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+            ghanixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
                 enableRegistry = false;
@@ -132,13 +132,13 @@
               registries = {
                 "ghcr.io" = {
                   enable = true;
-                  repo = "cameronraysmith/ghapod";
+                  repo = "cameronraysmith/ghanix";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
               };
               version = builtins.getEnv "VERSION";
-              images = builtins.map (sys: self.packages.${sys}.ghapod) includedSystems;
+              images = builtins.map (sys: self.packages.${sys}.ghanix) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
@@ -237,8 +237,8 @@
               };
             };
 
-            ghapod = pkgs.dockerTools.buildImage {
-              name = "ghapod";
+            ghanix = pkgs.dockerTools.buildImage {
+              name = "ghanix";
               tag = "latest";
               created = "now";
               fromImage = nixImage;
@@ -259,31 +259,31 @@
               };
             };
 
-          #   ghapod = pkgs.dockerTools.buildLayeredImage {
-          #     name = "ghapod";
-          #     tag = "latest";
-          #     created = "now";
-          #     fromImage = nixImage;
-          #     maxLayers = 111;
-          #     # contents = with pkgs; [
-          #     # ];
-          #     fakeRootCommands = ''
-          #       chown -R runner:wheel /nix
-          #       ${pkgs.sudo} -u runner \
-          #       ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
-          #     '';
-          #     enableFakechroot = true;
-          #     config = {
-          #       Cmd = [
-          #         "/root/.nix-profile/bin/bash"
-          #         "-c"
-          #         "su -l runner"
-          #       ];
-          #       Env = [
-          #         #   "NIX_REMOTE=daemon"
-          #       ];
-          #     };
-          #   };
+            #   ghanix = pkgs.dockerTools.buildLayeredImage {
+            #     name = "ghanix";
+            #     tag = "latest";
+            #     created = "now";
+            #     fromImage = nixImage;
+            #     maxLayers = 111;
+            #     # contents = with pkgs; [
+            #     # ];
+            #     fakeRootCommands = ''
+            #       chown -R runner:wheel /nix
+            #       ${pkgs.sudo} -u runner \
+            #       ${self'.legacyPackages.homeConfigurations.runner.activationPackage}/activate
+            #     '';
+            #     enableFakechroot = true;
+            #     config = {
+            #       Cmd = [
+            #         "/root/.nix-profile/bin/bash"
+            #         "-c"
+            #         "su -l runner"
+            #       ];
+            #       Env = [
+            #         #   "NIX_REMOTE=daemon"
+            #       ];
+            #     };
+            #   };
           };
 
           # `nix run .#update` vs `nix flake update`
