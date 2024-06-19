@@ -250,87 +250,86 @@ jobs:
   #         cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
   #         cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
-  build-deb-images:
-    needs: [set-variables, scan]
+  debnix:
+    needs: set-variables
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     concurrency:
-      group: ${{ matrix.job }}-${{ github.workflow }}-${{ github.ref }}
-    strategy:
-      matrix:
-        job: [debnix, debjupnix, debnixpod]
+      group: debnix-${{ github.workflow }}-${{ github.ref }}
     steps:
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Tag Build and Push Testing Container
         uses: ./.github/actions/tag-build-push-container
         with:
           registry: ghcr.io
-          image-name: ${{ github.repository_owner }}/${{ matrix.job }}
-          containerfile-path: "containers/Containerfile.${{ matrix.job }}"
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.${{ github.job }}"
           push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          build-args: ${{ matrix.job == 'debjupnix' && 'USER=jovyan\nUID=1000\nGID=100' || '' }}
 
+  debjupnix:
+    needs: set-variables
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: debjupnix-${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.debnix"
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          build-args: |
+            USER=jovyan
+            UID=1000
+            GID=100
 
-  # debnix:
-  #   needs: set-variables
+  debnixpod:
+    needs: [scan, debnix]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    concurrency:
+      group: debnixpod-${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - name: Tag Build and Push Testing Container
+        uses: ./.github/actions/tag-build-push-container
+        with:
+          registry: ghcr.io
+          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  # build-deb-images:
+  #   needs: [set-variables, scan]
   #   runs-on: ubuntu-latest
   #   permissions:
   #     contents: read
   #     packages: write
   #   concurrency:
-  #     group: debnix-${{ github.workflow }}-${{ github.ref }}
+  #     group: ${{ matrix.job }}-${{ github.workflow }}-${{ github.ref }}
+  #   strategy:
+  #     matrix:
+  #       job: [debnix, debjupnix, debnixpod]
   #   steps:
   #     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
   #     - name: Tag Build and Push Testing Container
   #       uses: ./.github/actions/tag-build-push-container
   #       with:
   #         registry: ghcr.io
-  #         image-name: ${{ github.repository_owner }}/${{ github.job }}
-  #         containerfile-path: "containers/Containerfile.${{ github.job }}"
+  #         image-name: ${{ github.repository_owner }}/${{ matrix.job }}
+  #         containerfile-path: "containers/Containerfile.${{ matrix.job }}"
   #         push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
   #         github-token: ${{ secrets.GITHUB_TOKEN }}
-
-  # debjupnix:
-  #   needs: set-variables
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   concurrency:
-  #     group: debjupnix-${{ github.workflow }}-${{ github.ref }}
-  #   steps:
-  #     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-  #     - name: Tag Build and Push Testing Container
-  #       uses: ./.github/actions/tag-build-push-container
-  #       with:
-  #         registry: ghcr.io
-  #         image-name: ${{ github.repository_owner }}/${{ github.job }}
-  #         containerfile-path: "containers/Containerfile.debnix"
-  #         push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         build-args: |
-  #           USER=jovyan
-  #           UID=1000
-  #           GID=100
-
-  # debnixpod:
-  #   needs: [scan, debnix]
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     packages: write
-  #   concurrency:
-  #     group: debnixpod-${{ github.workflow }}-${{ github.ref }}
-  #   steps:
-  #     - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
-  #     - name: Tag Build and Push Testing Container
-  #       uses: ./.github/actions/tag-build-push-container
-  #       with:
-  #         registry: ghcr.io
-  #         image-name: ${{ github.repository_owner }}/${{ github.job }}
-  #         containerfile-path: "containers/Containerfile.${{ github.job }}"
-  #         push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         build-args: ${{ matrix.job == 'debjupnix' && 'USER=jovyan\nUID=1000\nGID=100' || '' }}
