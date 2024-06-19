@@ -393,8 +393,8 @@ jobs:
         uses: ./.github/actions/tag-build-push-container
         with:
           registry: ghcr.io
-          image-name: ${{ github.repository_owner }}/${{ github.job }}
-          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          image-name: ${{ github.repository_owner }}/debnix
+          containerfile-path: "containers/Containerfile.debnix"
           push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -416,7 +416,7 @@ jobs:
         uses: ./.github/actions/tag-build-push-container
         with:
           registry: ghcr.io
-          image-name: ${{ github.repository_owner }}/${{ github.job }}
+          image-name: ${{ github.repository_owner }}/debjupnix
           containerfile-path: "containers/Containerfile.debnix"
           push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -427,7 +427,7 @@ jobs:
 
   publish-debnixpod:
     runs-on: ubuntu-latest
-    needs: [release]
+    needs: [release,publish-debnix]
     if: ${{ needs.release.outputs.released == 'true' }}
     permissions:
       contents: read
@@ -443,7 +443,7 @@ jobs:
         uses: ./.github/actions/tag-build-push-container
         with:
           registry: ghcr.io
-          image-name: ${{ github.repository_owner }}/${{ github.job }}
-          containerfile-path: "containers/Containerfile.${{ github.job }}"
+          image-name: ${{ github.repository_owner }}/debnixpod
+          containerfile-path: "containers/Containerfile.debnixpod"
           push-condition: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'build-images') }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
