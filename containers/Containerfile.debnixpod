@@ -6,6 +6,7 @@ RUN chown -R ${USER} ${HOME}/work/
 RUN cat <<EOF >> /etc/nix/nix.conf
 extra-trusted-public-keys = sciexp.cachix.org-1:HaliIGqJrFN7CDrzYVHqWS4uSISorWAY1bWNmNl8T08=
 extra-substituters = https://sciexp.cachix.org
+accept-flake-config = true
 EOF
 
 USER ${USER}
