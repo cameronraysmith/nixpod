@@ -95,7 +95,7 @@
               users);
 
             # Combine OCI json for includedSystems and push to registries
-            containerManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+            nixpodManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
                 enableRegistry = false;
@@ -140,6 +140,32 @@
               };
               version = builtins.getEnv "VERSION";
               images = builtins.map (sys: self.packages.${sys}.ghanix) includedSystems;
+              tags = [
+                (builtins.getEnv "GIT_SHA_SHORT")
+                (builtins.getEnv "GIT_SHA")
+                (builtins.getEnv "GIT_REF")
+              ];
+            };
+
+            jupnixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+              github = {
+                enable = true;
+                enableRegistry = false;
+                token = "$GH_TOKEN";
+              };
+              autoTags = {
+                branch = false;
+              };
+              registries = {
+                "ghcr.io" = {
+                  enable = true;
+                  repo = "cameronraysmith/jupnix";
+                  username = builtins.getEnv "GITHUB_ACTOR";
+                  password = "$GH_TOKEN";
+                };
+              };
+              version = builtins.getEnv "VERSION";
+              images = builtins.map (sys: self.packages.${sys}.jupnix) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
@@ -220,7 +246,8 @@
 
             # Enable 'nix run .#container to build an OCI tarball with the 
             # home configuration activated.
-            container = pkgs.dockerTools.buildLayeredImage {
+            container = nixpod;
+            nixpod = pkgs.dockerTools.buildLayeredImage {
               name = "nixpod";
               tag = "latest";
               created = "now";
@@ -275,6 +302,46 @@
                 "bash"
                 "-c"
                 "su runner -c /activate && su runner && bash"
+              ];
+            };
+
+            jupnix = buildMultiUserNixImage {
+              inherit pkgs;
+              name = "jupnix";
+              tag = "latest";
+              maxLayers = 111;
+              fromImage = sudoImage;
+              storeOwner = {
+                uid = 1000;
+                gid = 0;
+                uname = "jovyan";
+                gname = "wheel";
+              };
+              extraPkgs = with pkgs; [
+                ps
+                s6
+                su
+                sudo
+                tree
+                vim
+              ];
+              extraContents = [
+                self'.legacyPackages.homeConfigurations.jovyan.activationPackage
+              ];
+              extraFakeRootCommands = ''
+                chown -R jovyan:wheel /nix
+              '';
+              nixConf = {
+                allowed-users = [ "*" ];
+                experimental-features = [ "nix-command" "flakes" ];
+                max-jobs = [ "auto" ];
+                sandbox = "false";
+                trusted-users = [ "root" "jovyan" "runner" ];
+              };
+              cmd = [
+                "bash"
+                "-c"
+                "su jovyan -c /activate && su jovyan && bash"
               ];
             };
           };
