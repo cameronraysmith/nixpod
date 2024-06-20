@@ -72,6 +72,29 @@ runs:
         if [ "${{ inputs.triggerEventName }}" == "pull_request" ]; then
           echo "GIT_SHA=$CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA" >> $GITHUB_ENV
           echo "GIT_SHA_SHORT=$CI_GITHUB_EVENT_PULL_REQUEST_HEAD_SHA_SHORT" >> $GITHUB_ENV
+        elif [ -n "${{ inputs.releaseVersion }}" ]; then
+          tag_base="${{ inputs.releaseVersion }}"
+          tag_with_v="v$tag_base"
+
+          # tag without the 'v' prefix?
+          sha=$(git rev-parse "$tag_base" 2>/dev/null)
+          if [ $? -ne 0 ]; then
+            # tag with the 'v' prefix?
+            sha=$(git rev-parse "$tag_with_v" 2>/dev/null)
+            if [ $? -ne 0 ]; then
+              echo "Error: Tag $tag_base or $tag_with_v not found."
+              exit 1
+            else
+              tag="$tag_with_v"
+            fi
+          else
+            tag="$tag_base"
+          fi
+
+          short_sha=$(git rev-parse --short "$tag")
+
+          echo "GIT_SHA=$sha" >> $GITHUB_ENV
+          echo "GIT_SHA_SHORT=$short_sha" >> $GITHUB_ENV
         else
           echo "GIT_SHA=$CI_GITHUB_SHA" >> $GITHUB_ENV
           echo "GIT_SHA_SHORT=$CI_GITHUB_SHA_SHORT" >> $GITHUB_ENV
