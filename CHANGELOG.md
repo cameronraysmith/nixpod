@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1-beta.3](https://github.com/cameronraysmith/nixpod/compare/v0.3.1-beta.2...v0.3.1-beta.3) (2024-06-20)
+
+
+### Bug Fixes
+
+* **actions:** append "v" to construct tag from version on release ([1e533a7](https://github.com/cameronraysmith/nixpod/commit/1e533a72bca4e6a8a155b7b4bd5618cd394beb9c))
+
 ## [0.3.1-beta.2](https://github.com/cameronraysmith/nixpod/compare/v0.3.1-beta.1...v0.3.1-beta.2) (2024-06-20)
 
 
