@@ -5,6 +5,7 @@
     # Unix tools
     ripgrep
     fd
+    gnused
     sd
     tree
 
