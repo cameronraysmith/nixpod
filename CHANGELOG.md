@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1-beta.2](https://github.com/cameronraysmith/nixpod/compare/v0.3.1-beta.1...v0.3.1-beta.2) (2024-06-20)
+
+
+### Bug Fixes
+
+* **actions:** set git sha from tag on release ([674fc4a](https://github.com/cameronraysmith/nixpod/commit/674fc4a00063373b3dc54f701b5ec383c913967d))
+
 ## [0.3.1-beta.1](https://github.com/cameronraysmith/nixpod/compare/v0.3.0...v0.3.1-beta.1) (2024-06-20)
 
 
