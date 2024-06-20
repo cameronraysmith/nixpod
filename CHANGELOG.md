@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.3.1](https://github.com/cameronraysmith/nixpod/compare/v0.3.0...v0.3.1) (2024-06-20)
+
+
+### Bug Fixes
+
+* **actions:** append "v" to construct tag from version on release ([1e533a7](https://github.com/cameronraysmith/nixpod/commit/1e533a72bca4e6a8a155b7b4bd5618cd394beb9c))
+* **actions:** set git sha from tag on release ([674fc4a](https://github.com/cameronraysmith/nixpod/commit/674fc4a00063373b3dc54f701b5ec383c913967d))
+* **cid:** publish from git tag ([4d61f5f](https://github.com/cameronraysmith/nixpod/commit/4d61f5f44451c30f5954a2d2195a1d0836365cc7))
+* **home:** add sed ([26867df](https://github.com/cameronraysmith/nixpod/commit/26867df68529559ec257fcf50cddc3dcf905c0aa))
+
 ## [0.3.1-beta.3](https://github.com/cameronraysmith/nixpod/compare/v0.3.1-beta.2...v0.3.1-beta.3) (2024-06-20)
 
 
