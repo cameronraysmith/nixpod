@@ -317,7 +317,7 @@ jobs:
     steps:
       - uses: "actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29" # v4
         with:
-          ref: ${{ needs.release.outputs.git-head }}
+          ref: ${{ needs.release.outputs.git-tag }}
       - uses: "DeterminateSystems/nix-installer-action@75ffa7fc743135e1db864b699d78402ccc8ed988" # ratchet:DeterminateSystems/nix-installer-action@main
       - uses: "DeterminateSystems/flakehub-push@114496f7d11f17ceb7d1466a8aaeaef496b1041f" # ratchet:DeterminateSystems/flakehub-push@main
         with:
@@ -360,7 +360,7 @@ jobs:
       - name: Setup build environment
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # ratchet:actions/checkout@v4
         with:
-          ref: ${{ needs.release.outputs.git-head }}
+          ref: ${{ needs.release.outputs.git-tag }}
         
       - name: Build ${{ matrix.image }} image
         uses: ./.github/actions/build-nix-image
