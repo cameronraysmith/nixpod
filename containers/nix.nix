@@ -1,3 +1,8 @@
+# This is a modified version of
+#   https://github.com/NixOS/nix/blob/2.18.3/docker.nix
+# that adds primitive support for non-root users.
+# Note that while it is possible to initialize the
+# nix-daemon with s6, it does not yet function as expected.
 { pkgs ? import <nixpkgs> { }
 , lib ? pkgs.lib
 , name ? "nix"
@@ -10,6 +15,18 @@
 , nixConf ? { }
 , flake-registry ? null
 , fromImage ? null
+, extraContents ? [ ]
+, extraExtraCommands ? ""
+, extraFakeRootCommands ? ""
+, entrypoint ? [ "/opt/scripts/entrypoint.sh" ]
+, cmd ? [ "/root/.nix-profile/bin/bash" ]
+, extraEnv ? [ ]
+, storeOwner ? {
+    uid = 0;
+    gid = 0;
+    uname = "root";
+    gname = "wheel";
+  }
 }:
 let
   defaultPkgs = with pkgs; [
@@ -37,7 +54,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/home/jovyan";
       gid = 100;
-      groups = [ "jovyan" "wheel" ];
+      groups = [ "jovyan" "users" "wheel" ];
       description = "Privileged Jupyter user";
     };
 
@@ -46,7 +63,7 @@ let
       shell = "${pkgs.bashInteractive}/bin/bash";
       home = "/home/runner";
       gid = 121;
-      groups = [ "runner" "wheel" ];
+      groups = [ "runner" "docker" "users" "wheel" ];
       description = "Privileged GitHub Actions user";
     };
   };
@@ -88,8 +105,10 @@ let
 
   groups = {
     wheel.gid = 0;
-    jovyan.gid = 100;
-    runner.gid = 121;
+    users.gid = 100;
+    docker.gid = 121;
+    jovyan.gid = 1000;
+    runner.gid = 1001;
     nixbld.gid = 30000;
     nobody.gid = 65534;
   };
@@ -357,28 +376,34 @@ in
 pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   inherit name tag maxLayers fromImage;
+  inherit (storeOwner) uid gid uname gname;
 
-  contents = [ baseSystem ];
+  contents = [ baseSystem ] ++ extraContents;
 
   extraCommands = ''
     rm -rf nix-support
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
-  '';
+  '' + extraExtraCommands;
   fakeRootCommands = ''
     chmod 1777 /tmp
     chmod 1777 /var/tmp
-    chown -R jovyan:jovyan /home/jovyan
-    chown -R runner:runner /home/runner
+    chown -R jovyan:wheel /home/jovyan
+    chown -R runner:wheel /home/runner
+    chmod 775 /home/jovyan
+    chmod 775 /home/runner
     chmod 1775 /nix/store
-    chown -R root:nixbld /nix/store
     chmod 1777 /nix/var/nix/profiles/per-user
     chmod 1777 /nix/var/nix/gcroots/per-user
-  '';
+    ## Note: for multi-user nix with nix-daemon
+    ## /nix/store should be owned by root:nixbld
+    # chown -R root:nixbld /nix/store
+  '' + extraFakeRootCommands;
   enableFakechroot = true;
 
   config = {
-    Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-    Cmd = [ "/root/.nix-profile/bin/bash" ];
+    Entrypoint = entrypoint;
+    # User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
+    Cmd = cmd;
     Env = [
       "USER=root"
       "PATH=${lib.concatStringsSep ":" [
@@ -400,7 +425,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
       "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
-    ];
+    ] ++ extraEnv;
   };
 
 }

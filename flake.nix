@@ -73,7 +73,7 @@
             if envVar == ""
             then [ "x86_64-linux" "aarch64-linux" ]
             else builtins.filter (sys: sys != "") (builtins.split " " envVar);
-          buildMultiUserNixImage = import ./containers/multiuser.nix;
+          buildMultiUserNixImage = import ./containers/nix.nix;
         in
         {
           legacyPackages = {
