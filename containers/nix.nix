@@ -21,6 +21,7 @@
 , entrypoint ? [ "/opt/scripts/entrypoint.sh" ]
 , cmd ? [ "/root/.nix-profile/bin/bash" ]
 , extraEnv ? [ ]
+, extraConfig ? { }
 , storeOwner ? {
     uid = 0;
     gid = 0;
@@ -266,9 +267,20 @@ let
         S6_PID=$!
 
         if [ $# -gt 0 ]; then
-          exec "$@"
-        else
-          exec /root/.nix-profile/bin/bash
+          if command -v "$1" >/dev/null 2>&1; then
+            # using
+            # exec "$@"
+            # would bypass the wait for S6_PID below
+            "$@" &
+            CMD_PID=$!
+            wait "$CMD_PID"
+          fi
+        # else
+        #   # this would run bash as the default command
+        #   # if uncommented
+        #   /root/.nix-profile/bin/bash &
+        #   CMD_PID=$!
+        #   wait "$CMD_PID"
         fi
 
         wait "$S6_PID"
@@ -357,8 +369,10 @@ let
         mkdir -p $out/opt/scripts
         ln -s ${s6EntrypointScript} $out/opt/scripts/entrypoint.sh
 
-        mkdir -p $out/etc/services.d/nix-daemon
-        ln -s ${nixDaemonService} $out/etc/services.d/nix-daemon/run
+        # This would enable s6 to start the nix-daemon
+        # if uncommented
+        # mkdir -p $out/etc/services.d/nix-daemon
+        # ln -s ${nixDaemonService} $out/etc/services.d/nix-daemon/run
 
         mkdir -p $out/etc/profile.d
         ln -s ${nixProfileScript} $out/etc/profile.d/nix.sh
@@ -400,6 +414,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   '' + extraFakeRootCommands;
   enableFakechroot = true;
 
+  # https://github.com/moby/docker-image-spec/blob/v1.2.0/v1.2.md
   config = {
     Entrypoint = entrypoint;
     # User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
@@ -426,6 +441,6 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
     ] ++ extraEnv;
-  };
+  } // extraConfig;
 
 }
