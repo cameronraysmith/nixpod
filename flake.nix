@@ -314,45 +314,100 @@
               ];
             };
 
-            jupnix = buildMultiUserNixImage {
-              inherit pkgs;
-              name = "jupnix";
-              tag = "latest";
-              maxLayers = 111;
-              fromImage = sudoImage;
-              storeOwner = {
-                uid = 1000;
-                gid = 0;
-                uname = "jovyan";
-                gname = "wheel";
+            jupnix =
+              let
+                python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
+                jupyterService = pkgs.writeShellScriptBin "jupyter-service" ''
+                  #!${pkgs.runtimeShell}
+
+                  export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
+
+                  cd "/home/jovyan"
+                  exec SHELL=zsh jupyter lab \
+                    --notebook-dir="/home/jovyan" \
+                    --ip=0.0.0.0 \
+                    --no-browser \
+                    --allow-root \
+                    --port=8888 \
+                    --ServerApp.token="" \
+                    --ServerApp.password="" \
+                    --ServerApp.allow_origin="*" \
+                    --ServerApp.allow_remote_access=True \
+                    --ServerApp.authenticate_prometheus=False \
+                    --ServerApp.terminado_settings="shell_command=['zsh']" \
+                    --ServerApp.base_url="''${NB_PREFIX}"
+                '';
+                jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
+                  mkdir -p $out/tmp/jupyter_runtime
+                  mkdir -p $out/etc/services.d/jupyterlab
+                  ln -s ${jupyterService} $out/etc/services.d/jupyterlab/run
+                '';
+              in
+              buildMultiUserNixImage {
+                inherit pkgs;
+                name = "jupnix";
+                tag = "latest";
+                maxLayers = 111;
+                fromImage = sudoImage;
+                storeOwner = {
+                  uid = 1000;
+                  gid = 0;
+                  uname = "jovyan";
+                  gname = "wheel";
+                };
+                extraPkgs = with pkgs; [
+                  kubectl
+                  ps
+                  s6
+                  su
+                  sudo
+                  tree
+                  vim
+                  zsh
+                  python
+                ];
+                extraContents = [
+                  jupyterServiceRun
+                  self'.legacyPackages.homeConfigurations.jovyan.activationPackage
+                ];
+                extraFakeRootCommands = ''
+                  chown -R jovyan:wheel /nix
+                  chown -R jovyan:wheel /tmp/jupyter_runtime
+                '';
+                nixConf = {
+                  allowed-users = [ "*" ];
+                  experimental-features = [ "nix-command" "flakes" ];
+                  max-jobs = [ "auto" ];
+                  sandbox = "false";
+                  trusted-users = [ "root" "jovyan" "runner" ];
+                };
+                cmd = [
+                  ""
+                  # For debugging purposes, this CMD
+                  #
+                  # "bash"
+                  # "-c"
+                  # "su jovyan -c /activate && su jovyan && bash"
+                  #
+                  # would 
+                  # 1. start a bash shell as root
+                  # 2. activate the home-manager configuration
+                  # 3. run a bash shell as jovyan
+                  # 4. exit to root
+                  # but it should probably be disabled and left
+                  # to the entrypoint in most other use cases.
+                ];
+                extraEnv = [
+                  "NB_USER=jovyan"
+                  "NB_UID=1000"
+                  "NB_PREFIX=/"
+                ];
+                extraConfig = {
+                  ExposedPorts = {
+                    "8888/tcp" = { };
+                  };
+                };
               };
-              extraPkgs = with pkgs; [
-                ps
-                s6
-                su
-                sudo
-                tree
-                vim
-              ];
-              extraContents = [
-                self'.legacyPackages.homeConfigurations.jovyan.activationPackage
-              ];
-              extraFakeRootCommands = ''
-                chown -R jovyan:wheel /nix
-              '';
-              nixConf = {
-                allowed-users = [ "*" ];
-                experimental-features = [ "nix-command" "flakes" ];
-                max-jobs = [ "auto" ];
-                sandbox = "false";
-                trusted-users = [ "root" "jovyan" "runner" ];
-              };
-              cmd = [
-                "bash"
-                "-c"
-                "su jovyan -c /activate && su jovyan && bash"
-              ];
-            };
           };
 
           # `nix run .#update` vs `nix flake update`
