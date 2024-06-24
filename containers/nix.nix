@@ -203,6 +203,17 @@ let
     ) nonRootUsers)}
   '';
 
+  s6-overlay = pkgs.fetchurl rec {
+    version = "v3.2.0.0";
+    url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-noarch.tar.xz";
+    hash = "sha256-SwwJB+Z2KBTDGFDg5sZ2LDhVcdRlbrhyWFKwsVhnE7Y=";
+  };
+  s6-overlay-x86_64 = pkgs.fetchurl rec {
+    version = "v3.2.0.0";
+    url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-x86_64.tar.xz";
+    hash = "sha256-rZgqgBvXJ1fHsbU1OaFGz3FeZAtNjwpqZxo9G1YP4eI=";
+  };
+
   baseSystem =
     let
       nixpkgs = pkgs.path;
@@ -250,16 +261,6 @@ let
           "${flake-registry}/flake-registry.json"
         else
           flake-registry;
-      s6-overlay = pkgs.fetchurl rec {
-        version = "v3.2.0.0";
-        url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-noarch.tar.xz";
-        hash = "sha256-SwwJB+Z2KBTDGFDg5sZ2LDhVcdRlbrhyWFKwsVhnE7Y=";
-      };
-      s6-overlay-x86_64 = pkgs.fetchurl rec {
-        version = "v3.2.0.0";
-        url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-x86_64.tar.xz";
-        hash = "sha256-rZgqgBvXJ1fHsbU1OaFGz3FeZAtNjwpqZxo9G1YP4eI=";
-      };
       s6EntrypointScript = pkgs.writeShellScript "entrypoint.sh" ''
         #!${pkgs.runtimeShell}
 
@@ -376,8 +377,6 @@ let
         ln -s ${pkgs.coreutils}/bin/env $out/usr/bin/env
         ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
 
-        ${pkgs.gnutar}/bin/tar -C $out -Jxpf ${s6-overlay.outPath}
-        ${pkgs.gnutar}/bin/tar -C $out -Jxpf ${s6-overlay-x86_64.outPath}
         # mkdir -p $out/opt/scripts
         # ln -s ${s6EntrypointScript} $out/opt/scripts/entrypoint.sh
 
@@ -411,6 +410,8 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
   '' + extraExtraCommands;
   fakeRootCommands = ''
+    ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay.outPath}
+    ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay-x86_64.outPath}
     chmod 1777 /tmp
     chmod 1777 /var/tmp
     chown -R jovyan:wheel /home/jovyan
