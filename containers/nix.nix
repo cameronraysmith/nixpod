@@ -10,7 +10,7 @@
 , bundleNixpkgs ? true
 , channelName ? "nixpkgs"
 , channelURL ? "https://nixos.org/channels/nixpkgs-unstable"
-, extraPkgs ? [ pkgs.s6 ]
+, extraPkgs ? [ ]
 , maxLayers ? 100
 , nixConf ? { }
 , flake-registry ? null
@@ -18,8 +18,8 @@
 , extraContents ? [ ]
 , extraExtraCommands ? ""
 , extraFakeRootCommands ? ""
-, entrypoint ? [ "/opt/scripts/entrypoint.sh" ]
-, cmd ? [ "/root/.nix-profile/bin/bash" ]
+, entrypoint ? [ "/init" ] # [ "/opt/scripts/entrypoint.sh" ]
+, cmd ? [ ] # [ "/root/.nix-profile/bin/bash" ]
 , extraEnv ? [ ]
 , extraConfig ? { }
 , storeOwner ? {
@@ -250,6 +250,16 @@ let
           "${flake-registry}/flake-registry.json"
         else
           flake-registry;
+      s6-overlay = pkgs.fetchurl rec {
+        version = "v3.2.0.0";
+        url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-noarch.tar.xz";
+        hash = "sha256-SwwJB+Z2KBTDGFDg5sZ2LDhVcdRlbrhyWFKwsVhnE7Y=";
+      };
+      s6-overlay-x86_64 = pkgs.fetchurl rec {
+        version = "v3.2.0.0";
+        url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-x86_64.tar.xz";
+        hash = "sha256-rZgqgBvXJ1fHsbU1OaFGz3FeZAtNjwpqZxo9G1YP4eI=";
+      };
       s6EntrypointScript = pkgs.writeShellScript "entrypoint.sh" ''
         #!${pkgs.runtimeShell}
 
@@ -366,13 +376,15 @@ let
         ln -s ${pkgs.coreutils}/bin/env $out/usr/bin/env
         ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
 
-        mkdir -p $out/opt/scripts
-        ln -s ${s6EntrypointScript} $out/opt/scripts/entrypoint.sh
+        ${pkgs.gnutar}/bin/tar -C $out -Jxpf ${s6-overlay.outPath}
+        ${pkgs.gnutar}/bin/tar -C $out -Jxpf ${s6-overlay-x86_64.outPath}
+        # mkdir -p $out/opt/scripts
+        # ln -s ${s6EntrypointScript} $out/opt/scripts/entrypoint.sh
 
         # This would enable s6 to start the nix-daemon
         # if uncommented
         # mkdir -p $out/etc/services.d/nix-daemon
-        # ln -s ${nixDaemonService} $out/etc/services.d/nix-daemon/run
+        # ln -s ${nixDaemonService}/bin/nix-daemon-run $out/etc/services.d/nix-daemon/run
 
         mkdir -p $out/etc/profile.d
         ln -s ${nixProfileScript} $out/etc/profile.d/nix.sh
@@ -417,10 +429,10 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   # https://github.com/moby/docker-image-spec/blob/v1.2.0/v1.2.md
   config = {
     Entrypoint = entrypoint;
-    # User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
+    User = "${toString storeOwner.uid}:${toString storeOwner.gid}";
     Cmd = cmd;
     Env = [
-      "USER=root"
+      "USER=${storeOwner.uname}"
       "PATH=${lib.concatStringsSep ":" [
         "/run/wrappers/bin"
         "/root/.nix-profile/bin" # single-user nix
