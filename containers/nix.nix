@@ -262,8 +262,6 @@ let
         else
           flake-registry;
       s6EntrypointScript = pkgs.writeShellScript "entrypoint.sh" ''
-        #!${pkgs.runtimeShell}
-
         term_handler() {
           echo "Termination signal received, stopping s6-svscan..."
           kill -TERM "$S6_PID"
@@ -296,10 +294,8 @@ let
 
         wait "$S6_PID"
       '';
-      nixDaemonService = pkgs.writeShellScript "nix-daemon-run" ''
-        #!${pkgs.runtimeShell}
-        export SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
-        export CURL_CA_BUNDLE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt
+      nixDaemonService = pkgs.writeShellScriptBin "nix-daemon-run" ''
+        #!/command/with-contenv ${pkgs.runtimeShell}
         exec ${pkgs.nix}/bin/nix-daemon > /dev/null
       '';
       nixProfileScript = pkgs.writeShellScript "nix.sh" ''
