@@ -327,10 +327,10 @@
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
                 activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
-                  su jovyan -c /activate
-                  mkdir -p /var/log/jupyterlab
-                  chown nobody:wheel /var/log/jupyterlab
-                  chmod 02755 /var/log/jupyterlab
+                  /run/wrappers/bin/sudo -u jovyan /activate
+                  /run/wrappers/bin/sudo mkdir -p /var/log/jupyterlab
+                  /run/wrappers/bin/sudo chown nobody:nobody /var/log/jupyterlab
+                  /run/wrappers/bin/sudo chmod 02755 /var/log/jupyterlab
                 '';
                 activateJovyanHomeRun = pkgs.runCommand "activate-jovyan-home-run" { } ''
                   mkdir -p $out/etc/cont-init.d
@@ -343,7 +343,6 @@
                   cd "/home/jovyan"
                   export SHELL=zsh
                   env
-                  exec 2>&1
                   exec jupyter lab \
                     --notebook-dir="/home/jovyan" \
                     --ip=0.0.0.0 \
@@ -364,9 +363,10 @@
                 '';
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
                   mkdir -p $out/tmp/jupyter_runtime
-                  mkdir -p $out/etc/services.d/jupyterlab/log
+                  mkdir -p $out/etc/services.d/jupyterlab
                   ln -s ${jupyterService}/bin/jupyter-service-run $out/etc/services.d/jupyterlab/run
-                  ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
+                  # mkdir -p $out/etc/services.d/jupyterlab/log
+                  # ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
                 '';
               in
               buildMultiUserNixImage {
