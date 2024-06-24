@@ -327,7 +327,7 @@
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
                 activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
-                  /activate
+                  su jovyan -c /activate
                   mkdir -p /var/log/jupyterlab
                   chown nobody:wheel /var/log/jupyterlab
                   chmod 02755 /var/log/jupyterlab
@@ -341,6 +341,7 @@
 
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   cd "/home/jovyan"
+                  export SHELL=zsh
                   env
                   exec 2>&1
                   exec jupyter lab \
@@ -365,7 +366,7 @@
                   mkdir -p $out/tmp/jupyter_runtime
                   mkdir -p $out/etc/services.d/jupyterlab/log
                   ln -s ${jupyterService}/bin/jupyter-service-run $out/etc/services.d/jupyterlab/run
-                  # ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
+                  ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
                 '';
               in
               buildMultiUserNixImage {
