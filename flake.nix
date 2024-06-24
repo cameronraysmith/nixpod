@@ -73,6 +73,16 @@
             if envVar == ""
             then [ "x86_64-linux" "aarch64-linux" ]
             else builtins.filter (sys: sys != "") (builtins.split " " envVar);
+          s6Pkgs = with pkgs; [
+            # execline
+            # s6
+            # s6-dns
+            # s6-linux-init
+            # s6-linux-utils
+            # s6-networking
+            # s6-portable-utils
+            # s6-rc
+          ];
           buildMultiUserNixImage = import ./containers/nix.nix;
         in
         {
@@ -238,12 +248,11 @@
               fromImage = sudoImage;
               extraPkgs = with pkgs; [
                 ps
-                s6
                 su
                 sudo
                 tree
                 vim
-              ];
+              ] ++ s6Pkgs;
               nixConf = {
                 allowed-users = [ "*" ];
                 experimental-features = [ "nix-command" "flakes" ];
@@ -288,12 +297,11 @@
               };
               extraPkgs = with pkgs; [
                 ps
-                s6
                 su
                 sudo
                 tree
                 vim
-              ];
+              ] ++ s6Pkgs;
               extraContents = [
                 self'.legacyPackages.homeConfigurations.runner.activationPackage
               ];
@@ -317,8 +325,8 @@
             jupnix =
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
-                jupyterService = pkgs.writeShellScriptBin "jupyter-service" ''
-                  #!${pkgs.runtimeShell}
+                jupyterService = pkgs.writeShellScriptBin "jupyter-service-run" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
 
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
 
@@ -340,7 +348,7 @@
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
                   mkdir -p $out/tmp/jupyter_runtime
                   mkdir -p $out/etc/services.d/jupyterlab
-                  ln -s ${jupyterService} $out/etc/services.d/jupyterlab/run
+                  ln -s ${jupyterService}/bin/jupyter-service-run $out/etc/services.d/jupyterlab/run
                 '';
               in
               buildMultiUserNixImage {
@@ -358,14 +366,13 @@
                 extraPkgs = with pkgs; [
                   kubectl
                   ps
-                  s6
                   su
                   sudo
                   tree
                   vim
                   zsh
                   python
-                ];
+                ] ++ s6Pkgs;
                 extraContents = [
                   jupyterServiceRun
                   self'.legacyPackages.homeConfigurations.jovyan.activationPackage
@@ -382,7 +389,7 @@
                   trusted-users = [ "root" "jovyan" "runner" ];
                 };
                 cmd = [
-                  ""
+                  # ""
                   # For debugging purposes, this CMD
                   #
                   # "bash"
