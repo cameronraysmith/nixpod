@@ -399,22 +399,6 @@
                   sandbox = "false";
                   trusted-users = [ "root" "jovyan" "runner" ];
                 };
-                cmd = [
-                  # ""
-                  # For debugging purposes, this CMD
-                  #
-                  # "bash"
-                  # "-c"
-                  # "su jovyan -c /activate && su jovyan && bash"
-                  #
-                  # would 
-                  # 1. start a bash shell as root
-                  # 2. activate the home-manager configuration
-                  # 3. run a bash shell as jovyan
-                  # 4. exit to root
-                  # but it should probably be disabled and left
-                  # to the entrypoint in most other use cases.
-                ];
                 extraEnv = [
                   "NB_USER=jovyan"
                   "NB_UID=1000"
