@@ -325,10 +325,10 @@
             jupnix =
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
-                activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
-                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                activateJovyanHome = pkgs.writeScriptBin "activate-jovyan-home" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
                   printenv
-                  # /run/wrappers/bin/sudo -u jovyan /activate
+                  /run/wrappers/bin/sudo -u jovyan /activate
                   /run/wrappers/bin/sudo mkdir -p /var/log/jupyterlab
                   /run/wrappers/bin/sudo chown nobody:nobody /var/log/jupyterlab
                   /run/wrappers/bin/sudo chmod 02777 /var/log/jupyterlab
@@ -337,13 +337,12 @@
                   mkdir -p $out/etc/cont-init.d
                   ln -s ${activateJovyanHome}/bin/activate-jovyan-home $out/etc/cont-init.d/01-activate-jovyan-home
                 '';
-                jupyterService = pkgs.writeShellScriptBin "jupyter-service-run" ''
-                  #!/usr/bin/env /bin/sh
+                jupyterService = pkgs.writeScriptBin "jupyter-service-run" ''
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
                   printenv
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
+                  export SHELL=zsh
                   cd "/home/jovyan"
-                  # export SHELL=${pkgs.zsh}/bin/zsh
-                  #  --ServerApp.terminado_settings="shell_command=['${pkgs.zsh}/bin/zsh']"
                   echo "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}"
                   exec jupyter lab \
                     --notebook-dir="/home/jovyan" \
@@ -355,11 +354,12 @@
                     --ServerApp.password="" \
                     --ServerApp.allow_origin="*" \
                     --ServerApp.allow_remote_access=True \
+                    --ServerApp.terminado_settings="shell_command=['zsh']" \
                     --ServerApp.authenticate_prometheus=False \
                     --ServerApp.base_url="''${NB_PREFIX}"
                 '';
-                jupyterLog = pkgs.writeShellScriptBin "jupyter-log" ''
-                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                jupyterLog = pkgs.writeScriptBin "jupyter-log" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
                   exec logutil-service /var/log/jupyterlab
                 '';
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
