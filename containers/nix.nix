@@ -356,6 +356,7 @@ let
         mkdir -p $out/home/jovyan
         mkdir -p $out/home/runner
         mkdir -p $out/root
+        mkdir -p $out/run/wrappers/bin
         mkdir -p $out/nix/var/nix/profiles/per-user/root
         mkdir -p $out/nix/var/nix/profiles/per-user/jovyan
         mkdir -p $out/nix/var/nix/profiles/per-user/runner
@@ -423,8 +424,15 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     chmod 1775 /nix/store
     chmod 1777 /nix/var/nix/profiles/per-user
     chmod 1777 /nix/var/nix/gcroots/per-user
-    ## Note: for multi-user nix with nix-daemon
-    ## /nix/store should be owned by root:nixbld
+    # This pseudo-wrapper is suboptimal/insecure but it is otherwise necessary
+    # to generate a setuid wrapper for sudo that is generally performed by the
+    # nixos module
+    # https://github.com/NixOS/nixpkgs/blob/24.05/nixos/modules/security/sudo.nix
+    cp ${pkgs.sudo}/bin/sudo /run/wrappers/bin/sudo
+    chown root:wheel /run/wrappers/bin/sudo
+    chmod 4755 /run/wrappers/bin/sudo
+    # # Note: for multi-user nix with nix-daemon
+    # # /nix/store should be owned by root:nixbld
     # chown -R root:nixbld /nix/store
   '' + extraFakeRootCommands;
   enableFakechroot = true;
@@ -436,6 +444,9 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     Cmd = cmd;
     Env = [
       "USER=${storeOwner.uname}"
+      "HOME=${if storeOwner.uname == "root"
+              then "/root"
+              else "/home/${storeOwner.uname}"}"
       "PATH=${lib.concatStringsSep ":" [
         "/run/wrappers/bin"
         "/root/.nix-profile/bin" # single-user nix
