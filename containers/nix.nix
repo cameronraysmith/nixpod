@@ -320,6 +320,8 @@ let
         mkdir -p $out/home/runner
         mkdir -p $out/root
         mkdir -p $out/run/wrappers/bin
+        # s6 requires /var/run to be a symlink to /run
+        ln -s /run $out/var/run
         mkdir -p $out/nix/var/nix/profiles/per-user/root
         mkdir -p $out/nix/var/nix/profiles/per-user/jovyan
         mkdir -p $out/nix/var/nix/profiles/per-user/runner
@@ -391,6 +393,8 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     cp ${pkgs.sudo}/bin/sudo /run/wrappers/bin/sudo
     chown root:wheel /run/wrappers/bin/sudo
     chmod 4755 /run/wrappers/bin/sudo
+    # s6 requires /run to be owned by USER
+    chown ${storeOwner.uname} /run
     # # Note: for multi-user nix with nix-daemon
     # # /nix/store should be owned by root:nixbld
     # chown -R root:nixbld /nix/store
