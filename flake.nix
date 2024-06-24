@@ -338,7 +338,7 @@
                   ln -s ${activateJovyanHome}/bin/activate-jovyan-home $out/etc/cont-init.d/01-activate-jovyan-home
                 '';
                 jupyterService = pkgs.writeShellScriptBin "jupyter-service-run" ''
-                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  #!/usr/bin/env /bin/sh
                   printenv
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   cd "/home/jovyan"
