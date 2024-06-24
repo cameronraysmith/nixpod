@@ -330,14 +330,14 @@
                   /run/wrappers/bin/sudo -u jovyan /activate
                   /run/wrappers/bin/sudo mkdir -p /var/log/jupyterlab
                   /run/wrappers/bin/sudo chown nobody:nobody /var/log/jupyterlab
-                  /run/wrappers/bin/sudo chmod 02755 /var/log/jupyterlab
+                  /run/wrappers/bin/sudo chmod 02777 /var/log/jupyterlab
                 '';
                 activateJovyanHomeRun = pkgs.runCommand "activate-jovyan-home-run" { } ''
                   mkdir -p $out/etc/cont-init.d
                   ln -s ${activateJovyanHome}/bin/activate-jovyan-home $out/etc/cont-init.d/01-activate-jovyan-home
                 '';
                 jupyterService = pkgs.writeShellScriptBin "jupyter-service-run" ''
-                  #!/command/with-contenv ${pkgs.runtimeShell}
+                  #!/command/with-contenv bash
 
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   cd "/home/jovyan"
@@ -358,7 +358,7 @@
                     --ServerApp.base_url="''${NB_PREFIX}"
                 '';
                 jupyterLog = pkgs.writeShellScriptBin "jupyter-log" ''
-                  #!/command/with-contenv ${pkgs.runtimeShell}
+                  #!/command/with-contenv bash
                   exec logutil-service /var/log/jupyterlab
                 '';
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
