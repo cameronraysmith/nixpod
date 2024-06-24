@@ -73,16 +73,6 @@
             if envVar == ""
             then [ "x86_64-linux" "aarch64-linux" ]
             else builtins.filter (sys: sys != "") (builtins.split " " envVar);
-          s6Pkgs = with pkgs; [
-            # execline
-            # s6
-            # s6-dns
-            # s6-linux-init
-            # s6-linux-utils
-            # s6-networking
-            # s6-portable-utils
-            # s6-rc
-          ];
           buildMultiUserNixImage = import ./containers/nix.nix;
         in
         {
@@ -252,7 +242,7 @@
                 sudo
                 tree
                 vim
-              ] ++ s6Pkgs;
+              ];
               nixConf = {
                 allowed-users = [ "*" ];
                 experimental-features = [ "nix-command" "flakes" ];
@@ -301,7 +291,7 @@
                 sudo
                 tree
                 vim
-              ] ++ s6Pkgs;
+              ];
               extraContents = [
                 self'.legacyPackages.homeConfigurations.runner.activationPackage
               ];
@@ -392,7 +382,7 @@
                   vim
                   zsh
                   python
-                ] ++ s6Pkgs;
+                ];
                 extraContents = [
                   activateJovyanHomeRun
                   jupyterServiceRun
