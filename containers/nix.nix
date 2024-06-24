@@ -261,40 +261,7 @@ let
           "${flake-registry}/flake-registry.json"
         else
           flake-registry;
-      s6EntrypointScript = pkgs.writeShellScript "entrypoint.sh" ''
-        term_handler() {
-          echo "Termination signal received, stopping s6-svscan..."
-          kill -TERM "$S6_PID"
-          wait "$S6_PID"
-          echo "s6-svscan stopped, exiting."
-          exit 0
-        }
-
-        trap 'term_handler' SIGTERM SIGINT
-
-        ${pkgs.s6}/bin/s6-svscan /etc/services.d &
-        S6_PID=$!
-
-        if [ $# -gt 0 ]; then
-          if command -v "$1" >/dev/null 2>&1; then
-            # using
-            # exec "$@"
-            # would bypass the wait for S6_PID below
-            "$@" &
-            CMD_PID=$!
-            wait "$CMD_PID"
-          fi
-        # else
-        #   # this would run bash as the default command
-        #   # if uncommented
-        #   /root/.nix-profile/bin/bash &
-        #   CMD_PID=$!
-        #   wait "$CMD_PID"
-        fi
-
-        wait "$S6_PID"
-      '';
-      nixDaemonService = pkgs.writeShellScriptBin "nix-daemon-run" ''
+      nixDaemonService = pkgs.writeScriptBin "nix-daemon-run" ''
         #!/command/with-contenv ${pkgs.runtimeShell}
         exec ${pkgs.nix}/bin/nix-daemon > /dev/null
       '';
@@ -374,9 +341,6 @@ let
         mkdir -p $out/bin $out/usr/bin
         ln -s ${pkgs.coreutils}/bin/env $out/usr/bin/env
         ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
-
-        # mkdir -p $out/opt/scripts
-        # ln -s ${s6EntrypointScript} $out/opt/scripts/entrypoint.sh
 
         # This would enable s6 to start the nix-daemon
         # if uncommented
