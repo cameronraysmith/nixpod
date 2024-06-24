@@ -327,9 +327,7 @@
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
                 activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
-                  env
                   /activate
-                  env
                 '';
                 activateJovyanHomeRun = pkgs.runCommand "activate-jovyan-home-run" { } ''
                   mkdir -p $out/etc/cont-init.d
@@ -363,8 +361,9 @@
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
                   mkdir -p $out/tmp/jupyter_runtime
                   mkdir -p $out/etc/services.d/jupyterlab/log
+                  mkdir -p $out/var/log/jupyterlab
                   ln -s ${jupyterService}/bin/jupyter-service-run $out/etc/services.d/jupyterlab/run
-                  ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
+                  # ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
                 '';
               in
               buildMultiUserNixImage {
@@ -390,7 +389,7 @@
                   python
                 ] ++ s6Pkgs;
                 extraContents = [
-                  # activateJovyanHomeRun
+                  activateJovyanHomeRun
                   jupyterServiceRun
                   self'.legacyPackages.homeConfigurations.jovyan.activationPackage
                 ];
