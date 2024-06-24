@@ -328,7 +328,7 @@
                 activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
                   env
-                  su jovyan -c /activate
+                  /activate
                   env
                 '';
                 activateJovyanHomeRun = pkgs.runCommand "activate-jovyan-home-run" { } ''
@@ -390,7 +390,7 @@
                   python
                 ] ++ s6Pkgs;
                 extraContents = [
-                  activateJovyanHomeRun
+                  # activateJovyanHomeRun
                   jupyterServiceRun
                   self'.legacyPackages.homeConfigurations.jovyan.activationPackage
                 ];
