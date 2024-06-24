@@ -326,8 +326,9 @@
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
                 activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
-                  #!/command/with-contenv ${pkgs.runtimeShell}
-                  /run/wrappers/bin/sudo -u jovyan /activate
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printenv
+                  # /run/wrappers/bin/sudo -u jovyan /activate
                   /run/wrappers/bin/sudo mkdir -p /var/log/jupyterlab
                   /run/wrappers/bin/sudo chown nobody:nobody /var/log/jupyterlab
                   /run/wrappers/bin/sudo chmod 02777 /var/log/jupyterlab
@@ -337,12 +338,13 @@
                   ln -s ${activateJovyanHome}/bin/activate-jovyan-home $out/etc/cont-init.d/01-activate-jovyan-home
                 '';
                 jupyterService = pkgs.writeShellScriptBin "jupyter-service-run" ''
-                  #!/command/with-contenv bash
-
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printenv
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   cd "/home/jovyan"
-                  export SHELL=zsh
-                  env
+                  # export SHELL=${pkgs.zsh}/bin/zsh
+                  #  --ServerApp.terminado_settings="shell_command=['${pkgs.zsh}/bin/zsh']"
+                  echo "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}"
                   exec jupyter lab \
                     --notebook-dir="/home/jovyan" \
                     --ip=0.0.0.0 \
@@ -354,11 +356,10 @@
                     --ServerApp.allow_origin="*" \
                     --ServerApp.allow_remote_access=True \
                     --ServerApp.authenticate_prometheus=False \
-                    --ServerApp.terminado_settings="shell_command=['zsh']" \
                     --ServerApp.base_url="''${NB_PREFIX}"
                 '';
                 jupyterLog = pkgs.writeShellScriptBin "jupyter-log" ''
-                  #!/command/with-contenv bash
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
                   exec logutil-service /var/log/jupyterlab
                 '';
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
@@ -383,6 +384,7 @@
                 };
                 extraPkgs = with pkgs; [
                   kubectl
+                  musl
                   ps
                   su
                   sudo
