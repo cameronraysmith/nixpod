@@ -348,6 +348,7 @@ let
         mkdir $out/tmp
 
         mkdir -p $out/var/tmp
+        mkdir -p $out/var/log
 
         mkdir -p $out/etc/nix
         cat $nixConfContentsPath > $out/etc/nix/nix.conf
@@ -414,6 +415,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
     ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay-x86_64.outPath}
     chmod 1777 /tmp
     chmod 1777 /var/tmp
+    chmod 1777 /var/log
     chown -R jovyan:wheel /home/jovyan
     chown -R runner:wheel /home/runner
     chmod 775 /home/jovyan
