@@ -325,13 +325,24 @@
             jupnix =
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
+                activateJovyanHome = pkgs.writeShellScriptBin "activate-jovyan-home" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
+                  env
+                  su jovyan -c /activate
+                  env
+                '';
+                activateJovyanHomeRun = pkgs.runCommand "activate-jovyan-home-run" { } ''
+                  mkdir -p $out/etc/cont-init.d
+                  ln -s ${activateJovyanHome}/bin/activate-jovyan-home $out/etc/cont-init.d/01-activate-jovyan-home
+                '';
                 jupyterService = pkgs.writeShellScriptBin "jupyter-service-run" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
 
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
-
                   cd "/home/jovyan"
-                  exec SHELL=zsh jupyter lab \
+                  env
+                  exec 2>&1
+                  exec jupyter lab \
                     --notebook-dir="/home/jovyan" \
                     --ip=0.0.0.0 \
                     --no-browser \
@@ -345,10 +356,15 @@
                     --ServerApp.terminado_settings="shell_command=['zsh']" \
                     --ServerApp.base_url="''${NB_PREFIX}"
                 '';
+                jupyterLog = pkgs.writeShellScriptBin "jupyter-log" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
+                  exec logutil-service /var/log/jupyterlab
+                '';
                 jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
                   mkdir -p $out/tmp/jupyter_runtime
-                  mkdir -p $out/etc/services.d/jupyterlab
+                  mkdir -p $out/etc/services.d/jupyterlab/log
                   ln -s ${jupyterService}/bin/jupyter-service-run $out/etc/services.d/jupyterlab/run
+                  ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
                 '';
               in
               buildMultiUserNixImage {
@@ -374,6 +390,7 @@
                   python
                 ] ++ s6Pkgs;
                 extraContents = [
+                  activateJovyanHomeRun
                   jupyterServiceRun
                   self'.legacyPackages.homeConfigurations.jovyan.activationPackage
                 ];
