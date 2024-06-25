@@ -319,12 +319,11 @@
                 };
                 activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
-                  printenv
                   printf "activating home manager\n\n"
                   /activate
                   printf "home manager environment\n\n"
-                  printenv
-                  printf "\n\n"
+                  printenv | sort
+                  printf "====================\n\n"
                 '';
                 activateUserHomeService = pkgs.runCommand "activate-user-home" { } ''
                   mkdir -p $out/etc/cont-init.d
@@ -345,9 +344,10 @@
                 jupyterServerScript = pkgs.writeScript "jupyter-service-run" ''
                   #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
                   printf "jupyter environment\n\n"
-                  printenv
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   export SHELL=zsh
+                  printenv | sort
+                  printf "====================\n\n"
                   printf "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}\n\n"
                   cd "/home/${storeOwner.uname}"
                   exec jupyter lab \
