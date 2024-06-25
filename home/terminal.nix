@@ -25,6 +25,7 @@
     kubectl
     (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
     tmate
+    vim
   ];
 
   home.shellAliases = rec {
@@ -33,6 +34,13 @@
     k = "kubectl";
     lg = "lazygit";
     t = "tree";
+  };
+
+  home.sessionVariables = {
+    EDITOR = "nvim";
+    LANG = "en_US.UTF-8";
+    LC_ALL = "en_US.UTF-8";
+    LC_CTYPE = "en_US.UTF-8";
   };
 
   fonts.fontconfig.enable = true;
@@ -50,6 +58,7 @@
       enable = true;
       enableZshIntegration = true;
     };
+    nix-index-database.comma.enable = true;
     zoxide.enable = true;
 
     bash = {
