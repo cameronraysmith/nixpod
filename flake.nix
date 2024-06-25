@@ -367,7 +367,7 @@
                   exec openvscode-server \
                     --host=0.0.0.0 \
                     --port=8888 \
-                    --server-base-path="''${NB_PREFIX}" \
+                    --server-base-path="''${NB_PREFIX}/" \
                     --telemetry-level=off \
                     --accept-server-license-terms \
                     --without-connection-token \
