@@ -364,16 +364,25 @@
                   printf "====================\n\n"
                   printf "Starting code-server with NB_PREFIX=''${NB_PREFIX}\n\n"
                   cd "''${HOME}"
-                  exec openvscode-server \
-                    --host=0.0.0.0 \
-                    --port=8888 \
-                    --server-base-path="''${NB_PREFIX}/" \
-                    --telemetry-level=off \
-                    --accept-server-license-terms \
-                    --without-connection-token \
-                    --server-data-dir="''${HOME}/.vscode-remote" \
-                    --user-data-dir="''${HOME}/.vscode-remote/data" \
+                  exec code-server \
+                    --bind-addr 0.0.0.0:8888 \
+                    --disable-telemetry \
+                    --disable-update-check \
+                    --disable-workspace-trust \
+                    --disable-getting-started-override \
+                    --auth none \
                     "''${HOME}"
+                  # It is also possible to use openvscode-server
+                  # exec ${pkgs.openvscode-server}/bin/openvscode-server \
+                  #   --host=0.0.0.0 \
+                  #   --port=8888 \
+                  #   --server-base-path="''${NB_PREFIX}/" \
+                  #   --telemetry-level=off \
+                  #   --accept-server-license-terms \
+                  #   --without-connection-token \
+                  #   --server-data-dir="''${HOME}/.vscode-remote" \
+                  #   --user-data-dir="''${HOME}/.vscode-remote/data" \
+                  #   "''${HOME}"
                 '';
                 codeServerService = pkgs.runCommand "code-service" { } ''
                   mkdir -p $out/etc/services.d/codeserver
@@ -387,11 +396,11 @@
                 maxLayers = 111;
                 fromImage = sudoImage;
                 extraPkgs = with pkgs; [
+                  code-server
                   musl
                   ps
                   su
                   sudo
-                  openvscode-server
                   zsh
                 ] ++ [ python ];
                 extraContents = [
