@@ -311,10 +311,11 @@
             jupnix =
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
+                username = "jovyan";
                 storeOwner = {
                   uid = 1000;
                   gid = 0;
-                  uname = "jovyan";
+                  uname = username;
                   gname = "wheel";
                 };
                 activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
@@ -349,9 +350,9 @@
                   printenv | sort
                   printf "====================\n\n"
                   printf "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}\n\n"
-                  cd "/home/${storeOwner.uname}"
+                  cd "''${HOME}"
                   exec jupyter lab \
-                    --notebook-dir="/home/${storeOwner.uname}" \
+                    --notebook-dir="''${HOME}" \
                     --ip=0.0.0.0 \
                     --no-browser \
                     --allow-root \
@@ -393,11 +394,11 @@
                 extraContents = [
                   activateUserHomeService
                   jupyterServerService
-                  self'.legacyPackages.homeConfigurations.${storeOwner.uname}.activationPackage
+                  self'.legacyPackages.homeConfigurations.${username}.activationPackage
                 ];
                 extraFakeRootCommands = ''
-                  chown -R ${storeOwner.uname}:wheel /nix
-                  chown -R ${storeOwner.uname}:wheel /tmp/jupyter_runtime
+                  chown -R ${username}:wheel /nix
+                  chown -R ${username}:wheel /tmp/jupyter_runtime
                 '';
                 nixConf = {
                   allowed-users = [ "*" ];
@@ -407,7 +408,7 @@
                   trusted-users = [ "root" "jovyan" "runner" ];
                 };
                 extraEnv = [
-                  "NB_USER=${storeOwner.uname}"
+                  "NB_USER=${username}"
                   "NB_UID=1000"
                   "NB_PREFIX=/"
                 ];
