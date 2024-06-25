@@ -388,6 +388,7 @@
                   ps
                   su
                   sudo
+                  zsh
                 ] ++ [ python ];
                 extraContents = [
                   activateUserHomeService
