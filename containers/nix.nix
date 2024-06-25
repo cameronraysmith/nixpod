@@ -203,14 +203,13 @@ let
     ) nonRootUsers)}
   '';
 
-  s6-overlay = pkgs.fetchurl rec {
-    version = "v3.2.0.0";
-    url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-noarch.tar.xz";
+  s6-version = "v3.2.0.0";
+  s6-overlay = pkgs.fetchurl {
+    url = "https://github.com/just-containers/s6-overlay/releases/download/${s6-version}/s6-overlay-noarch.tar.xz";
     hash = "sha256-SwwJB+Z2KBTDGFDg5sZ2LDhVcdRlbrhyWFKwsVhnE7Y=";
   };
-  s6-overlay-x86_64 = pkgs.fetchurl rec {
-    version = "v3.2.0.0";
-    url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-x86_64.tar.xz";
+  s6-overlay-arch = pkgs.fetchurl {
+    url = "https://github.com/just-containers/s6-overlay/releases/download/${s6-version}/s6-overlay-x86_64.tar.xz";
     hash = "sha256-rZgqgBvXJ1fHsbU1OaFGz3FeZAtNjwpqZxo9G1YP4eI=";
   };
 
@@ -375,7 +374,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   '' + extraExtraCommands;
   fakeRootCommands = ''
     ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay.outPath}
-    ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay-x86_64.outPath}
+    ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay-arch.outPath}
     chmod 1777 /tmp
     chmod 1777 /var/tmp
     chmod 1777 /var/log
@@ -430,6 +429,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
       "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
+      "S6_CMD_WAIT_FOR_SERVICES_MAXTIME=300000"
     ] ++ extraEnv;
   } // extraConfig;
 
