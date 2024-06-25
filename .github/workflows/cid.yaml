@@ -150,7 +150,7 @@ jobs:
         
     strategy:
       matrix:
-        image: [nixpod, ghanix, jupnix]
+        image: [nixpod, codenix, ghanix, jupnix]
               
     steps:
       - name: Maximize build space
@@ -341,7 +341,7 @@ jobs:
         
     strategy:
       matrix:
-        image: [nixpod, ghanix, jupnix]
+        image: [nixpod, codenix, ghanix, jupnix]
               
     steps:
       - name: Maximize build space
