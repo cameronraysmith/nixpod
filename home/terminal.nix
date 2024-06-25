@@ -5,6 +5,7 @@
     # Unix tools
     ripgrep
     fd
+    gawk
     gnused
     sd
     tree
@@ -22,15 +23,14 @@
     gh
     just
     kubectl
-    lazygit
     (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
-    ratchet
     tmate
   ];
 
   home.shellAliases = rec {
     e = "nvim";
     g = "git";
+    k = "kubectl";
     lg = "lazygit";
     t = "tree";
   };
