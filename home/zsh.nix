@@ -10,6 +10,10 @@
       export PATH=/run/wrappers/bin:/run/current-system/sw/bin:/nix/var/nix/profiles/default/bin:$HOME/.nix-profile/bin:/etc/profiles/per-user/$USER/bin:/opt/homebrew/bin:$PATH
     '';
 
+    initExtraBeforeCompInit = ''
+      ZSH_DISABLE_COMPFIX=true
+    '';
+
     initExtra = ''
       # Shell function to compute the sha256 nix hash of a file from a url.
       get_nix_hash() {
