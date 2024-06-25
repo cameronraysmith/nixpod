@@ -21,6 +21,7 @@
     # Dev
     gh
     just
+    kubectl
     lazygit
     (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
     ratchet

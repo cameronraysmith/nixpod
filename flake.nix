@@ -85,10 +85,7 @@
                 value = self.nixos-flake.lib.mkHomeConfiguration
                   pkgs
                   ({ pkgs, ... }: {
-                    imports = [
-                      inputs.self.homeModules.default
-                      inputs.catppuccin.homeManagerModules.catppuccin
-                    ];
+                    imports = [ self.homeModules.default ];
                     home.username = user;
                     home.homeDirectory =
                       if user == "root"
@@ -98,7 +95,6 @@
                       then "Users"
                       else "home"
                       }/${user}";
-                    home.stateVersion = "23.11";
                   });
               })
               users);
