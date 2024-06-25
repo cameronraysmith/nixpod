@@ -311,6 +311,12 @@
             jupnix =
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
+                storeOwner = {
+                  uid = 1000;
+                  gid = 0;
+                  uname = "jovyan";
+                  gname = "wheel";
+                };
                 activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
                   printenv
@@ -343,9 +349,9 @@
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   export SHELL=zsh
                   printf "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}\n\n"
-                  cd "/home/jovyan"
+                  cd "/home/${storeOwner.uname}"
                   exec jupyter lab \
-                    --notebook-dir="/home/jovyan" \
+                    --notebook-dir="/home/${storeOwner.uname}" \
                     --ip=0.0.0.0 \
                     --no-browser \
                     --allow-root \
@@ -372,17 +378,11 @@
                 '';
               in
               buildMultiUserNixImage {
-                inherit pkgs;
+                inherit pkgs storeOwner;
                 name = "jupnix";
                 tag = "latest";
                 maxLayers = 111;
                 fromImage = sudoImage;
-                storeOwner = {
-                  uid = 1000;
-                  gid = 0;
-                  uname = "jovyan";
-                  gname = "wheel";
-                };
                 extraPkgs = with pkgs; [
                   musl
                   ps
@@ -392,11 +392,11 @@
                 extraContents = [
                   activateUserHomeService
                   jupyterServerService
-                  self'.legacyPackages.homeConfigurations.jovyan.activationPackage
+                  self'.legacyPackages.homeConfigurations.${storeOwner.uname}.activationPackage
                 ];
                 extraFakeRootCommands = ''
-                  chown -R jovyan:wheel /nix
-                  chown -R jovyan:wheel /tmp/jupyter_runtime
+                  chown -R ${storeOwner.uname}:wheel /nix
+                  chown -R ${storeOwner.uname}:wheel /tmp/jupyter_runtime
                 '';
                 nixConf = {
                   allowed-users = [ "*" ];
@@ -406,7 +406,7 @@
                   trusted-users = [ "root" "jovyan" "runner" ];
                 };
                 extraEnv = [
-                  "NB_USER=jovyan"
+                  "NB_USER=${storeOwner.uname}"
                   "NB_UID=1000"
                   "NB_PREFIX=/"
                 ];
