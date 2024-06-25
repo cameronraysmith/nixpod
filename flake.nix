@@ -402,7 +402,6 @@
                 fromImage = sudoImage;
                 extraPkgs = with pkgs; [
                   code-server
-                  musl
                   ps
                   su
                   sudo
