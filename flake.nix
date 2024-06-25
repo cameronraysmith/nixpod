@@ -152,6 +152,32 @@
               ];
             };
 
+            codenixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
+              github = {
+                enable = true;
+                enableRegistry = false;
+                token = "$GH_TOKEN";
+              };
+              autoTags = {
+                branch = false;
+              };
+              registries = {
+                "ghcr.io" = {
+                  enable = true;
+                  repo = "cameronraysmith/codenix";
+                  username = builtins.getEnv "GITHUB_ACTOR";
+                  password = "$GH_TOKEN";
+                };
+              };
+              version = builtins.getEnv "VERSION";
+              images = builtins.map (sys: self.packages.${sys}.codenix) includedSystems;
+              tags = [
+                (builtins.getEnv "GIT_SHA_SHORT")
+                (builtins.getEnv "GIT_SHA")
+                (builtins.getEnv "GIT_REF")
+              ];
+            };
+
             jupnixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
@@ -306,6 +332,92 @@
                 "-c"
                 "su runner -c /activate && su runner && bash"
               ];
+            };
+
+            codenix =
+              let
+                python = pkgs.python3.withPackages (ps: with ps; [ pip ipykernel ]);
+                username = "jovyan";
+                storeOwner = {
+                  uid = 1000;
+                  gid = 0;
+                  uname = username;
+                  gname = "wheel";
+                };
+                activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
+                  printf "activating home manager\n\n"
+                  /activate
+                  printf "home manager environment\n\n"
+                  printenv | sort
+                  printf "====================\n\n"
+                '';
+                activateUserHomeService = pkgs.runCommand "activate-user-home" { } ''
+                  mkdir -p $out/etc/cont-init.d
+                  ln -s ${activateUserHomeScript} $out/etc/cont-init.d/01-activate-user-home
+                '';
+                codeServerScript = pkgs.writeScript "code-service-run" ''
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printf "code environment\n\n"
+                  export SHELL=zsh
+                  printenv | sort
+                  printf "====================\n\n"
+                  printf "Starting code-server\n\n"
+                  cd "''${HOME}"
+                  exec openvscode-server \
+                    --host=0.0.0.0 \
+                    --port=8888 \
+                    --telemetry-level=off \
+                    --accept-server-license-terms \
+                    --without-connection-token \
+                    --server-data-dir="''${HOME}/.vscode-remote" \
+                    --user-data-dir="''${HOME}/.vscode-remote/data" \
+                    "''${HOME}"
+                '';
+                codeServerService = pkgs.runCommand "code-service" { } ''
+                  mkdir -p $out/etc/services.d/codeserver
+                  ln -s ${codeServerScript} $out/etc/services.d/codeserver/run
+                '';
+              in
+              buildMultiUserNixImage {
+                inherit pkgs storeOwner;
+                name = "codenix";
+                tag = "latest";
+                maxLayers = 111;
+                fromImage = sudoImage;
+                extraPkgs = with pkgs; [
+                  musl
+                  ps
+                  su
+                  sudo
+                  openvscode-server
+                  zsh
+                ] ++ [ python ];
+                extraContents = [
+                  activateUserHomeService
+                  codeServerService
+                  self'.legacyPackages.homeConfigurations.${username}.activationPackage
+                ];
+                extraFakeRootCommands = ''
+                  chown -R ${username}:wheel /nix
+                '';
+                nixConf = {
+                  allowed-users = [ "*" ];
+                  experimental-features = [ "nix-command" "flakes" ];
+                  max-jobs = [ "auto" ];
+                  sandbox = "false";
+                  trusted-users = [ "root" "jovyan" "runner" ];
+                };
+                extraEnv = [
+                  "NB_USER=${username}"
+                  "NB_UID=1000"
+                  "NB_PREFIX=/"
+                ];
+                extraConfig = {
+                  ExposedPorts = {
+                    "8888/tcp" = { };
+                  };
+                };
             };
 
             jupnix =
