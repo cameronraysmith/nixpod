@@ -7,6 +7,19 @@
     #   key = "1234567890ABCDEF";
     #   signByDefault = true;
     # };
+    extraConfig = {
+      core.editor = "nvim";
+      credential.helper = "store --file ~/.git-credentials";
+      color.ui = true;
+      commit.gpgsign = true;
+      diff.colorMoved = "zebra";
+      fetch.prune = true;
+      format.signoff = true;
+      init.defaultBranch = "main";
+      merge.conflictstyle = "diff3";
+      push.autoSetupRemote = true;
+      rebase.autoStash = true;
+    };
     aliases = {
       a = "add";
       c = "commit";
@@ -37,6 +50,29 @@
       rs = "remote show";
       st = "status";
       stn = "status -uno";
+    };
+    delta = {
+      enable = true;
+      options = {
+        side-by-side = true;
+      };
+    };
+    ignores = [ "*~" "*.swp" ];
+  };
+
+  programs.lazygit = {
+    enable = true;
+    settings = {
+      git = {
+        paging = {
+          colorArg = "always";
+          pager = "delta --color-only --dark --paging=never";
+          useConfig = false;
+        };
+        commit = {
+          signOff = true;
+        };
+      };
     };
   };
 }
