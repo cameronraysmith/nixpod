@@ -18,7 +18,12 @@
       inputs.flake-parts.follows = "flake-parts";
       inputs.systems.follows = "systems";
     };
-
+    nix-index-database = {
+      url = "github:nix-community/nix-index-database";
+      inputs = {
+        nixpkgs.follows = "nixpkgs";
+      };
+    };
     # see https://github.com/nix-systems/default/blob/main/default.nix
     systems.url = "github:nix-systems/default";
   };
@@ -428,7 +433,7 @@
                     "8888/tcp" = { };
                   };
                 };
-            };
+              };
 
             jupnix =
               let
