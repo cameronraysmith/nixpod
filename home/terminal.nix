@@ -38,9 +38,13 @@
 
   home.sessionVariables = {
     EDITOR = "nvim";
-    LANG = "en_US.UTF-8";
-    LC_ALL = "en_US.UTF-8";
-    LC_CTYPE = "en_US.UTF-8";
+  };
+
+  i18n = {
+    glibcLocales = pkgs.glibcLocales.override {
+      allLocales = false;
+      locales = [ "en_US.UTF-8/UTF-8" ];
+    };
   };
 
   fonts.fontconfig.enable = true;
