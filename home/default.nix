@@ -8,6 +8,7 @@
         home.stateVersion = "23.11";
         imports = [
           inputs.catppuccin.homeManagerModules.catppuccin
+          inputs.nix-index-database.hmModules.nix-index
           ./atuin.nix
           ./neovim
           ./git.nix
