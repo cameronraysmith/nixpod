@@ -103,17 +103,19 @@ runs:
         FQN_GIT_SHA="${{ inputs.imageFQN }}:$GIT_SHA"
         echo "Image FQN with Git SHA: $FQN_GIT_SHA"
         df -h
-        if SKOPEO_OUTPUT=$(skopeo inspect "docker://$FQN_GIT_SHA" 2>&1); then
-          echo "Image $FQN_GIT_SHA already exists. Skipping build."
-        else
-          if echo "$SKOPEO_OUTPUT" | grep -q 'manifest unknown'; then
-            echo "Image $FQN_GIT_SHA does not exist. Building."
-            ${{ inputs.nixCommand }}
-          else
-            echo "Failed to inspect image with error: $SKOPEO_OUTPUT"
-            exit 1
-          fi
-        fi
+        echo "Image $FQN_GIT_SHA does not exist. Building."
+        ${{ inputs.nixCommand }}
+        # if SKOPEO_OUTPUT=$(skopeo inspect "docker://$FQN_GIT_SHA" 2>&1); then
+        #   echo "Image $FQN_GIT_SHA already exists. Skipping build."
+        # else
+        #   if echo "$SKOPEO_OUTPUT" | grep -q 'manifest unknown'; then
+        #     echo "Image $FQN_GIT_SHA does not exist. Building."
+        #     ${{ inputs.nixCommand }}
+        #   else
+        #     echo "Failed to inspect image with error: $SKOPEO_OUTPUT"
+        #     exit 1
+        #   fi
+        # fi
         df -h
       env:
         GH_TOKEN: ${{ github.token }}
