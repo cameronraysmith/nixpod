@@ -315,25 +315,39 @@
             jupnix =
               let
                 python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
-                activateJovyanHome = pkgs.writeScriptBin "activate-jovyan-home" ''
+                activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
                   printenv
-                  /run/wrappers/bin/sudo -u jovyan /activate
+                  printf "activating home manager\n\n"
+                  /activate
+                  printf "home manager environment\n\n"
+                  printenv
+                  printf "\n\n"
+                '';
+                activateUserHomeService = pkgs.runCommand "activate-user-home" { } ''
+                  mkdir -p $out/etc/cont-init.d
+                  ln -s ${activateUserHomeScript} $out/etc/cont-init.d/01-activate-user-home
+                '';
+                createJupyterLogScript = pkgs.writeScript "create-jupyter-log-run" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
                   /run/wrappers/bin/sudo mkdir -p /var/log/jupyterlab
                   /run/wrappers/bin/sudo chown nobody:nobody /var/log/jupyterlab
                   /run/wrappers/bin/sudo chmod 02777 /var/log/jupyterlab
                 '';
-                activateJovyanHomeRun = pkgs.runCommand "activate-jovyan-home-run" { } ''
+                # createJupyterLogService will not be used if not added to extraContents
+                # in buildMultiUserNixImage below
+                createJupyterLogService = pkgs.runCommand "create-jupyter-log" { } ''
                   mkdir -p $out/etc/cont-init.d
-                  ln -s ${activateJovyanHome}/bin/activate-jovyan-home $out/etc/cont-init.d/01-activate-jovyan-home
+                  ln -s ${createJupyterLogScript} $out/etc/cont-init.d/02-create-jupyter-log
                 '';
-                jupyterService = pkgs.writeScriptBin "jupyter-service-run" ''
+                jupyterServerScript = pkgs.writeScript "jupyter-service-run" ''
                   #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printf "jupyter environment\n\n"
                   printenv
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
                   export SHELL=zsh
+                  printf "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}\n\n"
                   cd "/home/jovyan"
-                  echo "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}"
                   exec jupyter lab \
                     --notebook-dir="/home/jovyan" \
                     --ip=0.0.0.0 \
@@ -348,16 +362,17 @@
                     --ServerApp.authenticate_prometheus=False \
                     --ServerApp.base_url="''${NB_PREFIX}"
                 '';
-                jupyterLog = pkgs.writeScriptBin "jupyter-log" ''
+                jupyterLog = pkgs.writeScript "jupyter-log" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
                   exec logutil-service /var/log/jupyterlab
                 '';
-                jupyterServiceRun = pkgs.runCommand "jupyter-service" { } ''
+                # # Add the following to redirect stdout logging and manage rotation
+                # mkdir -p $out/etc/services.d/jupyterlab/log
+                # ln -s ${jupyterLog} $out/etc/services.d/jupyterlab/log/run
+                jupyterServerService = pkgs.runCommand "jupyter-service" { } ''
                   mkdir -p $out/tmp/jupyter_runtime
                   mkdir -p $out/etc/services.d/jupyterlab
-                  ln -s ${jupyterService}/bin/jupyter-service-run $out/etc/services.d/jupyterlab/run
-                  # mkdir -p $out/etc/services.d/jupyterlab/log
-                  # ln -s ${jupyterLog}/bin/jupyter-log $out/etc/services.d/jupyterlab/log/run
+                  ln -s ${jupyterServerScript} $out/etc/services.d/jupyterlab/run
                 '';
               in
               buildMultiUserNixImage {
@@ -373,19 +388,14 @@
                   gname = "wheel";
                 };
                 extraPkgs = with pkgs; [
-                  kubectl
                   musl
                   ps
                   su
                   sudo
-                  tree
-                  vim
-                  zsh
-                  python
-                ];
+                ] ++ [ python ];
                 extraContents = [
-                  activateJovyanHomeRun
-                  jupyterServiceRun
+                  activateUserHomeService
+                  jupyterServerService
                   self'.legacyPackages.homeConfigurations.jovyan.activationPackage
                 ];
                 extraFakeRootCommands = ''
