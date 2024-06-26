@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.4.1-beta.1](https://github.com/cameronraysmith/nixpod/compare/v0.4.0...v0.4.1-beta.1) (2024-06-26)
+
+
+### Bug Fixes
+
+* **flake:** add init script to install code-server extensions ([6c4a15f](https://github.com/cameronraysmith/nixpod/commit/6c4a15fd7d1565a633ec01e52a7dcd5eaa2398ad))
+* **flake:** initialize code-server user settings ([4a54e0a](https://github.com/cameronraysmith/nixpod/commit/4a54e0ab4f5b1346f34122bfbf72d77f9213f1ff))
+* **flake:** update code-server extensions ([4a79dd7](https://github.com/cameronraysmith/nixpod/commit/4a79dd71071c97c3223e93a919315cc538121534))
+* **flake:** whitespace ([ceabff2](https://github.com/cameronraysmith/nixpod/commit/ceabff253300e4780abea581f701f71f7d117570))
+
 ## [0.4.0](https://github.com/cameronraysmith/nixpod/compare/v0.3.1...v0.4.0) (2024-06-26)
 
 
