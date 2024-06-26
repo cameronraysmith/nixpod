@@ -361,6 +361,43 @@
                   mkdir -p $out/etc/cont-init.d
                   ln -s ${activateUserHomeScript} $out/etc/cont-init.d/01-activate-user-home
                 '';
+                installCodeServerExtensionsScript = pkgs.writeScript "install-code-extensions-run" ''
+                  #!/command/with-contenv ${pkgs.runtimeShell}
+                  VSCODE_EXTENSIONS=(
+                      "vscodevim.vim"
+                      "Catppuccin.catppuccin-vsc"
+                      "jnoortheen.nix-ide"
+                      "tamasfe.even-better-toml"
+                      "donjayamanne.python-extension-pack"
+                      "charliermarsh.ruff"
+                      "redhat.vscode-yaml"
+                      "ms-kubernetes-tools.vscode-kubernetes-tools"
+                      "eamodio.gitlens"
+                      "GitHub.vscode-pull-request-github"
+                      "ms-azuretools.vscode-docker"
+                      "ms-toolsai.jupyter"
+                      "njzy.stats-bar"
+                      "vscode-icons-team.vscode-icons"
+                  )
+
+                  printf "Listing currently installed extensions...\n\n"
+                  code-server --list-extensions --show-versions
+                  echo ""
+
+                  install_command="code-server"
+                  for extension in "''${VSCODE_EXTENSIONS[@]}"; do
+                      install_command+=" --install-extension \"''${extension}\""
+                  done
+
+                  eval "''${install_command}"
+
+                  printf "Listing extensions after installation...\n\n"
+                  code-server --list-extensions --show-versions
+                '';
+                installCodeServerExtensionsService = pkgs.runCommand "install-code-extensions" { } ''
+                  mkdir -p $out/etc/cont-init.d
+                  ln -s ${installCodeServerExtensionsScript} $out/etc/cont-init.d/02-install-code-extensions
+                '';
                 # # It is also possible to use openvscode-server
                 # exec ${pkgs.openvscode-server}/bin/openvscode-server \
                 #   --host=0.0.0.0 \
@@ -409,6 +446,7 @@
                 ] ++ [ python ];
                 extraContents = [
                   activateUserHomeService
+                  installCodeServerExtensionsService
                   codeServerService
                   self'.legacyPackages.homeConfigurations.${username}.activationPackage
                 ];
