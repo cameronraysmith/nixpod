@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0-beta.2](https://github.com/cameronraysmith/nixpod/compare/v0.4.0-beta.1...v0.4.0-beta.2) (2024-06-26)
+
+
+### Bug Fixes
+
+* **cid:** disable publish ([12b55f7](https://github.com/cameronraysmith/nixpod/commit/12b55f7b5d7d9940954c1d453c1728b6ac6fc290))
+
 ## [0.4.0-beta.1](https://github.com/cameronraysmith/nixpod/compare/v0.3.1...v0.4.0-beta.1) (2024-06-26)
 
 
