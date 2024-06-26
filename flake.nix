@@ -398,17 +398,6 @@
                   mkdir -p $out/etc/cont-init.d
                   ln -s ${installCodeServerExtensionsScript} $out/etc/cont-init.d/02-install-code-extensions
                 '';
-                # # It is also possible to use openvscode-server
-                # exec ${pkgs.openvscode-server}/bin/openvscode-server \
-                #   --host=0.0.0.0 \
-                #   --port=8888 \
-                #   --server-base-path="''${NB_PREFIX}/" \
-                #   --telemetry-level=off \
-                #   --accept-server-license-terms \
-                #   --without-connection-token \
-                #   --server-data-dir="''${HOME}/.vscode-remote" \
-                #   --user-data-dir="''${HOME}/.vscode-remote/data" \
-                #   "''${HOME}"
                 codeServerScript = pkgs.writeScript "code-service-run" ''
                   #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
                   printf "code environment\n\n"
