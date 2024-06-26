@@ -2,7 +2,7 @@
 
 # nixpod home
 
-<a href="https://nixos.wiki/wiki/Flakes" target="_blank">
+<a href="https://nix.dev/concepts/flakes" target="_blank">
 	<img alt="Nix Flakes Ready" src="https://img.shields.io/static/v1?logo=nixos&logoColor=d8dee9&label=Nix%20Flakes&labelColor=5e81ac&message=In%20Containers&color=d8dee9&style=for-the-badge">
 </a>
 
@@ -10,14 +10,14 @@
 
 </div>
 
-While this repository contains a [Nix flake](https://zero-to-nix.com/concepts/flakes), it essentially integrates a few parts of [srid/nixos-config](https://github.com/srid/nixos-config) into [juspay/nix-dev-home](https://github.com/juspay/nix-dev-home). These were merged upstream in [juspay/nix-dev-home#7](https://github.com/juspay/nix-dev-home/pull/7), so you might prefer to look there.
+Using [nix](https://github.com/NixOS/nix), [home-manager](https://github.com/nix-community/home-manager), and [nixpkgs](https://github.com/NixOS/nixpkgs) [dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nixpod](https://ghcr.io/cameronraysmith/nixpod) provides a containerized or containerizable drop-in user configuration on any platform where the [nix](https://github.com/NixOS/nix) package manager is already, or can be, [installed](https://nix.dev/install-nix.html). This is intended to include, but is not limited to, scenarios like those involving [kubernetes ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) via images like [netshoot](https://github.com/nicolaka/netshoot), which might be used for debugging purposes adjacent to otherwise minimal container images. See the [github packages associated to this repository](https://github.com/cameronraysmith?tab=packages&repo_name=nixpod) for the containers currently built in the [nixpod CID](https://github.com/cameronraysmith/nixpod/blob/main/.github/workflows/cid.yam).
 
-Using [home-manager](https://github.com/nix-community/home-manager), [nixpod](https://ghcr.io/cameronraysmith/nixpod) provides an ergonomic drop-in configuration on any platform where the [nix](https://github.com/NixOS/nix) package manager is already, or can be, [installed](https://nix.dev/install-nix.html). This is intended to include scenarios like those involving [kubernetes ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) via images like [netshoot](https://github.com/nicolaka/netshoot), which might be used for debugging purposes adjacent to otherwise minimal container images.
+This repository originally contained a [nix flake](https://zero-to-nix.com/concepts/flakes) that essentially integrated a few parts of [srid/nixos-config](https://github.com/srid/nixos-config) into [juspay/nix-dev-home](https://github.com/juspay/nix-dev-home). These were merged upstream in [juspay/nix-dev-home#7](https://github.com/juspay/nix-dev-home/pull/7), so you might want to look there.
 
 ## Testing
 
 > [!NOTE]
-> This repository previously supported building containers exclusively via [Containerfile](https://github.com/cameronraysmith/nixpod/blob/main/containers/Containerfile.debnix). Currently it uses [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools) and the Containerfiles are only retained for comparison. Other excellent tools for building container images with nix that may be supported in the future are [nix2container](https://github.com/nlewo/nix2container) and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter).
+> This repository previously supported building containers exclusively via [Containerfiles](https://github.com/cameronraysmith/nixpod/blob/main/containers/Containerfile.debnix). Currently it uses [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools) and the Containerfiles are only retained for comparison. Other excellent tools for building container images with nix that may be supported in the future are [nix2container](https://github.com/nlewo/nix2container) and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter).
 
 ### direnv and dev shell
 
