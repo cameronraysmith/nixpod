@@ -1,5 +1,54 @@
 # Changelog
 
+## [0.4.0-beta.1](https://github.com/cameronraysmith/nixpod/compare/v0.3.1...v0.4.0-beta.1) (2024-06-26)
+
+
+### Features
+
+* **flake:** add codenix image ([88788b1](https://github.com/cameronraysmith/nixpod/commit/88788b1d5ab17de6ecefc5d44cf9035b7a5767f2))
+
+
+### Bug Fixes
+
+* **build-nix-image:** disable existing git sha tag check to create new image ([8e20b9c](https://github.com/cameronraysmith/nixpod/commit/8e20b9cb4883df389bfb702eccb6fc5d04639681))
+* **containers:** create `/var/log` ([befdd9b](https://github.com/cameronraysmith/nixpod/commit/befdd9b9e03ea6b7c5e4b671fb2fe04b4f5d64f1))
+* **containers:** fetch s6-overlay ([2a1a722](https://github.com/cameronraysmith/nixpod/commit/2a1a722342194a78235354e0a417acdfb09a1d99))
+* **containers:** fix usage of writeShellScript vs +Bin ([0e13390](https://github.com/cameronraysmith/nixpod/commit/0e133905a3ccf1f758759b698c39a826bb1e39b7))
+* **containers:** remove manual s6 entrypoint script ([3c958c3](https://github.com/cameronraysmith/nixpod/commit/3c958c380ffe13893f7b2ee774b1340f1adb1869))
+* **containers:** support joining extraConfig to the config set ([d56cbf8](https://github.com/cameronraysmith/nixpod/commit/d56cbf86323c6e62f99855ca3536fb092f415295))
+* **containers:** untar s6-overlay in fakeRootCommands ([4c8b9d2](https://github.com/cameronraysmith/nixpod/commit/4c8b9d22ef9f940ce33922f9977c9e7f3b4247e4))
+* **containers:** update `/run` permissions ([d0a2883](https://github.com/cameronraysmith/nixpod/commit/d0a2883d6903786d115a56897767429f8a146393))
+* **containers:** use single s6 version reference ([0b6f140](https://github.com/cameronraysmith/nixpod/commit/0b6f1401a66e96065fbc5d1c9c4373eda7591773))
+* **flake:** add nix-index-database ([efbb05d](https://github.com/cameronraysmith/nixpod/commit/efbb05d8b4251d28a77c8c3578b29800f61fc76b))
+* **flake:** allow s6 to start jupyterlab in jupnix ([423705e](https://github.com/cameronraysmith/nixpod/commit/423705e02df84aeead46c2a16386c0e8ad1affa4))
+* **flake:** assume s6 from s6-overlay ([1511eaa](https://github.com/cameronraysmith/nixpod/commit/1511eaadef9ff9d15ade2048209a55ce34cf7ee5))
+* **flake:** create logging directory in cont-init.d ([5cc88ff](https://github.com/cameronraysmith/nixpod/commit/5cc88ff9a144e1d96452d479edfcd69d0f21317e))
+* **flake:** defer s6 binaries to s6-overlay ([82e4667](https://github.com/cameronraysmith/nixpod/commit/82e46676d9b7ff0a59cb876cd44eb3659f30f54c))
+* **flake:** disable home activation ([5047377](https://github.com/cameronraysmith/nixpod/commit/5047377743a1af997d4c9724fcf6cb330d871bdc))
+* **flake:** disable logging ([398772b](https://github.com/cameronraysmith/nixpod/commit/398772b408467bf82a0348f98a5e79e2772228f0))
+* **flake:** disable zsh ([5e4ca23](https://github.com/cameronraysmith/nixpod/commit/5e4ca237513dd5ac90fc6a698449987ced7e9873))
+* **flake:** enable logging and activate hm on startup ([c2972ac](https://github.com/cameronraysmith/nixpod/commit/c2972acef2de32b0012e7cff6c20507ad7288a81))
+* **flake:** fix usage of writeShellScript vs +Bin ([f77bd15](https://github.com/cameronraysmith/nixpod/commit/f77bd1559a466b1b9728c27946bc2b8e4b2b66d3))
+* **flake:** include trailing slash in code-server base path ([6f413b1](https://github.com/cameronraysmith/nixpod/commit/6f413b1b31d4d4a7eec38d67d631b351905be7e8))
+* **flake:** reenable zsh ([6ea5a0a](https://github.com/cameronraysmith/nixpod/commit/6ea5a0a235b6c4e84690411a59f7d8a147725e36))
+* **flake:** refactor hm config to module ([14ce6f4](https://github.com/cameronraysmith/nixpod/commit/14ce6f46fc3c8c0ff2d40dd20e68510a934690b6))
+* **flake:** reference single username and HOME in jupnix image ([7d2d4f8](https://github.com/cameronraysmith/nixpod/commit/7d2d4f885d350955d691ce57858d2c9af98ee1f5))
+* **flake:** remove musl ([ec60083](https://github.com/cameronraysmith/nixpod/commit/ec60083c3b3f2cc4c2b8d41cd1b43f5e3161d5c1))
+* **flake:** remove unused container cmd ([c292f5f](https://github.com/cameronraysmith/nixpod/commit/c292f5f80fc22e0591862f08006d7554d70bd767))
+* **flake:** set server-base-path in code-server image ([2636b74](https://github.com/cameronraysmith/nixpod/commit/2636b74a9de0bd9339c76cfad1871aa215519c69))
+* **flake:** set SHELL and reenable logging ([3d474b9](https://github.com/cameronraysmith/nixpod/commit/3d474b92d8a89c18cc397bcf0757c71348b9ed93))
+* **flake:** sort and separate printenv ([f4579cb](https://github.com/cameronraysmith/nixpod/commit/f4579cb49f26928b21f12f39d6ec1d8f61687773))
+* **flake:** update jupyter log ([89c08cb](https://github.com/cameronraysmith/nixpod/commit/89c08cbcffec22ac1d2ca1019a878a8a6d934f49))
+* **flake:** use bash ([2730980](https://github.com/cameronraysmith/nixpod/commit/2730980bee00cdca87ea9a78d82996babc33ced8))
+* **flake:** use code-server ([cbdefec](https://github.com/cameronraysmith/nixpod/commit/cbdefec4df732f004be9ce95208896784ee6af74))
+* **flake:** use interactive/PATH bash to pickup env ([f7e6ffa](https://github.com/cameronraysmith/nixpod/commit/f7e6ffa47bb39655054f2f6dc562aa1e457589f9))
+* **home:** add gawk ([d15b619](https://github.com/cameronraysmith/nixpod/commit/d15b61986721f94c85f89c7d8a870b619ac99755))
+* **home:** disable compfix ([4abbdd5](https://github.com/cameronraysmith/nixpod/commit/4abbdd570ca952775886694d0c58dd670e14a666))
+* **home:** enable git config, delta, lg ([2c52534](https://github.com/cameronraysmith/nixpod/commit/2c52534bc2299f52d5d0721f60eb49bac7ddb3e2))
+* **home:** load nix-index-database module ([abc8e64](https://github.com/cameronraysmith/nixpod/commit/abc8e648427bc744de6a1177a4804bdec085f753))
+* **home:** set editor ([812ab72](https://github.com/cameronraysmith/nixpod/commit/812ab729b1564aa432e750eba60abd5821e0477d))
+* **home:** set glibcLocales ([bf92251](https://github.com/cameronraysmith/nixpod/commit/bf92251a8306aaf9f4a8bcf3f7db9051fc0451b4))
+
 ## [0.3.1](https://github.com/cameronraysmith/nixpod/compare/v0.3.0...v0.3.1) (2024-06-20)
 
 
