@@ -361,11 +361,11 @@
                   mkdir -p $out/etc/cont-init.d
                   ln -s ${activateUserHomeScript} $out/etc/cont-init.d/01-activate-user-home
                 '';
+                # https://gist.github.com/hyperupcall/99e355405611be6c4e0a38b6e3e8aad0#file-settings-jsonc
                 installCodeServerExtensionsScript = pkgs.writeScript "install-code-extensions-run" ''
                   #!/command/with-contenv ${pkgs.runtimeShell}
                   VSCODE_EXTENSIONS=(
                     "alefragnani.project-manager"
-                    "BazelBuild.vscode-bazel"
                     "Catppuccin.catppuccin-vsc"
                     "charliermarsh.ruff"
                     "christian-kohler.path-intellisense"
@@ -402,10 +402,24 @@
                       install_command+=" --install-extension \"''${extension}\""
                   done
 
-                  eval "''${install_command}"
+                  eval "''${install_command} --force"
 
                   printf "Listing extensions after installation...\n\n"
                   code-server --list-extensions --show-versions
+
+                  settings_file="''${HOME}/.local/share/code-server/User/settings.json"
+                  mkdir -p "''${HOME}/.local/share/code-server/User"
+                  [ ! -s "''${settings_file}" ] && echo '{}' > "''${settings_file}"
+
+                  ${pkgs.jq}/bin/jq '{
+                  	"gitlens.showWelcomeOnInstall": false,
+                  	"gitlens.showWhatsNewAfterUpgrades": false,
+                    "update.showReleaseNotes": false,
+                    "workbench.iconTheme": "vscode-icons",
+                    "workbench.colorTheme": "Catppuccin Macchiato",
+                  } + . ' "''${settings_file}" > "''${settings_file}.tmp" && mv "''${settings_file}.tmp" "''${settings_file}"
+
+                  printf "Updated settings in %s\n\n" "''${settings_file}"
                 '';
                 installCodeServerExtensionsService = pkgs.runCommand "install-code-extensions" { } ''
                   mkdir -p $out/etc/cont-init.d
