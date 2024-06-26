@@ -412,8 +412,8 @@
                   [ ! -s "''${settings_file}" ] && echo '{}' > "''${settings_file}"
 
                   ${pkgs.jq}/bin/jq '{
-                  	"gitlens.showWelcomeOnInstall": false,
-                  	"gitlens.showWhatsNewAfterUpgrades": false,
+                    "gitlens.showWelcomeOnInstall": false,
+                    "gitlens.showWhatsNewAfterUpgrades": false,
                     "update.showReleaseNotes": false,
                     "workbench.iconTheme": "vscode-icons",
                     "workbench.colorTheme": "Catppuccin Macchiato",
