@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.2](https://github.com/cameronraysmith/nixpod/compare/v0.4.1...v0.4.2) (2024-06-27)
+
+
+### Bug Fixes
+
+* **home:** disable atuin auto_sync ([5f577bf](https://github.com/cameronraysmith/nixpod/commit/5f577bfc06178c2875150c18c4d5d0beec127239))
+* **home:** set direnv warn_timeout ([993c9b2](https://github.com/cameronraysmith/nixpod/commit/993c9b2c22879fb8faa3a3f3615a404cbc656a1d))
+
 ## [0.4.1](https://github.com/cameronraysmith/nixpod/compare/v0.4.0...v0.4.1) (2024-06-26)
 
 
