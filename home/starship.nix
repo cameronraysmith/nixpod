@@ -2,6 +2,8 @@
   programs.starship = {
     enable = true;
     catppuccin.enable = true;
-    settings = { };
+    settings = {
+      command_timeout = 2000;
+    };
   };
 }
