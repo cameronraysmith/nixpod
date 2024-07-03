@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.4](https://github.com/cameronraysmith/nixpod/compare/v0.4.3...v0.4.4) (2024-07-03)
+
+
+### Bug Fixes
+
+* **home:** increase command_timeout to 2s ([1205728](https://github.com/cameronraysmith/nixpod/commit/1205728ff581c6beba76e9fcc952b0d26907a006))
+
 ## [0.4.3](https://github.com/cameronraysmith/nixpod/compare/v0.4.2...v0.4.3) (2024-07-03)
 
 
