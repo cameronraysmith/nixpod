@@ -414,6 +414,7 @@
                   ${pkgs.jq}/bin/jq '{
                     "gitlens.showWelcomeOnInstall": false,
                     "gitlens.showWhatsNewAfterUpgrades": false,
+                    "python.terminal.activateEnvironment": false,
                     "update.showReleaseNotes": false,
                     "workbench.iconTheme": "vscode-icons",
                     "workbench.colorTheme": "Catppuccin Macchiato",
