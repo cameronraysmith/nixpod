@@ -13,6 +13,9 @@
       search_mode = "fuzzy";
       show_help = false;
       show_preview = true;
+      daemon = {
+        enabled = true;
+      };
     };
   };
 }
