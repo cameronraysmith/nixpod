@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.3-beta.1](https://github.com/cameronraysmith/nixpod/compare/v0.4.2...v0.4.3-beta.1) (2024-07-03)
+
+
+### Bug Fixes
+
+* **atuin:** enable daemon ([aaf95ac](https://github.com/cameronraysmith/nixpod/commit/aaf95ac492c676fe704d711d8de52601e650eab8))
+* **code:** disable code-managed environment activation ([8bea974](https://github.com/cameronraysmith/nixpod/commit/8bea9749dff9307e74bf1962d7e9a1f480e09428))
+* **flake:** enable atuin daemon service ([1e080de](https://github.com/cameronraysmith/nixpod/commit/1e080de51cd0dcb129f92d21db63b9427cbc1c25))
+
 ## [0.4.2](https://github.com/cameronraysmith/nixpod/compare/v0.4.1...v0.4.2) (2024-06-27)
 
 
