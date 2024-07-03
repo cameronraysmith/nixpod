@@ -300,44 +300,57 @@
               };
             };
 
-            ghanix = buildMultiUserNixImage {
-              inherit pkgs;
-              name = "ghanix";
-              tag = "latest";
-              maxLayers = 111;
-              fromImage = sudoImage;
-              storeOwner = {
-                uid = 1001;
-                gid = 0;
-                uname = "runner";
-                gname = "wheel";
+            ghanix =
+              let
+                atuinDaemonScript = pkgs.writeScript "atuin-daemon" ''
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printf "running atuin daemon\n\n"
+                  exec ${pkgs.atuin}/bin/atuin daemon
+                '';
+                atuinDaemonService = pkgs.runCommand "atuin-daemon" { } ''
+                  mkdir -p $out/etc/services.d/atuindaemon
+                  ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
+                '';
+              in
+              buildMultiUserNixImage {
+                inherit pkgs;
+                name = "ghanix";
+                tag = "latest";
+                maxLayers = 111;
+                fromImage = sudoImage;
+                storeOwner = {
+                  uid = 1001;
+                  gid = 0;
+                  uname = "runner";
+                  gname = "wheel";
+                };
+                extraPkgs = with pkgs; [
+                  ps
+                  su
+                  sudo
+                  tree
+                  vim
+                ];
+                extraContents = [
+                  atuinDaemonService
+                  self'.legacyPackages.homeConfigurations.runner.activationPackage
+                ];
+                extraFakeRootCommands = ''
+                  chown -R runner:wheel /nix
+                '';
+                nixConf = {
+                  allowed-users = [ "*" ];
+                  experimental-features = [ "nix-command" "flakes" ];
+                  max-jobs = [ "auto" ];
+                  sandbox = "false";
+                  trusted-users = [ "root" "jovyan" "runner" ];
+                };
+                cmd = [
+                  "bash"
+                  "-c"
+                  "su runner -c /activate && su runner && bash"
+                ];
               };
-              extraPkgs = with pkgs; [
-                ps
-                su
-                sudo
-                tree
-                vim
-              ];
-              extraContents = [
-                self'.legacyPackages.homeConfigurations.runner.activationPackage
-              ];
-              extraFakeRootCommands = ''
-                chown -R runner:wheel /nix
-              '';
-              nixConf = {
-                allowed-users = [ "*" ];
-                experimental-features = [ "nix-command" "flakes" ];
-                max-jobs = [ "auto" ];
-                sandbox = "false";
-                trusted-users = [ "root" "jovyan" "runner" ];
-              };
-              cmd = [
-                "bash"
-                "-c"
-                "su runner -c /activate && su runner && bash"
-              ];
-            };
 
             codenix =
               let
@@ -447,6 +460,15 @@
                   mkdir -p $out/etc/services.d/codeserver
                   ln -s ${codeServerScript} $out/etc/services.d/codeserver/run
                 '';
+                atuinDaemonScript = pkgs.writeScript "atuin-daemon" ''
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printf "running atuin daemon\n\n"
+                  exec ${pkgs.atuin}/bin/atuin daemon
+                '';
+                atuinDaemonService = pkgs.runCommand "atuin-daemon" { } ''
+                  mkdir -p $out/etc/services.d/atuindaemon
+                  ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
+                '';
               in
               buildMultiUserNixImage {
                 inherit pkgs storeOwner;
@@ -464,6 +486,7 @@
                 extraContents = [
                   activateUserHomeService
                   installCodeServerExtensionsService
+                  atuinDaemonService
                   codeServerService
                   self'.legacyPackages.homeConfigurations.${username}.activationPackage
                 ];
@@ -558,6 +581,15 @@
                   mkdir -p $out/etc/services.d/jupyterlab
                   ln -s ${jupyterServerScript} $out/etc/services.d/jupyterlab/run
                 '';
+                atuinDaemonScript = pkgs.writeScript "atuin-daemon" ''
+                  #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
+                  printf "running atuin daemon\n\n"
+                  exec ${pkgs.atuin}/bin/atuin daemon
+                '';
+                atuinDaemonService = pkgs.runCommand "atuin-daemon" { } ''
+                  mkdir -p $out/etc/services.d/atuindaemon
+                  ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
+                '';
               in
               buildMultiUserNixImage {
                 inherit pkgs storeOwner;
@@ -574,6 +606,7 @@
                 ] ++ [ python ];
                 extraContents = [
                   activateUserHomeService
+                  atuinDaemonService
                   jupyterServerService
                   self'.legacyPackages.homeConfigurations.${username}.activationPackage
                 ];
