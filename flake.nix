@@ -285,7 +285,7 @@
             # Enable 'nix run .#container to build an OCI tarball with the 
             # home configuration activated.
             container = nixpod;
-            nixpod = pkgs.dockerTools.buildLayeredImage {
+            nixpod = pkgs.dockerTools.buildLayeredImageWithNixDb {
               name = "nixpod";
               tag = "latest";
               created = "now";
