@@ -269,6 +269,7 @@
                 sudo
                 tree
                 vim
+                zstd
               ];
               nixConf = {
                 allowed-users = [ "*" ];
@@ -288,6 +289,7 @@
               created = "now";
               fromImage = nixImage;
               maxLayers = 111;
+              compressor = "zstd";
               contents = with pkgs; [
                 default
               ];
