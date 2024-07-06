@@ -367,7 +367,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   inherit (storeOwner) uid gid uname gname;
 
   contents = [ baseSystem ] ++ extraContents;
-
+  compressor = "zstd";
   extraCommands = ''
     rm -rf nix-support
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
