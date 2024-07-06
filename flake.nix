@@ -235,6 +235,7 @@
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
               tag = "latest";
+              compressor = "zstd";
 
               copyToRoot = pkgs.pam;
 
@@ -249,6 +250,7 @@
               name = "suimage";
               tag = "latest";
               fromImage = pamImage;
+              compressor = "zstd";
 
               copyToRoot = pkgs.su;
             };
