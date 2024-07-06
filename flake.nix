@@ -235,7 +235,7 @@
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
               tag = "latest";
-              compressor = "zstd";
+              compressor = "none";
 
               copyToRoot = pkgs.pam;
 
@@ -250,7 +250,7 @@
               name = "suimage";
               tag = "latest";
               fromImage = pamImage;
-              compressor = "zstd";
+              compressor = "none";
 
               copyToRoot = pkgs.su;
             };
@@ -265,13 +265,13 @@
               tag = "latest";
               maxLayers = 70;
               fromImage = sudoImage;
+              compressor = "none";
               extraPkgs = with pkgs; [
                 ps
                 su
                 sudo
                 tree
                 vim
-                zstd
               ];
               nixConf = {
                 allowed-users = [ "*" ];

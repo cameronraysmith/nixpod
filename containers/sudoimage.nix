@@ -5,7 +5,7 @@ pkgs.dockerTools.buildImage {
   name = "sudoimage";
   tag = "latest";
   fromImage = suImage;
-  compressor = "zstd";
+  compressor = "none";
 
   copyToRoot = pkgs.sudo;
 
