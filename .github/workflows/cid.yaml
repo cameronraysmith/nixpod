@@ -114,6 +114,12 @@ jobs:
       group: nixci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq zstd
+          sudo apt-get clean
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@75ffa7fc743135e1db864b699d78402ccc8ed988 # ratchet:DeterminateSystems/nix-installer-action@main
@@ -165,6 +171,13 @@ jobs:
           remove-android: "true"
           remove-codeql: "true"
           remove-docker-images: "true"
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq zstd
+          sudo apt-get clean
                   
       - name: Setup build environment
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # ratchet:actions/checkout@v4
@@ -362,6 +375,13 @@ jobs:
         with:
           ref: ${{ needs.release.outputs.git-tag }}
         
+      - name: Install dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq zstd
+          sudo apt-get clean
+
       - name: Build ${{ matrix.image }} image
         uses: ./.github/actions/build-nix-image
         with:
