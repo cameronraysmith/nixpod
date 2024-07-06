@@ -15,6 +15,7 @@
 , nixConf ? { }
 , flake-registry ? null
 , fromImage ? null
+, compressor ? "zstd"
 , extraContents ? [ ]
 , extraExtraCommands ? ""
 , extraFakeRootCommands ? ""
@@ -367,7 +368,7 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
   inherit (storeOwner) uid gid uname gname;
 
   contents = [ baseSystem ] ++ extraContents;
-  compressor = "zstd";
+  compressor = compressor;
   extraCommands = ''
     rm -rf nix-support
     ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
