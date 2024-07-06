@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.4.5](https://github.com/cameronraysmith/nixpod/compare/v0.4.4...v0.4.5) (2024-07-06)
+
+
+### Bug Fixes
+
+* **cid:** install system dependencies ([2b577b3](https://github.com/cameronraysmith/nixpod/commit/2b577b3070c240a9657c2d23e38dcfc07fcee0cf))
+* **containers:** compress layers with zstd ([f8dc29c](https://github.com/cameronraysmith/nixpod/commit/f8dc29c79d0e55cb82b55522eb8d259c74c43f4b))
+* **containers:** parameterize compressor ([4b7b354](https://github.com/cameronraysmith/nixpod/commit/4b7b3547d0beed9664f3895277de058a7194361b))
+* **flake:** do not compress base images ([38a1bed](https://github.com/cameronraysmith/nixpod/commit/38a1bedcd13b12ddcc921fb233dd3a4ed6cbb3e9))
+* **flake:** make nixpod with nix db ([071f601](https://github.com/cameronraysmith/nixpod/commit/071f60181acfb43d81b5e24cbc1696cd5019300b))
+* **flake:** make zstd available to builder ([1eefb0f](https://github.com/cameronraysmith/nixpod/commit/1eefb0f2c718785def008380fbabb83e4330edca))
+* **flake:** use zstd to compress all inherited images ([1ec7f2f](https://github.com/cameronraysmith/nixpod/commit/1ec7f2f7e57b65ca72a9940657b37e6d7d5335b8))
+
 ## [0.4.4](https://github.com/cameronraysmith/nixpod/compare/v0.4.3...v0.4.4) (2024-07-03)
 
 
