@@ -28,6 +28,9 @@ inputs:
   cachixAuthToken:
     description: "Cachix authentication token"
     required: true
+  artifactRegistryPassword:
+    description: "Password for the Artifact Registry"
+    required: true
 
 runs:
   using: "composite"
@@ -128,6 +131,7 @@ runs:
         GH_TOKEN: ${{ github.token }}
         # GCP_PROJECT_ID: ${{ inputs.gcpProjectId }}
         # ENCODED_GAR_SA_CREDS: ${{ inputs.encodedGARCredentials }}
+        ARTIFACT_REGISTRY_PASSWORD: ${{ inputs.artifactRegistryPassword }}
         VERSION: ${{ inputs.releaseVersion }}
 
     - name: Check Nix Store usage
