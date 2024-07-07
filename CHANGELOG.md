@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.7](https://github.com/cameronraysmith/nixpod/compare/v0.4.6...v0.4.7) (2024-07-07)
+
+
+### Bug Fixes
+
+* **containers:** disable sudoImage runAsRoot ([45ce23b](https://github.com/cameronraysmith/nixpod/commit/45ce23b9ff7e2376608d4211938144e0a714d328))
+* **flake:** disable pamImage runAsRoot ([ba4ceb4](https://github.com/cameronraysmith/nixpod/commit/ba4ceb407ebbbb985b03beab3597f9f3cac393ed))
+
 ## [0.4.6](https://github.com/cameronraysmith/nixpod/compare/v0.4.5...v0.4.6) (2024-07-07)
 
 
