@@ -8,3 +8,4 @@ providers:
       # $ just create-and-populate-separate-secrets google.env
       keys:
         CACHIX_AUTH_TOKEN: ==
+        ARTIFACT_REGISTRY_PASSWORD: ==
