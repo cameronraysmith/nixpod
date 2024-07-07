@@ -69,6 +69,7 @@
           # };
           users = [ "root" "jovyan" "runner" ];
           myUserName = "runner";
+          githubOrg = "cameronraysmith";
           myUserUid = "1001";
           myUserGid = "121";
           includedSystems =
@@ -117,7 +118,7 @@
               registries = {
                 "ghcr.io" = {
                   enable = true;
-                  repo = "cameronraysmith/nixpod";
+                  repo = "${githubOrg}/nixpod";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
@@ -143,7 +144,7 @@
               registries = {
                 "ghcr.io" = {
                   enable = true;
-                  repo = "cameronraysmith/ghanix";
+                  repo = "${githubOrg}/ghanix";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
@@ -169,7 +170,7 @@
               registries = {
                 "ghcr.io" = {
                   enable = true;
-                  repo = "cameronraysmith/codenix";
+                  repo = "${githubOrg}/codenix";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
@@ -195,7 +196,7 @@
               registries = {
                 "ghcr.io" = {
                   enable = true;
-                  repo = "cameronraysmith/jupnix";
+                  repo = "${githubOrg}/jupnix";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
