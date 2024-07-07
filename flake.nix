@@ -122,6 +122,12 @@
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
+                "cr.cluster.pyrovelocity.net" = {
+                  enable = true;
+                  repo = "${githubOrg}/nixpod";
+                  username = "admin";
+                  password = "$ARTIFACT_REGISTRY_PASSWORD";
+                };
               };
               version = builtins.getEnv "VERSION";
               images = builtins.map (sys: self.packages.${sys}.container) includedSystems;
@@ -174,6 +180,12 @@
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
                 };
+                "cr.cluster.pyrovelocity.net" = {
+                  enable = true;
+                  repo = "${githubOrg}/codenix";
+                  username = "admin";
+                  password = "$ARTIFACT_REGISTRY_PASSWORD";
+                };
               };
               version = builtins.getEnv "VERSION";
               images = builtins.map (sys: self.packages.${sys}.codenix) includedSystems;
@@ -199,6 +211,12 @@
                   repo = "${githubOrg}/jupnix";
                   username = builtins.getEnv "GITHUB_ACTOR";
                   password = "$GH_TOKEN";
+                };
+                "cr.cluster.pyrovelocity.net" = {
+                  enable = true;
+                  repo = "${githubOrg}/jupnix";
+                  username = "admin";
+                  password = "$ARTIFACT_REGISTRY_PASSWORD";
                 };
               };
               version = builtins.getEnv "VERSION";
