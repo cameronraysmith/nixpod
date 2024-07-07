@@ -239,11 +239,11 @@
 
               copyToRoot = pkgs.pam;
 
-              runAsRoot = ''
-                #!${pkgs.runtimeShell}
+              # runAsRoot = ''
+              #   #!${pkgs.runtimeShell}
 
-                mkdir -p /etc/pam.d
-              '';
+              #   mkdir -p /etc/pam.d
+              # '';
             };
 
             suImage = pkgs.dockerTools.buildImage {
@@ -255,8 +255,17 @@
               copyToRoot = pkgs.su;
             };
 
+            preSudoImage = pkgs.dockerTools.buildImage {
+              name = "presudoimage";
+              tag = "latest";
+              fromImage = pamImage;
+              compressor = "none";
+
+              copyToRoot = pkgs.sudo;
+            };
+
             sudoImage = import ./containers/sudoimage.nix {
-              inherit pkgs suImage;
+              inherit pkgs preSudoImage;
             };
 
             nixpod = buildMultiUserNixImage {
