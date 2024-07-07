@@ -259,7 +259,8 @@ ghsecrets repo="cameronraysmith/nixpod":
   PAGER=cat gh secret list --repo={{ repo }}
   @echo
   eval "$(teller sh)" && \
-  gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN"
+  gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN" && \
+  gh secret set ARTIFACT_REGISTRY_PASSWORD --repo={{ repo }} --body="$ARTIFACT_REGISTRY_PASSWORD"
   @echo
   @echo secrets after updates:
   @echo
