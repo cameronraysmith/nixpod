@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.6](https://github.com/cameronraysmith/nixpod/compare/v0.4.5...v0.4.6) (2024-07-07)
+
+
+### Bug Fixes
+
+* **flake:** remove unused intermediate nixImage ([ad81280](https://github.com/cameronraysmith/nixpod/commit/ad812801d63b9ff7259b226d690c88730243dc0b))
+
 ## [0.4.5](https://github.com/cameronraysmith/nixpod/compare/v0.4.4...v0.4.5) (2024-07-06)
 
 
