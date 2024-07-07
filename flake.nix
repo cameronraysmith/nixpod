@@ -259,13 +259,16 @@
               inherit pkgs suImage;
             };
 
-            nixImage = buildMultiUserNixImage {
+            nixpod = buildMultiUserNixImage {
               inherit pkgs;
-              name = "multiusernix";
+              name = "nixpod";
               tag = "latest";
-              maxLayers = 70;
+              maxLayers = 111;
               fromImage = sudoImage;
-              compressor = "none";
+              compressor = "zstd";
+              extraContents = with pkgs; [
+                default
+              ];
               extraPkgs = with pkgs; [
                 ps
                 su
@@ -280,29 +283,16 @@
                 sandbox = "false";
                 trusted-users = [ "root" "jovyan" "runner" ];
               };
+              entrypoint = [ "/opt/scripts/entrypoint.sh" ];
+              cmd = [ "/root/.nix-profile/bin/bash" ];
+              extraEnv = [
+                #   "NIX_REMOTE=daemon"
+              ];
             };
 
             # Enable 'nix run .#container to build an OCI tarball with the 
             # home configuration activated.
             container = nixpod;
-            nixpod = pkgs.dockerTools.buildLayeredImageWithNixDb {
-              name = "nixpod";
-              tag = "latest";
-              created = "now";
-              fromImage = nixImage;
-              maxLayers = 111;
-              compressor = "zstd";
-              contents = with pkgs; [
-                default
-              ];
-              config = {
-                Entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-                Cmd = [ "/root/.nix-profile/bin/bash" ];
-                Env = [
-                  #   "NIX_REMOTE=daemon"
-                ];
-              };
-            };
 
             ghanix =
               let
