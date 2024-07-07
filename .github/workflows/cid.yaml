@@ -194,6 +194,7 @@ jobs:
           releaseVersion: ""
           cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
           cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          artifactRegistryPassword: ${{ secrets.ARTIFACT_REGISTRY_PASSWORD }}
           # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
           # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
 
@@ -392,6 +393,7 @@ jobs:
           releaseVersion: ${{ needs.release.outputs.version }}
           cachixCacheName: ${{ vars.CACHIX_CACHE_NAME }}
           cachixAuthToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          artifactRegistryPassword: ${{ secrets.ARTIFACT_REGISTRY_PASSWORD }}
           # gcpProjectId: ${{ secrets.GCP_PROJECT_ID }}
           # encodedGARCredentials: ${{ secrets.ENCODED_GAR_SA_CREDS }}
 
