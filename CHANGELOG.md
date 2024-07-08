@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.8](https://github.com/cameronraysmith/nixpod/compare/v0.4.7...v0.4.8) (2024-07-08)
+
+
+### Bug Fixes
+
+* **cid:** provide artifactRegistryPassword to build-nix-image action ([861e816](https://github.com/cameronraysmith/nixpod/commit/861e8163dd53de6d41780a088ba4743a65742efe))
+
 ## [0.4.7](https://github.com/cameronraysmith/nixpod/compare/v0.4.6...v0.4.7) (2024-07-07)
 
 
