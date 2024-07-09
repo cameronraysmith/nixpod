@@ -19,11 +19,16 @@
     # Publishing
     asciinema
 
+    # Fonts
+    noto-fonts-emoji
+    fira-code
+    cascadia-code
+    (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
+
     # Dev
     gh
     just
     kubectl
-    (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
     tmate
     vim
   ];
