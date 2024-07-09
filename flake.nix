@@ -13,7 +13,7 @@
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-flake.url = "github:srid/nixos-flake";
     flocken = {
-      url = "github:cameronraysmith/flocken/crane-tag";
+      url = "github:mirkolenz/flocken/v2";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.flake-parts.follows = "flake-parts";
       inputs.systems.follows = "systems";
