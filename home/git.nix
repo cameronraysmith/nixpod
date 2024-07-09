@@ -11,7 +11,7 @@
       core.editor = "nvim";
       credential.helper = "store --file ~/.git-credentials";
       color.ui = true;
-      commit.gpgsign = true;
+      commit.gpgsign = false;
       diff.colorMoved = "zebra";
       fetch.prune = true;
       format.signoff = true;
@@ -22,9 +22,13 @@
     };
     aliases = {
       a = "add";
+      br = "branch";
+      bra = "branch -a";
       c = "commit";
       ca = "commit --amend";
       can = "commit --amend --no-edit";
+      cavm = "commit -a -v -m";
+      cfg = "config --list";
       cl = "clone";
       cm = "commit -m";
       co = "checkout";
