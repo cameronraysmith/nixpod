@@ -421,6 +421,11 @@
 
                   eval "''${install_command} --force"
 
+                  tmpdir=$(mktemp -d) && \
+                  curl --proto '=https' --tlsv1.2 -sSfL -o "$tmpdir/vscode-just-syntax-0.3.0.vsix" https://github.com/nefrob/vscode-just/releases/download/0.3.0/vscode-just-syntax-0.3.0.vsix && \
+                  code-server --install-extension "$tmpdir/vscode-just-syntax-0.3.0.vsix" && \
+                  rm -r "$tmpdir"
+
                   printf "Listing extensions after installation...\n\n"
                   code-server --list-extensions --show-versions
 
