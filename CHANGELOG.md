@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.4.9-beta.2](https://github.com/cameronraysmith/nixpod/compare/v0.4.9-beta.1...v0.4.9-beta.2) (2024-07-09)
+
+
+### Bug Fixes
+
+* **flake:** update code-server extensions ([eb8bfb6](https://github.com/cameronraysmith/nixpod/commit/eb8bfb6549ec68b9854d8318503e4ea924991fbe))
+* **flake:** update shell path ([134068a](https://github.com/cameronraysmith/nixpod/commit/134068a7da54b132461a8b7c6db554eb3d3eddee))
+* **terminal:** update fonts ([8007937](https://github.com/cameronraysmith/nixpod/commit/8007937170e28aaec673a0f8ec618d473dc6303c))
+
 ## [0.4.9-beta.1](https://github.com/cameronraysmith/nixpod/compare/v0.4.8...v0.4.9-beta.1) (2024-07-09)
 
 
