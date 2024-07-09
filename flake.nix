@@ -293,8 +293,7 @@
                 sandbox = "false";
                 trusted-users = [ "root" "jovyan" "runner" ];
               };
-              entrypoint = [ "/opt/scripts/entrypoint.sh" ];
-              cmd = [ "/root/.nix-profile/bin/bash" ];
+              entrypoint = [ "/root/.nix-profile/bin/bash" ];
               extraEnv = [
                 #   "NIX_REMOTE=daemon"
               ];
