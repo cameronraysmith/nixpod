@@ -463,7 +463,7 @@
                 codeServerScript = pkgs.writeScript "code-service-run" ''
                   #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
                   printf "code environment\n\n"
-                  export SHELL=/nix/var/nix/profiles/default/bin/zsh
+                  export SHELL=${pkgs.zsh}/bin/zsh
                   printenv | sort
                   printf "====================\n\n"
                   printf "Starting code-server with NB_PREFIX=''${NB_PREFIX}\n\n"
@@ -571,7 +571,7 @@
                   #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
                   printf "jupyter environment\n\n"
                   export JUPYTER_RUNTIME_DIR="/tmp/jupyter_runtime"
-                  export SHELL=/nix/var/nix/profiles/default/bin/zsh
+                  export SHELL=${pkgs.zsh}/bin/zsh
                   printenv | sort
                   printf "====================\n\n"
                   printf "Starting jupyterlab with NB_PREFIX=''${NB_PREFIX}\n\n"
@@ -586,7 +586,7 @@
                     --ServerApp.password="" \
                     --ServerApp.allow_origin="*" \
                     --ServerApp.allow_remote_access=True \
-                    --ServerApp.terminado_settings="shell_command=['/nix/var/nix/profiles/default/bin/zsh']" \
+                    --ServerApp.terminado_settings="shell_command=['${pkgs.zsh}/bin/zsh']" \
                     --ServerApp.authenticate_prometheus=False \
                     --ServerApp.base_url="''${NB_PREFIX}"
                 '';
