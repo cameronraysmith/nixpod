@@ -46,16 +46,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1720385848,
-        "narHash": "sha256-a3t3eEjrMFU2bKURVekCLGIK4vfRo+/gGLHCG5lG38k=",
-        "owner": "cameronraysmith",
+        "lastModified": 1720509369,
+        "narHash": "sha256-/r40a79ibtWwB1R292MbRRv487M9UWrp93tDwIr7Ek4=",
+        "owner": "mirkolenz",
         "repo": "flocken",
-        "rev": "3acd82f74aab397dc4ffcf580a71a9a980ba53dc",
+        "rev": "848f7edf90dcb9355d4817bd65117d6f6dd516fd",
         "type": "github"
       },
       "original": {
-        "owner": "cameronraysmith",
-        "ref": "crane-tag",
+        "owner": "mirkolenz",
+        "ref": "v2",
         "repo": "flocken",
         "type": "github"
       }
