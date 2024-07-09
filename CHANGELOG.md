@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.4.9](https://github.com/cameronraysmith/nixpod/compare/v0.4.8...v0.4.9) (2024-07-09)
+
+
+### Bug Fixes
+
+* **flake:** add vscode just extension ([79b6a59](https://github.com/cameronraysmith/nixpod/commit/79b6a5914c8c162c4be05deb86e90134ba83f3b1))
+* **flake:** reenable upstream flocken ([d2db56b](https://github.com/cameronraysmith/nixpod/commit/d2db56b7d3b208f6e00ceaf65c7b4fffee7385b1))
+* **flake:** remove unused cmd ([3f7ad8f](https://github.com/cameronraysmith/nixpod/commit/3f7ad8f2bc2db8d18fd18c941b901e97ef650fdc))
+* **flake:** set full path to SHELL ([fddd09c](https://github.com/cameronraysmith/nixpod/commit/fddd09ce04aa2c14253bc80bd7317548137ba1a7))
+* **flake:** update code-server extensions ([eb8bfb6](https://github.com/cameronraysmith/nixpod/commit/eb8bfb6549ec68b9854d8318503e4ea924991fbe))
+* **flake:** update shell path ([134068a](https://github.com/cameronraysmith/nixpod/commit/134068a7da54b132461a8b7c6db554eb3d3eddee))
+* **git:** disable gpgsign by default for unknown user ([ec26150](https://github.com/cameronraysmith/nixpod/commit/ec26150c199af3053d352b2726e82d092968e4d7))
+* **sudoimage:** remove unused comments ([3b2d654](https://github.com/cameronraysmith/nixpod/commit/3b2d654a8f57de1f323eac9aea6679f65257be83))
+* **terminal:** sync PATH for bash and zsh ([16b21a7](https://github.com/cameronraysmith/nixpod/commit/16b21a7399dd207be364e9b097a2f0174006f4d6))
+* **terminal:** update fonts ([8007937](https://github.com/cameronraysmith/nixpod/commit/8007937170e28aaec673a0f8ec618d473dc6303c))
+
 ## [0.4.9-beta.2](https://github.com/cameronraysmith/nixpod/compare/v0.4.9-beta.1...v0.4.9-beta.2) (2024-07-09)
 
 
