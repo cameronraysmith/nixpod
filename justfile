@@ -246,6 +246,7 @@ ghvars repo="cameronraysmith/nixpod":
   PAGER=cat gh variable list --repo={{ repo }}
   @echo
   gh variable set CACHIX_CACHE_NAME --repo={{ repo }} --body="$CACHIX_CACHE_NAME"
+  gh variable set FAST_FORWARD_ACTOR --repo={{ repo }} --body="$FAST_FORWARD_ACTOR"
   @echo
   @echo vars after updates:
   @echo
@@ -260,7 +261,8 @@ ghsecrets repo="cameronraysmith/nixpod":
   @echo
   eval "$(teller sh)" && \
   gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN" && \
-  gh secret set ARTIFACT_REGISTRY_PASSWORD --repo={{ repo }} --body="$ARTIFACT_REGISTRY_PASSWORD"
+  gh secret set ARTIFACT_REGISTRY_PASSWORD --repo={{ repo }} --body="$ARTIFACT_REGISTRY_PASSWORD" && \
+  gh secret set FAST_FORWARD_PAT --repo={{ repo }} --body="$FAST_FORWARD_PAT"
   @echo
   @echo secrets after updates:
   @echo
