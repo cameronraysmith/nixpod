@@ -304,12 +304,12 @@ populate-single-secret name path:
 # Populate each line of a dotenv-formatted file as a separate secret
 [group('secrets')]
 populate-separate-secrets path:
-  @while IFS= read -r line; do \
+  @grep -v '^[[:space:]]*#' {{path}} | while IFS= read -r line; do \
      KEY=$(echo $line | cut -d '=' -f 1); \
      VALUE=$(echo $line | cut -d '=' -f 2); \
      gcloud secrets create $KEY --replication-policy="automatic" --project {{gcp_project_id}} 2>/dev/null; \
      printf "$VALUE" | gcloud secrets versions add $KEY --data-file=- --project {{gcp_project_id}}; \
-   done < {{path}}
+   done
 
 # Complete process: Create a secret and populate it with the entire contents of a dotenv file
 [group('secrets')]
