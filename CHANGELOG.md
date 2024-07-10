@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.4.10](https://github.com/cameronraysmith/nixpod/compare/v0.4.9...v0.4.10) (2024-07-10)
+
+
+### Bug Fixes
+
+* **justfile:** add commands to set fast-forward variables ([e3a12ca](https://github.com/cameronraysmith/nixpod/commit/e3a12ca5e7cd2ac5cb17e3da3ff51cde01e55661))
+* **teller:** add reference to fast-forward pat ([ed9b0d1](https://github.com/cameronraysmith/nixpod/commit/ed9b0d1185c3af53d3bc8d2219c63def856885ec))
+
 ## [0.4.9](https://github.com/cameronraysmith/nixpod/compare/v0.4.8...v0.4.9) (2024-07-09)
 
 
