@@ -2,6 +2,11 @@ name: PR Fast-forward Merge
 on:
   issue_comment:
     types: [created, edited]
+
+env:
+  GITHUB_ACTOR: ${{ vars.FAST_FORWARD_ACTOR }}
+  GITHUB_TOKEN: ${{ secrets.FAST_FORWARD_PAT }}
+
 jobs:
   fast-forward:
     if: ${{ contains(github.event.comment.body, '/fast-forward') && github.event.issue.pull_request }}
