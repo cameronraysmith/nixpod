@@ -9,3 +9,4 @@ providers:
       keys:
         CACHIX_AUTH_TOKEN: ==
         ARTIFACT_REGISTRY_PASSWORD: ==
+        FAST_FORWARD_PAT: ==
