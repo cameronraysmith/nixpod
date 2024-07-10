@@ -75,7 +75,7 @@ runs:
       shell: bash
 
     - name: Build and push
-      uses: docker/build-push-action@2cdde995de11925a030ce8070c3d77a52ffcf1c0 # ratchet:docker/build-push-action@v5
+      uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6
       with:
         context: .
         file: ${{ inputs.containerfile-path }}
