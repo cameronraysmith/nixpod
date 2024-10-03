@@ -122,7 +122,7 @@ jobs:
           sudo apt-get clean
       - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@75ffa7fc743135e1db864b699d78402ccc8ed988 # ratchet:DeterminateSystems/nix-installer-action@main
+        uses: DeterminateSystems/nix-installer-action@b92f66560d6f97d6576405a7bae901ab57e72b6a # ratchet:DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
       # - name: Run the Magic Nix Cache
