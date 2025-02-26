@@ -147,7 +147,7 @@
             ghanixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
-                enableRegistry = false;
+                enableRegistry = true;
                 token = "$GH_TOKEN";
               };
               autoTags = {
@@ -155,14 +155,11 @@
               };
               registries = {
                 "ghcr.io" = {
-                  enable = true;
-                  repo = "${githubOrg}/ghanix";
-                  username = builtins.getEnv "GITHUB_ACTOR";
-                  password = "$GH_TOKEN";
+                  repo = lib.mkForce "${githubOrg}/ghanix";
                 };
               };
               version = builtins.getEnv "VERSION";
-              images = builtins.map (sys: self.packages.${sys}.ghanix) includedSystems;
+              imageFiles = builtins.map (sys: self.packages.${sys}.ghanix) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
@@ -173,7 +170,7 @@
             codenixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
-                enableRegistry = false;
+                enableRegistry = true;
                 token = "$GH_TOKEN";
               };
               autoTags = {
@@ -181,14 +178,11 @@
               };
               registries = {
                 "ghcr.io" = {
-                  enable = true;
-                  repo = "${githubOrg}/codenix";
-                  username = builtins.getEnv "GITHUB_ACTOR";
-                  password = "$GH_TOKEN";
+                  repo = lib.mkForce "${githubOrg}/codenix";
                 };
               };
               version = builtins.getEnv "VERSION";
-              images = builtins.map (sys: self.packages.${sys}.codenix) includedSystems;
+              imageFiles = builtins.map (sys: self.packages.${sys}.codenix) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
@@ -199,7 +193,7 @@
             jupnixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
-                enableRegistry = false;
+                enableRegistry = true;
                 token = "$GH_TOKEN";
               };
               autoTags = {
@@ -207,14 +201,11 @@
               };
               registries = {
                 "ghcr.io" = {
-                  enable = true;
-                  repo = "${githubOrg}/jupnix";
-                  username = builtins.getEnv "GITHUB_ACTOR";
-                  password = "$GH_TOKEN";
+                  repo = lib.mkForce "${githubOrg}/jupnix";
                 };
               };
               version = builtins.getEnv "VERSION";
-              images = builtins.map (sys: self.packages.${sys}.jupnix) includedSystems;
+              imageFiles = builtins.map (sys: self.packages.${sys}.jupnix) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
