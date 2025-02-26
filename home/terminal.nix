@@ -55,6 +55,7 @@
   fonts.fontconfig.enable = true;
   catppuccin.flavor = "mocha";
   catppuccin.enable = true;
+  catppuccin.starship.enable = true;
 
   programs = {
     autojump.enable = false;
