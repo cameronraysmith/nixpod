@@ -1,5 +1,25 @@
 # Changelog
 
+## [0.4.11](https://github.com/cameronraysmith/nixpod/compare/v0.4.10...v0.4.11) (2025-02-26)
+
+### Bug Fixes
+
+* **build-nix-image:** address Nix search path entry does not exist warning ([b7f12c3](https://github.com/cameronraysmith/nixpod/commit/b7f12c3499965bdca58d4e278c61311df5820cd1))
+* **build-nix-image:** address podman access failure ([2d4d7e6](https://github.com/cameronraysmith/nixpod/commit/2d4d7e62855a01336d46a240e3ca3f32f4be8fe9))
+* **build-nix-image:** disable debug ([c3a2464](https://github.com/cameronraysmith/nixpod/commit/c3a24640ee170a0154075c4ec912c63fa8678452))
+* **build-nix-image:** enable debug ([34e30fd](https://github.com/cameronraysmith/nixpod/commit/34e30fdb7bf0300d4f3a30bf8e289d1fc4023c09))
+* **cid:** disable build-nix-images matrix fail-fast ([92aa31c](https://github.com/cameronraysmith/nixpod/commit/92aa31c15b1932b32473c78582481e378ee1308a))
+* **cid:** install dependencies clobbered by ratchet ([ad123f5](https://github.com/cameronraysmith/nixpod/commit/ad123f55be5e8bdaa2015cffacbfdcd82129584d))
+* **cid:** skip-ci label even skips nixci ([ee69985](https://github.com/cameronraysmith/nixpod/commit/ee699852aef995fd5075a1f473025b922be932bd))
+* **flake:** disable zstd image compression ([dc48747](https://github.com/cameronraysmith/nixpod/commit/dc487479421bae03a6b92fa34e03bdae66d039b2))
+* **flake:** reenable nixpod zstd image compression ([87e1d69](https://github.com/cameronraysmith/nixpod/commit/87e1d698adb181740f248e6214cefb5aff375c3a))
+* **flake:** update all image Manifests ([76af441](https://github.com/cameronraysmith/nixpod/commit/76af4414c07508a3631236cf159f4909da8b7b3b))
+* **flake:** update use of flocken module system ([34a454f](https://github.com/cameronraysmith/nixpod/commit/34a454fefa8f0b6a7ba4de6ad7c7fb71466366ac))
+* **flake:** update use of flocken module system ([839407a](https://github.com/cameronraysmith/nixpod/commit/839407ae283efe9bba26376974149770eaaf19f6))
+* **flake:** use imageFiles instead of imageStreams ([cd2e584](https://github.com/cameronraysmith/nixpod/commit/cd2e584daec9cd38a45d4565940ae1bf9af1c037))
+* **home:** move starship configuration ([328ca46](https://github.com/cameronraysmith/nixpod/commit/328ca46a5d6b1409a0db70bfc43b8bf3b6a286b7))
+* **home:** update terminal font package reference ([d03109a](https://github.com/cameronraysmith/nixpod/commit/d03109a56303fa46a90634a2653d4886b0064d3c))
+
 ## [0.4.10](https://github.com/cameronraysmith/nixpod/compare/v0.4.9...v0.4.10) (2024-07-10)
 
 
