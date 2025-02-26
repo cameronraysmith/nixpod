@@ -287,7 +287,7 @@
               tag = "latest";
               maxLayers = 111;
               fromImage = sudoImage;
-              compressor = "zstd";
+              compressor = "none";
               extraContents = with pkgs; [
                 default
               ];
