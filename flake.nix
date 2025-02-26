@@ -136,7 +136,7 @@
                 };
               };
               version = builtins.getEnv "VERSION";
-              imageStreams = builtins.map (sys: self.packages.${sys}.container) includedSystems;
+              imageFiles = builtins.map (sys: self.packages.${sys}.container) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
