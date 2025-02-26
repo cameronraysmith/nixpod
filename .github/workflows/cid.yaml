@@ -158,6 +158,7 @@ jobs:
     strategy:
       matrix:
         image: [nixpod, codenix, ghanix, jupnix]
+      fail-fast: false
 
     steps:
       - name: Maximize build space
