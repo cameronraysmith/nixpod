@@ -9,7 +9,10 @@
         "cabal.project"
         "hie.yaml"
       ];
-      filetypes = [ "haskell" "lhaskell" ];
+      filetypes = [
+        "haskell"
+        "lhaskell"
+      ];
     };
 
     plugins = with pkgs.vimPlugins; [

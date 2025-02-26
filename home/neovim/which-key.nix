@@ -20,7 +20,6 @@
       # TODO: Don't know how to configure this correctly
       # nvim-whichkey-setup-lua
 
-
     ];
   };
 }

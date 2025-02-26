@@ -38,8 +38,9 @@
   };
 
   outputs =
-    inputs @ { self
-    , ...
+    inputs@{
+      self,
+      ...
     }:
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
@@ -48,7 +49,14 @@
         ./home
       ];
 
-      perSystem = { self', inputs', pkgs, system, ... }:
+      perSystem =
+        {
+          self',
+          inputs',
+          pkgs,
+          system,
+          ...
+        }:
         let
           # users = {
           #   root = {
@@ -67,7 +75,11 @@
           #     gid = "100";
           #   };
           # };
-          users = [ "root" "jovyan" "runner" ];
+          users = [
+            "root"
+            "jovyan"
+            "runner"
+          ];
           myUserName = "runner";
           githubOrg = "cameronraysmith";
           myUserUid = "1001";
@@ -76,34 +88,33 @@
             let
               envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
             in
-            if envVar == ""
-            then [ "x86_64-linux" "aarch64-linux" ]
-            else builtins.filter (sys: sys != "") (builtins.split " " envVar);
+            if envVar == "" then
+              [
+                "x86_64-linux"
+                "aarch64-linux"
+              ]
+            else
+              builtins.filter (sys: sys != "") (builtins.split " " envVar);
           buildMultiUserNixImage = import ./containers/nix.nix;
         in
         {
           legacyPackages = {
             # Make home-manager configuration
             # homeConfigurations.${myUserName} = homeConfig;
-            homeConfigurations = builtins.listToAttrs (map
-              (user: {
+            homeConfigurations = builtins.listToAttrs (
+              map (user: {
                 name = user;
-                value = self.nixos-flake.lib.mkHomeConfiguration
-                  pkgs
-                  ({ pkgs, ... }: {
+                value = self.nixos-flake.lib.mkHomeConfiguration pkgs (
+                  { pkgs, ... }:
+                  {
                     imports = [ self.homeModules.default ];
                     home.username = user;
                     home.homeDirectory =
-                      if user == "root"
-                      then "/root"
-                      else "/${
-                      if pkgs.stdenv.isDarwin
-                      then "Users"
-                      else "home"
-                      }/${user}";
-                  });
-              })
-              users);
+                      if user == "root" then "/root" else "/${if pkgs.stdenv.isDarwin then "Users" else "home"}/${user}";
+                  }
+                );
+              }) users
+            );
 
             # Combine OCI json for includedSystems and push to registries
             nixpodManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
@@ -212,8 +223,8 @@
             };
           };
 
-          # Enable 'nix fmt' to lint with nixpkgs-fmt
-          formatter = pkgs.nixpkgs-fmt;
+          # Enable 'nix fmt' to lint with nixfmt-rfc-style
+          formatter = pkgs.nixfmt-rfc-style;
 
           # Enable 'nix run' to activate home-manager.
           apps.default.program = self'.packages.activate-home;
@@ -289,10 +300,17 @@
               ];
               nixConf = {
                 allowed-users = [ "*" ];
-                experimental-features = [ "nix-command" "flakes" ];
+                experimental-features = [
+                  "nix-command"
+                  "flakes"
+                ];
                 max-jobs = [ "auto" ];
                 sandbox = "false";
-                trusted-users = [ "root" "jovyan" "runner" ];
+                trusted-users = [
+                  "root"
+                  "jovyan"
+                  "runner"
+                ];
               };
               entrypoint = [ "/root/.nix-profile/bin/bash" ];
               extraEnv = [
@@ -300,7 +318,7 @@
               ];
             };
 
-            # Enable 'nix run .#container to build an OCI tarball with the 
+            # Enable 'nix run .#container to build an OCI tarball with the
             # home configuration activated.
             container = nixpod;
 
@@ -344,10 +362,17 @@
                 '';
                 nixConf = {
                   allowed-users = [ "*" ];
-                  experimental-features = [ "nix-command" "flakes" ];
+                  experimental-features = [
+                    "nix-command"
+                    "flakes"
+                  ];
                   max-jobs = [ "auto" ];
                   sandbox = "false";
-                  trusted-users = [ "root" "jovyan" "runner" ];
+                  trusted-users = [
+                    "root"
+                    "jovyan"
+                    "runner"
+                  ];
                 };
                 cmd = [
                   "bash"
@@ -358,7 +383,12 @@
 
             codenix =
               let
-                python = pkgs.python3.withPackages (ps: with ps; [ pip ipykernel ]);
+                python = pkgs.python3.withPackages (
+                  ps: with ps; [
+                    pip
+                    ipykernel
+                  ]
+                );
                 username = "jovyan";
                 storeOwner = {
                   uid = 1000;
@@ -498,13 +528,16 @@
                 tag = "latest";
                 maxLayers = 111;
                 fromImage = sudoImage;
-                extraPkgs = with pkgs; [
-                  code-server
-                  ps
-                  su
-                  sudo
-                  zsh
-                ] ++ [ python ];
+                extraPkgs =
+                  with pkgs;
+                  [
+                    code-server
+                    ps
+                    su
+                    sudo
+                    zsh
+                  ]
+                  ++ [ python ];
                 extraContents = [
                   activateUserHomeService
                   installCodeServerExtensionsService
@@ -517,10 +550,17 @@
                 '';
                 nixConf = {
                   allowed-users = [ "*" ];
-                  experimental-features = [ "nix-command" "flakes" ];
+                  experimental-features = [
+                    "nix-command"
+                    "flakes"
+                  ];
                   max-jobs = [ "auto" ];
                   sandbox = "false";
-                  trusted-users = [ "root" "jovyan" "runner" ];
+                  trusted-users = [
+                    "root"
+                    "jovyan"
+                    "runner"
+                  ];
                 };
                 extraEnv = [
                   "NB_USER=${username}"
@@ -536,7 +576,12 @@
 
             jupnix =
               let
-                python = pkgs.python3.withPackages (ps: with ps; [ pip jupyterlab ]);
+                python = pkgs.python3.withPackages (
+                  ps: with ps; [
+                    pip
+                    jupyterlab
+                  ]
+                );
                 username = "jovyan";
                 storeOwner = {
                   uid = 1000;
@@ -619,13 +664,16 @@
                 tag = "latest";
                 maxLayers = 111;
                 fromImage = sudoImage;
-                extraPkgs = with pkgs; [
-                  musl
-                  ps
-                  su
-                  sudo
-                  zsh
-                ] ++ [ python ];
+                extraPkgs =
+                  with pkgs;
+                  [
+                    musl
+                    ps
+                    su
+                    sudo
+                    zsh
+                  ]
+                  ++ [ python ];
                 extraContents = [
                   activateUserHomeService
                   atuinDaemonService
@@ -638,10 +686,17 @@
                 '';
                 nixConf = {
                   allowed-users = [ "*" ];
-                  experimental-features = [ "nix-command" "flakes" ];
+                  experimental-features = [
+                    "nix-command"
+                    "flakes"
+                  ];
                   max-jobs = [ "auto" ];
                   sandbox = "false";
-                  trusted-users = [ "root" "jovyan" "runner" ];
+                  trusted-users = [
+                    "root"
+                    "jovyan"
+                    "runner"
+                  ];
                 };
                 extraEnv = [
                   "NB_USER=${username}"

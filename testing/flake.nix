@@ -3,9 +3,11 @@
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-  outputs = { self, nixpkgs }:
+  outputs =
+    { self, nixpkgs }:
     let
-      buildImageOnTopOfDebian = system:
+      buildImageOnTopOfDebian =
+        system:
         let
 
           pkgs = nixpkgs.legacyPackages.${system};
@@ -18,7 +20,6 @@
             finalImageName = "debian";
             finalImageTag = "stable-slim";
           };
-
 
           dockerImage = pkgs.dockerTools.buildLayeredImage {
             name = "trynix";
@@ -53,11 +54,11 @@
               # Set up the environment with the right tools available
               export PATH=${pkgs.curl}/bin:$PATH
               export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
-  
+
               # Fetch the installer binary
               curl --proto '=https' --tlsv1.2 -sSf -o nix-installer \
               https://install.determinate.systems/nix/nix-installer-${system}
-  
+
               # Make it executable
               chmod +x nix-installer
 
@@ -78,15 +79,12 @@
     };
 }
 
-
-
-
 # {
 #   description = "Docker image with nix";
 
 #   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-#   outputs = { self, nixpkgs }: 
+#   outputs = { self, nixpkgs }:
 #     let
 #       buildImage = system: let
 #         pkgs = nixpkgs.legacyPackages.${system};
