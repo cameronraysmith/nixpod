@@ -176,7 +176,10 @@ jobs:
 
       - name: Install dependencies
         shell: bash
-        run: "sudo apt-get update\nsudo apt-get install -yq zstd\nsudo apt-get clean\n        \n"
+        run: |
+          sudo apt-get update
+          sudo apt-get install -yq zstd
+          sudo apt-get clean
       - name: Setup build environment
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
         with:
