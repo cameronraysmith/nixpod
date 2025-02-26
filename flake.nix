@@ -110,6 +110,7 @@
               github = {
                 enable = true;
                 enableRegistry = false;
+                registry = "alt.ghcr.io";
                 token = "$GH_TOKEN";
               };
               autoTags = {
@@ -124,7 +125,7 @@
                 };
               };
               version = builtins.getEnv "VERSION";
-              images = builtins.map (sys: self.packages.${sys}.container) includedSystems;
+              imageStreams = builtins.map (sys: self.packages.${sys}.container) includedSystems;
               tags = [
                 (builtins.getEnv "GIT_SHA_SHORT")
                 (builtins.getEnv "GIT_SHA")
