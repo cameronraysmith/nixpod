@@ -126,6 +126,7 @@ runs:
         else
           if echo "$SKOPEO_OUTPUT" | grep -q 'manifest unknown'; then
             echo "Image $FQN_GIT_SHA does not exist. Building."
+            nix-channel --update
             ${{ inputs.nixCommand }}
           else
             echo "Failed to inspect image with error: $SKOPEO_OUTPUT"
