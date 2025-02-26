@@ -54,6 +54,7 @@
           self',
           inputs',
           pkgs,
+          lib,
           system,
           ...
         }:
@@ -120,8 +121,7 @@
             nixpodManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
               github = {
                 enable = true;
-                enableRegistry = false;
-                registry = "alt.ghcr.io";
+                enableRegistry = true;
                 token = "$GH_TOKEN";
               };
               autoTags = {
@@ -129,10 +129,10 @@
               };
               registries = {
                 "ghcr.io" = {
-                  enable = true;
-                  repo = "${githubOrg}/nixpod";
-                  username = builtins.getEnv "GITHUB_ACTOR";
-                  password = "$GH_TOKEN";
+                  # enable = lib.mkForce true;
+                  repo = lib.mkForce "${githubOrg}/nixpod";
+                  # username = builtins.getEnv "GITHUB_ACTOR";
+                  # password = "$GH_TOKEN";
                 };
               };
               version = builtins.getEnv "VERSION";
