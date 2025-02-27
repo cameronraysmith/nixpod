@@ -37,7 +37,7 @@ let
     [
       nix
       bashInteractive
-      coreutils-full
+      coreutils
       gnutar
       gzip
       gnugrep
