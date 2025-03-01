@@ -23,7 +23,12 @@
     noto-fonts-emoji
     fira-code
     cascadia-code
-    nerd-fonts.inconsolata
+    (
+      if builtins.hasAttr "nerd-fonts" pkgs then
+        pkgs.nerd-fonts.inconsolata
+      else
+        (pkgs.nerdfonts.override { fonts = [ "Inconsolata" ]; })
+    )
 
     # Dev
     gh
