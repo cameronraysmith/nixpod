@@ -63,7 +63,7 @@ runs:
         authToken: "${{ inputs.cachixAuthToken }}"
 
     - name: Set GitHub CI Slug Variables
-      uses: rlespinasse/github-slug-action@797d68864753cbceedc271349d402da4590e6302 # ratchet:rlespinasse/github-slug-action@v4
+      uses: rlespinasse/github-slug-action@c33ff65466c58d57e4d796f88bb1ae0ff26ee453 # v5
       with:
         prefix: CI_
 
