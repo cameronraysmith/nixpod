@@ -11,7 +11,7 @@
       };
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
-    nixos-flake.url = "github:srid/nixos-flake";
+    nixos-unified.url = "github:srid/nixos-unified/v0.2.0";
     flocken = {
       url = "github:mirkolenz/flocken/v2";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -45,7 +45,7 @@
     inputs.flake-parts.lib.mkFlake { inherit inputs; } {
       systems = import inputs.systems;
       imports = [
-        inputs.nixos-flake.flakeModule
+        inputs.nixos-unified.flakeModule
         ./home
       ];
 
@@ -105,7 +105,7 @@
             homeConfigurations = builtins.listToAttrs (
               map (user: {
                 name = user;
-                value = self.nixos-flake.lib.mkHomeConfiguration pkgs (
+                value = self.nixos-unified.lib.mkHomeConfiguration pkgs (
                   { pkgs, ... }:
                   {
                     imports = [ self.homeModules.default ];
@@ -703,11 +703,11 @@
           };
 
           # `nix run .#update` vs `nix flake update`
-          nixos-flake = {
+          nixos-unified = {
             primary-inputs = [
               "nixpkgs"
               "home-manager"
-              "nixos-flake"
+              "nixos-unified"
             ];
           };
         };
