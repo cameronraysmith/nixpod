@@ -115,6 +115,20 @@ jobs:
       group: nixci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
+      # https://github.com/easimon/maximize-build-space/blob/v10/action.yml#L121-L137
+      - name: Maximize build space
+        run: |
+          echo "Available storage before removing unused software:"
+          sudo df -h
+          echo
+          sudo rm -rf /usr/local/lib/android
+          echo "Available storage after removing android:"
+          sudo df -h
+          echo
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          echo "Available storage after removing codeql:"
+          sudo df -h
+          echo
       - name: Install dependencies
         shell: bash
         run: |
@@ -165,18 +179,20 @@ jobs:
       fail-fast: false
 
     steps:
+      # https://github.com/easimon/maximize-build-space/blob/v10/action.yml#L121-L137
       - name: Maximize build space
-        # uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # ratchet:easimon/maximize-build-space@v10
-        uses: cameronraysmith/maximize-build-space@fdf0c06b18d92be98aa64cb68ae4ea4c9bc4794d # ratchet:cameronraysmith/maximize-build-space@print-usage
-        with:
-          build-mount-path: /nix
-          build-mount-path-ownership: "root:root"
-          root-reserve-mb: 34816
-          swap-size-mb: 1024
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
+        run: |
+          echo "Available storage before removing unused software:"
+          sudo df -h
+          echo
+          sudo rm -rf /usr/local/lib/android
+          echo "Available storage after removing android:"
+          sudo df -h
+          echo
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          echo "Available storage after removing codeql:"
+          sudo df -h
+          echo
 
       - name: Install dependencies
         shell: bash
@@ -368,19 +384,20 @@ jobs:
 
         image: [nixpod, codenix, ghanix, jupnix]
     steps:
+      # https://github.com/easimon/maximize-build-space/blob/v10/action.yml#L121-L137
       - name: Maximize build space
-
-        # uses: easimon/maximize-build-space@fc881a613ad2a34aca9c9624518214ebc21dfc0c # ratchet:easimon/maximize-build-space@v10
-        uses: cameronraysmith/maximize-build-space@fdf0c06b18d92be98aa64cb68ae4ea4c9bc4794d # ratchet:cameronraysmith/maximize-build-space@print-usage
-        with:
-          build-mount-path: /nix
-          build-mount-path-ownership: "root:root"
-          root-reserve-mb: 34816
-          swap-size-mb: 1024
-          remove-dotnet: "true"
-          remove-android: "true"
-          remove-codeql: "true"
-          remove-docker-images: "true"
+        run: |
+          echo "Available storage before removing unused software:"
+          sudo df -h
+          echo
+          sudo rm -rf /usr/local/lib/android
+          echo "Available storage after removing android:"
+          sudo df -h
+          echo
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          echo "Available storage after removing codeql:"
+          sudo df -h
+          echo
       - name: Setup build environment
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
 
