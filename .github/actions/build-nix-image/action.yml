@@ -58,7 +58,7 @@ runs:
     #   uses: DeterminateSystems/magic-nix-cache-action@b46e247b898aa56e6d2d2e728dc6df6c84fdb738 # ratchet:DeterminateSystems/magic-nix-cache-action@v7
 
     - name: Setup Remote Nix Cache
-      uses: cachix/cachix-action@be5295a636153b6ad194d3245f78f8e0b78dc704 # ratchet:cachix/cachix-action@v15
+      uses: cachix/cachix-action@ad2ddac53f961de1989924296a1f236fcfbaa4fc # v15
       with:
         name: "${{ inputs.cachixCacheName }}"
         authToken: "${{ inputs.cachixAuthToken }}"
