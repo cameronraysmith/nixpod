@@ -103,18 +103,18 @@
         "type": "github"
       }
     },
-    "nixos-flake": {
+    "nixos-unified": {
       "locked": {
         "lastModified": 1718149389,
         "narHash": "sha256-Bom7owfn/piwRum+VmsRSGAjvnlhDEeE60IONzIQffs=",
         "owner": "srid",
-        "repo": "nixos-flake",
+        "repo": "nixos-unified",
         "rev": "c23ce31c707c3e4b699312ab9c80a4a003e893b1",
         "type": "github"
       },
       "original": {
         "owner": "srid",
-        "repo": "nixos-flake",
+        "repo": "nixos-unified",
         "type": "github"
       }
     },
@@ -169,7 +169,7 @@
         "flocken": "flocken",
         "home-manager": "home-manager",
         "nix-index-database": "nix-index-database",
-        "nixos-flake": "nixos-flake",
+        "nixos-unified": "nixos-unified",
         "nixpkgs": "nixpkgs_2",
         "systems": "systems"
       }
