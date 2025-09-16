@@ -142,7 +142,7 @@ jobs:
           extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
       # - name: Run the Magic Nix Cache
       #   uses: DeterminateSystems/magic-nix-cache-action@main
-      - uses: cachix/cachix-action@be5295a636153b6ad194d3245f78f8e0b78dc704 # ratchet:cachix/cachix-action@v15
+      - uses: cachix/cachix-action@0fc020193b5a1fa3ac4575aa3a7d3aa6a35435ad # v16
         continue-on-error: true
         with:
           name: "${{ vars.CACHIX_CACHE_NAME }}"
