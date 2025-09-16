@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.12](https://github.com/cameronraysmith/nixpod/compare/v0.4.11...v0.4.12) (2025-09-16)
+
+### Bug Fixes
+
+* **build-nix-image:** update dependency hashes ([93bcec1](https://github.com/cameronraysmith/nixpod/commit/93bcec12ca30994f7a8cf027def80ecb88c26945))
+* **cid:** disable build space max on nixci job ([763f1b8](https://github.com/cameronraysmith/nixpod/commit/763f1b86519be9ba4298838dfbd997a14af07c05))
+* **cid:** nixci -> om ci ([d222ff9](https://github.com/cameronraysmith/nixpod/commit/d222ff91a97b9da863724daf6597cf4802c9c95c))
+* **cid:** profile install -> add ([5684dbd](https://github.com/cameronraysmith/nixpod/commit/5684dbd42f04482b809e7f07adef582125e3479e))
+* **cid:** switch to manual build space opt ([fb09448](https://github.com/cameronraysmith/nixpod/commit/fb09448ece4ca1fedd023f184860c6ee93a6ab76))
+* **cid:** update dependency hashes ([5e1d1e7](https://github.com/cameronraysmith/nixpod/commit/5e1d1e75a94a0d1217f80ff1560d35f8e69ad1e3))
+* **flake:** pin nixos-unified/c23ce31 ([95afc8d](https://github.com/cameronraysmith/nixpod/commit/95afc8de2e7433311d1117a634477db53592cd54))
+* **flake:** pin nixos-unified/c23ce31 ([1d4c03f](https://github.com/cameronraysmith/nixpod/commit/1d4c03f29c030f9df28222e5f7d3036f5320551a))
+* **flake:** rename nixos-flake -> nixos-unified/v0.2.0 ([8d56ecb](https://github.com/cameronraysmith/nixpod/commit/8d56ecbc3f36a36adcfa2d465d7ebb5fa2f164b9))
+* **flake:** rename nixos-unified -> nixos-flake ([b89c0b9](https://github.com/cameronraysmith/nixpod/commit/b89c0b91ed2da2cb57d950413bafc19b5dedf880))
+
 ## [0.4.11](https://github.com/cameronraysmith/nixpod/compare/v0.4.10...v0.4.11) (2025-02-26)
 
 ### Bug Fixes
