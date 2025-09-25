@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: fast-forward merge
-        uses: sequoia-pgp/fast-forward@042cd23fbf9d5ed1400497a106c8abe4b45408ab # ratchet:sequoia-pgp/fast-forward@main
+        uses: sequoia-pgp/fast-forward@e2c6fb52f977408912b000ad4577a669f1c4f5fe # ratchet:sequoia-pgp/fast-forward@main
         with:
           merge: true
           comment: on-error
