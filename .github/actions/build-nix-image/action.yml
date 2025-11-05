@@ -36,7 +36,7 @@ runs:
   using: "composite"
   steps:
     - name: Setup QEMU
-      uses: docker/setup-qemu-action@5927c834f5b4fdf503fca6f4c7eccda82949e1ee # v3
+      uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3
       with:
         platforms: arm64
 
