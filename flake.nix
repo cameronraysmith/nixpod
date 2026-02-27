@@ -99,6 +99,7 @@
             else
               builtins.filter (sys: sys != "") (builtins.split " " envVar);
           buildMultiUserNixImage = import ./containers/nix.nix;
+          buildS6OverlayLayer = import ./containers/s6-overlay.nix;
         in
         {
           legacyPackages = {
@@ -237,6 +238,8 @@
             # activating it.
             default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
             activate = self'.packages.activate-home;
+
+            s6-overlay-layer = buildS6OverlayLayer { inherit pkgs system; };
 
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
