@@ -241,6 +241,10 @@
 
             s6-overlay-layer = buildS6OverlayLayer { inherit pkgs system; };
 
+            nixpod-users = import ./containers/users.nix {
+              inherit pkgs lib;
+            };
+
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
               tag = "latest";
