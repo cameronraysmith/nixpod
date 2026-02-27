@@ -245,6 +245,10 @@
               inherit pkgs lib;
             };
 
+            nixpod-nix-config = import ./containers/nix-config.nix {
+              inherit pkgs lib;
+            };
+
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
               tag = "latest";
