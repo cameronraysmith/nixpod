@@ -18,6 +18,8 @@
       inputs.flake-parts.follows = "flake-parts";
       inputs.systems.follows = "systems";
     };
+    nix2container.url = "github:nlewo/nix2container";
+    nix2container.inputs.nixpkgs.follows = "nixpkgs";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs = {
