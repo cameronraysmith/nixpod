@@ -2,3 +2,10 @@ result
 .direnv
 *.qcow2
 .env
+
+# Bead worktree isolation
+.worktrees/
+
+# Dolt database files (added by bd init)
+.dolt/
+*.db
