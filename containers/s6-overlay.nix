@@ -40,6 +40,6 @@ let
 in
 pkgs.runCommand "s6-overlay-${version}" { nativeBuildInputs = [ pkgs.gnutar pkgs.xz ]; } ''
   mkdir -p $out
-  tar -C $out -Jxpf ${noarchTarball}
-  tar -C $out -Jxpf ${archTarball}
+  tar -C $out --no-same-permissions -Jxf ${noarchTarball}
+  tar -C $out --no-same-permissions -Jxf ${archTarball}
 ''
