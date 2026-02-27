@@ -1,0 +1,156 @@
+name: setup-nix
+description: setup nix using nothing-but-nix pattern with space reclamation and magic-nix-cache
+
+inputs:
+  installer:
+    description: |
+      nix installation strategy:
+      - 'full' (default): space reclamation + magic-nix-cache + cachix for builds
+      - 'quick': minimal install for simple tasks (no space reclamation, no caching overhead)
+    type: string
+    required: false
+    default: full
+  system:
+    description: nix system to configure (e.g., x86_64-linux, aarch64-darwin)
+    type: string
+    required: true
+  sandbox:
+    description: enable nix sandbox builds
+    type: string
+    default: "true"
+  enable-cachix:
+    description: enable cachix binary cache
+    type: boolean
+    default: false
+  cachix-name:
+    description: cachix cache name
+    type: string
+    required: false
+  cachix-auth-token:
+    description: cachix auth token
+    type: string
+    required: false
+  cachix-skip-push:
+    description: skip pushing to cachix (read-only)
+    type: boolean
+    default: false
+  nix-version:
+    description: nix version to install (e.g., 2.32.4, 2.31.2)
+    type: string
+    required: false
+    default: "2.32.4"
+  hatchet:
+    description: |
+      nothing-but-nix hatchet protocol for space reclamation (linux only):
+      - 'holster' (level 0): ~65GB, preserves Docker
+      - 'carve' (level 1): ~85GB, preserves Docker
+      - 'cleave' (level 2, default): ~115GB, removes Docker
+      - 'rampage' (level 3): ~130GB, removes Docker
+    type: string
+    required: false
+    default: "cleave"
+  root-safe-haven:
+    description: |
+      Space in MB to reserve on root filesystem for non-Nix usage (e.g., Docker overlay).
+      Only effective with carve/cleave/rampage protocols that expand from root.
+      Set higher (8192-10240) for k3d/Docker workloads to prevent kubelet disk pressure.
+    type: string
+    required: false
+    default: "2048"
+  mnt-safe-haven:
+    description: |
+      Space in MB to reserve on /mnt filesystem. On single-disk runners where /mnt
+      is on root, this effectively reserves space for Docker overlay storage.
+      Set to 30720 (30GB) for k3d workloads to handle both runner topologies.
+    type: string
+    required: false
+    default: "4096"
+
+runs:
+  using: composite
+  steps:
+    - name: reclaim space (linux)
+      if: runner.os == 'Linux' && inputs.installer == 'full'
+      uses: wimpysworld/nothing-but-nix@687c797a730352432950c707ab493fcc951818d7 # main
+      with:
+        hatchet-protocol: ${{ inputs.hatchet }}
+        nix-permission-edict: true
+        # Reserve space on /mnt for non-Nix TMPDIR usage
+        # Nix build temps now go to /nix/build (see build-dir in extra_nix_config)
+        mnt-safe-haven: ${{ inputs.mnt-safe-haven }}
+        # Reserve space on root for Docker overlay (k3d workloads)
+        root-safe-haven: ${{ inputs.root-safe-haven }}
+
+    - name: reclaim space (darwin)
+      if: runner.os == 'macOS' && inputs.installer == 'full'
+      shell: bash
+      run: |
+        echo "::group::disk space (before)"
+        sudo df -h
+        echo "::endgroup::"
+
+        echo "::group::disable mds"
+        sudo mdutil -i off -a || echo "mdutil failed"
+        sudo launchctl unload -w /System/Library/LaunchDaemons/com.apple.metadata.mds.plist \
+         || echo "launchctl unload failed"
+        echo "::endgroup::"
+
+        echo "Background space expansion started. /nix will grow as space becomes available."
+        sudo rm -rf \
+          /Applications/Xcode_* \
+          /Library/Developer/CoreSimulator \
+          /Library/Frameworks \
+          /Users/runner/.dotnet \
+          /Users/runner/.rustup \
+          /Users/runner/Library/Android \
+          /Users/runner/Library/Caches \
+          /Users/runner/Library/Developer/CoreSimulator \
+          /Users/runner/hostedtoolcache &
+
+    - name: install nix
+      uses: cachix/install-nix-action@4e002c8ec80594ecd40e759629461e26c8abed15 # v31
+      with:
+        # Use install_url to pin specific Nix version
+        # Switched from nix-quick-install-action (single-user) to install-nix-action (multi-user with daemon)
+        # to get access to Nix 2.32.4 which fixes callback race condition (NixOS/nix#13484)
+        install_url: https://releases.nixos.org/nix/nix-${{ inputs.nix-version }}/install
+        # build-dir on /nix is workaround for https://github.com/wimpysworld/nothing-but-nix/issues/18
+        extra_nix_config: |
+          build-dir = /nix/build
+          sandbox = ${{ inputs.sandbox }}
+          system = ${{ inputs.system }}
+          keep-env-derivations = true
+          keep-outputs = true
+
+    - name: create build-dir
+      if: runner.os == 'Linux'
+      shell: bash
+      run: sudo mkdir -p /nix/build
+
+    - name: setup magic-nix-cache
+      if: inputs.installer == 'full'
+      uses: DeterminateSystems/magic-nix-cache-action@cec65ff6f104850203b152861d3f9e5f1747885d # main
+      with:
+        # Disable FlakeHub cache (we use Cachix instead)
+        use-flakehub: false
+        # Disable telemetry
+        diagnostic-endpoint: ""
+
+    - name: setup cachix
+      if: inputs.enable-cachix == 'true'
+      uses: cachix/cachix-action@3ba601ff5bbb07c7220846facfa2cd81eeee15a1 # v16
+      continue-on-error: true
+      with:
+        name: ${{ inputs.cachix-name }}
+        authToken: ${{ inputs.cachix-auth-token }}
+        skipPush: ${{ inputs.cachix-skip-push }}
+
+    - name: post setup-nix
+      if: runner.os == 'macOS' && inputs.installer == 'full'
+      uses: srz-zumix/post-run-action@1a8fae7b66af5af138983031ee58347f76513293 # v3
+      with:
+        shell: bash -e {0}
+        post-run: |
+          echo "::group::disk space (after)"
+          sudo df -h
+          echo "::endgroup::"
