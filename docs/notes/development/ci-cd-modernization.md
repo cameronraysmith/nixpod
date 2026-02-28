@@ -85,12 +85,19 @@ Example `modules/dev-shell.nix`:
 nixpod-home uses teller for secrets via `.teller.yml`:
 ```yaml
 providers:
-  google_cloud_secretmanager:
-    env_sync:
-      path: projects/{{.gcp_project_id}}/secrets
+  google_secretmanager_1:
+    kind: google_secretmanager
+    maps:
+    - id: gsm
+      path: projects/{{ get_env(name="GCP_PROJECT_ID", default="default") }}
+      keys:
+        CACHIX_AUTH_TOKEN: ==
+        ARTIFACT_REGISTRY_PASSWORD: ==
+        FAST_FORWARD_PAT: ==
 ```
 
-Secrets accessed in justfile via `teller run -s -- env`.
+The provider kind is `google_secretmanager` (not `google_cloud_secretmanager`), and secrets are configured via a `maps` structure with explicit key mappings rather than `env_sync.path`.
+Secrets are accessed in the justfile via `teller run -s -- env`.
 
 ### Migrated approach with sops-nix and age
 
@@ -147,6 +154,9 @@ Pass age key as GitHub secret `SOPS_AGE_KEY`, then decrypt in workflows:
 ### Pattern overview
 
 The `cached-ci-job` action avoids re-running expensive operations by hashing source files and caching job results.
+
+The example below is a simplified illustration of the concept.
+The actual vanixiets implementation is significantly more sophisticated, with additional inputs for workflow file hashing, result directory management, and edge case handling around cache restoration.
 
 Create `.github/actions/cached-ci-job/action.yaml`:
 ```yaml
@@ -224,7 +234,11 @@ runs:
 
 ### Consolidated Nix installation
 
-Create `.github/actions/setup-nix/action.yml`:
+Create `.github/actions/setup-nix/action.yml`.
+The vanixiets reference implementation uses `cachix/install-nix-action` (not `DeterminateSystems/nix-installer-action`) for Nix installation, `cachix/cachix-action@v16` (not v15), and the parameter is named `cachix-name` (not `cachix-cache-name`).
+The action also supports macOS CI runners with dedicated space reclamation (removing Xcode, Simulator, Homebrew caches) and post-run disk reporting.
+
+Simplified example:
 ```yaml
 name: 'Setup Nix'
 description: 'Install Nix with caching'
@@ -233,7 +247,13 @@ inputs:
   installer:
     description: 'Installation type: full (with space reclaim) or quick'
     default: 'full'
-  cachix-cache-name:
+  system:
+    description: 'Nix system to configure (e.g., x86_64-linux, aarch64-darwin)'
+    required: true
+  enable-cachix:
+    description: 'Enable cachix binary cache'
+    default: 'false'
+  cachix-name:
     description: 'Cachix cache name'
     required: false
   cachix-auth-token:
@@ -250,27 +270,41 @@ runs:
         hatchet-protocol: cleave
         mnt-safe-haven: '4096'
 
+    - name: Reclaim space (darwin)
+      if: runner.os == 'macOS' && inputs.installer == 'full'
+      shell: bash
+      run: |
+        sudo rm -rf /Applications/Xcode_* /Library/Developer/CoreSimulator \
+          /Users/runner/.dotnet /Users/runner/.rustup /Users/runner/hostedtoolcache &
+
     - name: Install Nix
-      uses: DeterminateSystems/nix-installer-action@main
+      uses: cachix/install-nix-action@v31
       with:
-        extra-conf: |
-          extra-platforms = aarch64-linux
-          system-features = nixos-test benchmark big-parallel kvm
+        extra_nix_config: |
+          sandbox = true
+          system = ${{ inputs.system }}
+
+    - name: Setup magic-nix-cache
+      if: inputs.installer == 'full'
+      uses: DeterminateSystems/magic-nix-cache-action@main
+      with:
+        use-flakehub: false
 
     - name: Setup Cachix
-      if: inputs.cachix-cache-name != ''
-      uses: cachix/cachix-action@v15
+      if: inputs.enable-cachix == 'true'
+      uses: cachix/cachix-action@v16
       with:
-        name: ${{ inputs.cachix-cache-name }}
+        name: ${{ inputs.cachix-name }}
         authToken: ${{ inputs.cachix-auth-token }}
 ```
 
 ### Benefits
 
-- Space reclamation on Linux runners (removes Android SDK, CodeQL, etc.)
+- Space reclamation on both Linux and macOS runners
 - Consistent Nix configuration across all workflows
-- Optional Cachix integration
-- Platform-specific optimizations
+- Optional Cachix integration for binary caches
+- magic-nix-cache-action for transparent binary cache sharing between CI jobs (uses GitHub Actions cache as a read-through Nix binary cache, requiring no Cachix setup for cross-job sharing)
+- Platform-specific optimizations including macOS support
 
 ## Pre-commit hooks with treefmt-nix
 
@@ -339,6 +373,55 @@ ci-build-category system category:
     devshells) nix develop -c true ;; \
   esac
 ```
+
+## Nix-driven CI matrix discovery
+
+### Problem
+
+Hardcoded YAML matrices duplicate information that the flake already knows: which containers exist, which architectures each targets, and which manifests to publish.
+Adding or removing a container requires updating both Nix code and workflow YAML.
+
+### Solution
+
+Export a `containerMatrix` flake output that CI evaluates at runtime to discover the build matrix dynamically.
+This is a pure evaluation (no `--impure` needed) that returns structured JSON:
+
+```nix
+flake.containerMatrix = {
+  build = lib.flatten (
+    lib.mapAttrsToList (
+      containerName: def:
+      map (targetName: {
+        container = containerName;
+        target = targetName;
+      }) (def.targets or defaultTargetNames)
+    ) containerDefs
+  );
+  manifest = lib.attrNames containerDefs;
+};
+```
+
+CI discovers the matrix in a setup job:
+```yaml
+- name: Discover container matrix from Nix
+  id: matrix
+  run: |
+    BUILD=$(nix eval .#containerMatrix.build --json)
+    MANIFEST=$(nix eval .#containerMatrix.manifest --json)
+    echo "build=$BUILD" >> $GITHUB_OUTPUT
+    echo "manifest=$MANIFEST" >> $GITHUB_OUTPUT
+```
+
+Downstream jobs consume the output as a dynamic matrix:
+```yaml
+build:
+  needs: discover
+  strategy:
+    matrix:
+      include: ${{ fromJSON(needs.discover.outputs.build-matrix) }}
+```
+
+Adding a new container or architecture only requires updating the Nix `containerDefs`; the CI workflow adapts automatically.
 
 ## Flake input update automation
 
