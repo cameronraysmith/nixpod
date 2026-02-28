@@ -98,7 +98,6 @@
               ]
             else
               builtins.filter (sys: sys != "") (builtins.split " " envVar);
-          buildMultiUserNixImage = import ./containers/nix.nix;
           buildNixImage = import ./containers/build-image.nix;
           buildS6OverlayLayer = import ./containers/s6-overlay.nix;
         in
@@ -271,42 +270,6 @@
 
             nixpod-nix-config = import ./containers/nix-config.nix {
               inherit pkgs lib;
-            };
-
-            pamImage = pkgs.dockerTools.buildImage {
-              name = "pamimage";
-              tag = "latest";
-              compressor = "none";
-
-              copyToRoot = pkgs.pam;
-
-              # runAsRoot = ''
-              #   #!${pkgs.runtimeShell}
-
-              #   mkdir -p /etc/pam.d
-              # '';
-            };
-
-            suImage = pkgs.dockerTools.buildImage {
-              name = "suimage";
-              tag = "latest";
-              fromImage = pamImage;
-              compressor = "none";
-
-              copyToRoot = pkgs.su;
-            };
-
-            preSudoImage = pkgs.dockerTools.buildImage {
-              name = "presudoimage";
-              tag = "latest";
-              fromImage = pamImage;
-              compressor = "none";
-
-              copyToRoot = pkgs.sudo;
-            };
-
-            sudoImage = import ./containers/sudoimage.nix {
-              inherit pkgs preSudoImage;
             };
 
             nixpod =
@@ -629,7 +592,7 @@
                   /run/wrappers/bin/sudo chmod 02777 /var/log/jupyterlab
                 '';
                 # createJupyterLogService will not be used if not added to extraContents
-                # in buildMultiUserNixImage below
+                # in buildNixImage below
                 createJupyterLogService = pkgs.runCommand "create-jupyter-log" { } ''
                   mkdir -p $out/etc/cont-init.d
                   ln -s ${createJupyterLogScript} $out/etc/cont-init.d/02-create-jupyter-log
