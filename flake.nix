@@ -249,6 +249,20 @@
               inherit pkgs lib;
             };
 
+            nixpod-test-image = import ./containers/build-image.nix {
+              nix2container = inputs'.nix2container.packages.nix2container;
+              inherit pkgs lib;
+              name = "nixpod-test";
+              s6-overlay = s6-overlay-layer;
+              userConfig = nixpod-users;
+              nixConfig = nixpod-nix-config;
+              extraPkgs = with pkgs; [
+                ps
+                tree
+                vim
+              ];
+            };
+
             pamImage = pkgs.dockerTools.buildImage {
               name = "pamimage";
               tag = "latest";
