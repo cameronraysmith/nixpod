@@ -348,13 +348,27 @@
                   mkdir -p $out/etc/services.d/atuindaemon
                   ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
                 '';
+                ghanixNixConfig = import ./containers/nix-config.nix {
+                  inherit pkgs lib;
+                  storeOwner = "runner";
+                  nixConf = {
+                    allowed-users = [ "*" ];
+                    max-jobs = [ "auto" ];
+                    trusted-users = [
+                      "root"
+                      "jovyan"
+                      "runner"
+                    ];
+                  };
+                };
               in
-              buildMultiUserNixImage {
-                inherit pkgs;
+              buildNixImage {
+                nix2container = inputs'.nix2container.packages.nix2container;
+                inherit pkgs lib;
                 name = "ghanix";
-                tag = "latest";
-                maxLayers = 111;
-                fromImage = sudoImage;
+                s6-overlay = s6-overlay-layer;
+                userConfig = nixpod-users;
+                nixConfig = ghanixNixConfig;
                 storeOwner = {
                   uid = 1001;
                   gid = 0;
@@ -372,28 +386,7 @@
                   atuinDaemonService
                   self'.legacyPackages.homeConfigurations.runner.activationPackage
                 ];
-                extraFakeRootCommands = ''
-                  chown -R runner:wheel /nix
-                '';
-                nixConf = {
-                  allowed-users = [ "*" ];
-                  experimental-features = [
-                    "nix-command"
-                    "flakes"
-                  ];
-                  max-jobs = [ "auto" ];
-                  sandbox = "false";
-                  trusted-users = [
-                    "root"
-                    "jovyan"
-                    "runner"
-                  ];
-                };
-                cmd = [
-                  "bash"
-                  "-c"
-                  "su runner -c /activate && su runner && bash"
-                ];
+                cmd = [ "/home/runner/.nix-profile/bin/bash" ];
               };
 
             codenix =
