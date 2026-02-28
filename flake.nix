@@ -99,6 +99,7 @@
             else
               builtins.filter (sys: sys != "") (builtins.split " " envVar);
           buildMultiUserNixImage = import ./containers/nix.nix;
+          buildNixImage = import ./containers/build-image.nix;
           buildS6OverlayLayer = import ./containers/s6-overlay.nix;
         in
         {
@@ -215,6 +216,14 @@
                 (builtins.getEnv "GIT_REF")
               ];
             };
+
+            containerMatrix = {
+              nixpod = {
+                name = "nixpod";
+                package = "container";
+                inherit system;
+              };
+            };
           };
 
           # Enable 'nix fmt' to lint with nixfmt-rfc-style
@@ -247,20 +256,6 @@
 
             nixpod-nix-config = import ./containers/nix-config.nix {
               inherit pkgs lib;
-            };
-
-            nixpod-test-image = import ./containers/build-image.nix {
-              nix2container = inputs'.nix2container.packages.nix2container;
-              inherit pkgs lib;
-              name = "nixpod-test";
-              s6-overlay = s6-overlay-layer;
-              userConfig = nixpod-users;
-              nixConfig = nixpod-nix-config;
-              extraPkgs = with pkgs; [
-                ps
-                tree
-                vim
-              ];
             };
 
             pamImage = pkgs.dockerTools.buildImage {
@@ -299,42 +294,44 @@
               inherit pkgs preSudoImage;
             };
 
-            nixpod = buildMultiUserNixImage {
-              inherit pkgs;
-              name = "nixpod";
-              tag = "latest";
-              maxLayers = 111;
-              fromImage = sudoImage;
-              compressor = "zstd";
-              extraContents = with pkgs; [
-                default
-              ];
-              extraPkgs = with pkgs; [
-                ps
-                su
-                sudo
-                tree
-                vim
-              ];
-              nixConf = {
-                allowed-users = [ "*" ];
-                experimental-features = [
-                  "nix-command"
-                  "flakes"
+            nixpod =
+              let
+                nixpodNixConfig = import ./containers/nix-config.nix {
+                  inherit pkgs lib;
+                  nixConf = {
+                    allowed-users = [ "*" ];
+                    max-jobs = [ "auto" ];
+                    trusted-users = [
+                      "root"
+                      "jovyan"
+                      "runner"
+                    ];
+                  };
+                };
+              in
+              buildNixImage {
+                nix2container = inputs'.nix2container.packages.nix2container;
+                inherit pkgs lib;
+                name = "nixpod";
+                s6-overlay = s6-overlay-layer;
+                userConfig = nixpod-users;
+                nixConfig = nixpodNixConfig;
+                storeOwner = {
+                  uid = 0;
+                  gid = 0;
+                  uname = "root";
+                  gname = "wheel";
+                };
+                extraPkgs = with pkgs; [
+                  ps
+                  su
+                  sudo
+                  tree
+                  vim
                 ];
-                max-jobs = [ "auto" ];
-                sandbox = "false";
-                trusted-users = [
-                  "root"
-                  "jovyan"
-                  "runner"
-                ];
+                extraContents = [ default ];
+                cmd = [ "/root/.nix-profile/bin/bash" ];
               };
-              entrypoint = [ "/root/.nix-profile/bin/bash" ];
-              extraEnv = [
-                #   "NIX_REMOTE=daemon"
-              ];
-            };
 
             # Enable 'nix run .#container to build an OCI tarball with the
             # home configuration activated.
