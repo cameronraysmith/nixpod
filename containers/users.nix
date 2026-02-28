@@ -5,8 +5,8 @@
 # - pam.d/ (PAM configuration for sudo, su, system-auth, login)
 # - sudoers.d/ (NOPASSWD wheel group)
 #
-# User/group definitions are extracted from containers/nix.nix and
-# PAM/sudoers configs from containers/sudoimage.nix to decouple
+# User/group definitions were originally extracted from containers/nix-legacy.nix
+# and PAM/sudoers configs from containers/sudoimage-legacy.nix to decouple
 # system identity configuration from the container build backend.
 {
   pkgs,
@@ -22,7 +22,7 @@
 }:
 let
   # Non-root user accounts with explicit uid/gid/shell/home.
-  # Values match containers/nix.nix exactly.
+  # Values match containers/nix-legacy.nix exactly.
   nonRootUsers = {
     jovyan = {
       uid = 1000;
@@ -150,7 +150,7 @@ let
 
   groupContents = lib.concatStringsSep "\n" (lib.attrValues (lib.mapAttrs groupToGroup groups));
 
-  # PAM configuration extracted from containers/sudoimage.nix.
+  # PAM configuration extracted from containers/sudoimage-legacy.nix.
   # Each file under /etc/pam.d/ configures authentication for a service.
   pamSudo = ''
     #%PAM-1.0
@@ -202,7 +202,7 @@ let
     session     optional      pam_permit.so
   '';
 
-  # Sudoers configuration extracted from containers/sudoimage.nix.
+  # Sudoers configuration extracted from containers/sudoimage-legacy.nix.
   sudoersWheel = ''
     root     ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
     %wheel  ALL=(ALL:ALL)    NOPASSWD:SETENV: ALL
