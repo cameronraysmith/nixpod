@@ -223,6 +223,21 @@
                 package = "container";
                 inherit system;
               };
+              ghanix = {
+                name = "ghanix";
+                package = "ghanix";
+                inherit system;
+              };
+              codenix = {
+                name = "codenix";
+                package = "codenix";
+                inherit system;
+              };
+              jupnix = {
+                name = "jupnix";
+                package = "jupnix";
+                inherit system;
+              };
             };
           };
 
