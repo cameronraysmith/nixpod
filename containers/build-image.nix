@@ -233,10 +233,10 @@ nix2container.buildImage {
       "PATH=${
         lib.concatStringsSep ":" [
           "/run/wrappers/bin"
-          "/root/.nix-profile/bin"
+          "${userHome}/.nix-profile/bin"
           "/nix/profile/bin"
-          "/root/.local/state/nix/profile/bin"
-          "/etc/profiles/per-user/root/bin"
+          "${userHome}/.local/state/nix/profile/bin"
+          "/etc/profiles/per-user/${storeOwner.uname}/bin"
           "/nix/var/nix/profiles/default/bin"
           "/nix/var/nix/profiles/default/sbin"
           "/run/current-system/sw/bin"
@@ -244,7 +244,7 @@ nix2container.buildImage {
       }"
       "MANPATH=${
         lib.concatStringsSep ":" [
-          "/root/.nix-profile/share/man"
+          "${userHome}/.nix-profile/share/man"
           "/nix/var/nix/profiles/default/share/man"
         ]
       }"
@@ -252,7 +252,7 @@ nix2container.buildImage {
       "CURL_CA_BUNDLE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
-      "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
+      "NIX_PATH=/nix/var/nix/profiles/per-user/${storeOwner.uname}/channels:${userHome}/.nix-defexpr/channels"
       "S6_CMD_WAIT_FOR_SERVICES_MAXTIME=300000"
     ]
     ++ extraEnv;
