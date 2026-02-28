@@ -529,13 +529,27 @@
                   mkdir -p $out/etc/services.d/atuindaemon
                   ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
                 '';
+                codenixNixConfig = import ./containers/nix-config.nix {
+                  inherit pkgs lib;
+                  storeOwner = username;
+                  nixConf = {
+                    allowed-users = [ "*" ];
+                    max-jobs = [ "auto" ];
+                    trusted-users = [
+                      "root"
+                      "jovyan"
+                      "runner"
+                    ];
+                  };
+                };
               in
-              buildMultiUserNixImage {
-                inherit pkgs storeOwner;
+              buildNixImage {
+                nix2container = inputs'.nix2container.packages.nix2container;
+                inherit pkgs lib storeOwner;
                 name = "codenix";
-                tag = "latest";
-                maxLayers = 111;
-                fromImage = sudoImage;
+                s6-overlay = s6-overlay-layer;
+                userConfig = nixpod-users;
+                nixConfig = codenixNixConfig;
                 extraPkgs =
                   with pkgs;
                   [
@@ -553,23 +567,6 @@
                   codeServerService
                   self'.legacyPackages.homeConfigurations.${username}.activationPackage
                 ];
-                extraFakeRootCommands = ''
-                  chown -R ${username}:wheel /nix
-                '';
-                nixConf = {
-                  allowed-users = [ "*" ];
-                  experimental-features = [
-                    "nix-command"
-                    "flakes"
-                  ];
-                  max-jobs = [ "auto" ];
-                  sandbox = "false";
-                  trusted-users = [
-                    "root"
-                    "jovyan"
-                    "runner"
-                  ];
-                };
                 extraEnv = [
                   "NB_USER=${username}"
                   "NB_UID=1000"
@@ -580,6 +577,7 @@
                     "8888/tcp" = { };
                   };
                 };
+                cmd = [ "/home/${username}/.nix-profile/bin/bash" ];
               };
 
             jupnix =
