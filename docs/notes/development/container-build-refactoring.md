@@ -38,11 +38,15 @@ The nix2container `buildImage` function maps to current usage as follows.
 | `contents` | `copyToRoot` |
 | `uid`, `gid`, `uname`, `gname` | `perms` entries + `config.User` |
 | `fakeRootCommands` | Pre-extract to derivation + `perms` |
-| `config.Entrypoint` | `config.entrypoint` (camelCase) |
-| `config.Cmd` | `config.cmd` |
+| `config.Entrypoint` | `config.entrypoint` or `config.Entrypoint` |
+| `config.Cmd` | `config.cmd` or `config.Cmd` |
 | `config.Env` | Same |
 | `fromImage` | `pullImage` or `pullImageFromManifest` |
 | `enableFakechroot` | Not needed (perms replace) |
+
+nix2container passes the `config` attribute as JSON to the Go binary, where Go's `json.Unmarshal` handles field matching case-insensitively.
+The OCI image spec uses PascalCase for config fields (`Entrypoint`, `Cmd`, `Env`, `ExposedPorts`), and nix2container examples mix lowercase and PascalCase freely.
+Both forms work; prefer PascalCase for consistency with the OCI specification.
 
 ### Nix database initialization
 
@@ -144,7 +148,9 @@ mkUsers = pkgs.runCommand "mkUsers" { } ''
 
 ### Step 5: Convert config format
 
-Config fields are largely compatible but use camelCase:
+Config fields are largely compatible.
+Go's `json.Unmarshal` is case-insensitive, so both lowercase and PascalCase work.
+The OCI spec uses PascalCase; nix2container examples use both forms interchangeably:
 ```nix
 config = {
   entrypoint = [ "/init" ];
@@ -168,17 +174,64 @@ nix2container provides passthru scripts:
 - `copyToPodman` - load into Podman
 - `copyToRegistry` - push to registry via skopeo
 
-## flocken integration
+## Multi-arch image building
 
-flocken remains orthogonal to the build backend.
-The `mkDockerManifest` function works with nix2container outputs since both produce OCI-compliant images.
+nix2container's `buildImage` accepts an `arch` parameter (defaulting to `pkgs.go.GOARCH`) that sets the OCI platform architecture field in the image manifest.
+Combined with `pkgsCross`, this enables building images for multiple architectures from a single host system without QEMU emulation.
+
+The vanixiets reference implementation demonstrates this pattern.
+Each target architecture maps a `pkgsCross` instance to an OCI arch label:
+
+```nix
+allTargets = {
+  x86_64 = {
+    system = "x86_64-linux";
+    crossPkgs = pkgs.pkgsCross.gnu64;
+    arch = "amd64";
+  };
+  aarch64 = {
+    system = "aarch64-linux";
+    crossPkgs = pkgs.pkgsCross.aarch64-multiplatform;
+    arch = "arm64";
+  };
+};
+```
+
+Packages are resolved through `target.crossPkgs` and the `arch` is passed to `buildImage`:
+
+```nix
+nix2container.buildImage {
+  inherit name tag;
+  arch = target.arch;
+  layers = [ baseLayer ];
+  copyToRoot = target.crossPkgs.buildEnv { ... };
+  # ...
+};
+```
+
+When `host == target`, `pkgsCross` automatically optimizes to native compilation.
+On `aarch64-darwin`, both architectures build via rosetta-builder.
+
+## Multi-arch manifest publishing
+
+Two approaches exist for creating multi-arch manifest lists from per-architecture nix2container images.
+
+### flocken (current nixpod-home approach)
+
+flocken's `mkDockerManifest` works with nix2container outputs since both produce OCI-compliant images.
+flocken expects per-system `imageFiles` and handles manifest list creation internally.
 
 Multi-arch workflow:
 1. Build per-system images with nix2container
 2. Push each architecture via `copyToRegistry`
 3. Create multi-arch manifest with flocken's `mkDockerManifest`
 
-No changes needed to current manifest publishing logic.
+### crane (vanixiets approach)
+
+The vanixiets reference implementation uses crane instead of flocken for manifest list creation via `mk-multi-arch-manifest.nix`.
+This approach pushes per-architecture images with skopeo's `nix:` transport (capturing digests), then assembles a manifest list with `crane index append`.
+Tagging additional refs uses `crane tag`.
+This integrates naturally with nix2container's `pkgsCross` + `arch` pattern for building all architectures from a single system.
 
 ## Layer composition strategies
 
@@ -208,17 +261,38 @@ layers = [
 
 The explicit layer's closure is excluded from the implicit application layer.
 
+### Layer metadata for OCI history
+
+`buildLayer` accepts a `metadata` parameter (defaulting to `{ created_by = "nix2container"; }`) that populates OCI image history fields.
+This supports `created_by`, `author`, and `comment`:
+
+```nix
+nix2container.buildLayer {
+  deps = [ pkgs.hello ];
+  metadata = {
+    created_by = "nixpod buildMultiUserNixImage";
+    author = "nixpod";
+    comment = "base system layer";
+  };
+}
+```
+
 ## Base image handling
 
 ### Current sudoImage approach
 
-Currently builds a layered base with pam/sudo via dockerTools:
+Currently builds a base with pam/sudo via dockerTools.
+The chain is not linear: `pamImage` is the root, from which `preSudoImage` branches to add `pkgs.sudo`, then `sudoImage` wraps `preSudoImage` with PAM configuration.
+`suImage` also branches from `pamImage` to add `pkgs.su` but is dead code, consumed by nothing downstream.
+
 ```nix
-pamImage = pkgs.dockerTools.buildImage { ... };
-suImage = pkgs.dockerTools.buildImage { fromImage = pamImage; ... };
-preSudoImage = pkgs.dockerTools.buildImage { fromImage = pamImage; ... };
-sudoImage = import ./containers/sudoimage.nix { ... };
+pamImage = pkgs.dockerTools.buildImage { copyToRoot = pkgs.pam; };
+suImage = pkgs.dockerTools.buildImage { fromImage = pamImage; copyToRoot = pkgs.su; };  # dead code
+preSudoImage = pkgs.dockerTools.buildImage { fromImage = pamImage; copyToRoot = pkgs.sudo; };
+sudoImage = import ./containers/sudoimage.nix { inherit pkgs preSudoImage; };
 ```
+
+All four container variants (`nixpod`, `ghanix`, `codenix`, `jupnix`) use `sudoImage` as their `fromImage`.
 
 ### Migrated approach with manifest
 
