@@ -1,0 +1,130 @@
+name: Container Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      push:
+        description: "Push images to registry"
+        required: false
+        type: boolean
+        default: false
+      debug_enabled:
+        description: "Enable tmate debug session"
+        required: false
+        type: boolean
+        default: false
+  workflow_call:
+    inputs:
+      push:
+        description: "Push images to registry"
+        required: false
+        type: boolean
+        default: true
+
+concurrency:
+  group: container-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  CACHIX_BINARY_CACHE: cameronraysmith
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    outputs:
+      build-matrix: ${{ steps.matrix.outputs.build }}
+      container-names: ${{ steps.matrix.outputs.names }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          system: x86_64-linux
+          enable-cachix: true
+          cachix-name: ${{ env.CACHIX_BINARY_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+          cachix-skip-push: true
+
+      - name: Discover container matrix from Nix
+        id: matrix
+        run: |
+          echo "Evaluating containerMatrix from flake..."
+          RAW=$(nix eval '.#legacyPackages.x86_64-linux.containerMatrix' --json)
+          echo "Raw matrix: $RAW"
+
+          # Transform to GitHub Actions matrix format: [{name, package}, ...]
+          BUILD=$(echo "$RAW" | jq -c '[to_entries[] | {name: .value.name, package: .value.package}]')
+          echo "Build matrix: $BUILD"
+          echo "build=$BUILD" >> $GITHUB_OUTPUT
+
+          # Extract container names for manifest push
+          NAMES=$(echo "$RAW" | jq -c '[keys[]]')
+          echo "Container names: $NAMES"
+          echo "names=$NAMES" >> $GITHUB_OUTPUT
+
+  build:
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.discover.outputs.build-matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          system: x86_64-linux
+          hatchet: cleave
+          enable-cachix: true
+          cachix-name: ${{ env.CACHIX_BINARY_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Setup tmate debug session
+        if: inputs.debug_enabled
+        uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
+
+      - name: Build ${{ matrix.name }}
+        run: |
+          echo "Building ${{ matrix.name }} (package: ${{ matrix.package }})"
+          nix build ".#${{ matrix.package }}" -L
+
+  push:
+    needs: [discover, build]
+    if: inputs.push
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        container: ${{ fromJSON(needs.discover.outputs.container-names) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          system: x86_64-linux
+          hatchet: cleave
+          enable-cachix: true
+          cachix-name: ${{ env.CACHIX_BINARY_CACHE }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Push ${{ matrix.container }} to registry
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Pushing ${{ matrix.container }} to registry"
+          nix run --impure ".#${{ matrix.container }}Manifest"
