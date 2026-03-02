@@ -83,38 +83,37 @@ let
     };
   };
 
-  users =
-    {
-      root = {
-        uid = 0;
-        shell = "${pkgs.bashInteractive}/bin/bash";
-        home = "/root";
-        gid = 0;
-        groups = [ "wheel" ];
-        description = "System administrator";
-      };
+  users = {
+    root = {
+      uid = 0;
+      shell = "${pkgs.bashInteractive}/bin/bash";
+      home = "/root";
+      gid = 0;
+      groups = [ "wheel" ];
+      description = "System administrator";
+    };
 
-      nobody = {
-        uid = 65534;
-        shell = "${pkgs.shadow}/bin/nologin";
-        home = "/var/empty";
-        gid = 65534;
-        groups = [ "nobody" ];
-        description = "Unprivileged account (don't use!)";
+    nobody = {
+      uid = 65534;
+      shell = "${pkgs.shadow}/bin/nologin";
+      home = "/var/empty";
+      gid = 65534;
+      groups = [ "nobody" ];
+      description = "Unprivileged account (don't use!)";
+    };
+  }
+  // nonRootUsers
+  // lib.listToAttrs (
+    map (n: {
+      name = "nixbld${toString n}";
+      value = {
+        uid = 30000 + n;
+        gid = 30000;
+        groups = [ "nixbld" ];
+        description = "Nix build user ${toString n}";
       };
-    }
-    // nonRootUsers
-    // lib.listToAttrs (
-      map (n: {
-        name = "nixbld${toString n}";
-        value = {
-          uid = 30000 + n;
-          gid = 30000;
-          groups = [ "nixbld" ];
-          description = "Nix build user ${toString n}";
-        };
-      }) (lib.lists.range 1 32)
-    );
+    }) (lib.lists.range 1 32)
+  );
 
   groups = {
     wheel.gid = 0;
@@ -399,40 +398,38 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
 
   contents = [ baseSystem ] ++ extraContents;
   compressor = compressor;
-  extraCommands =
-    ''
-      rm -rf nix-support
-      ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
-    ''
-    + extraExtraCommands;
-  fakeRootCommands =
-    ''
-      ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay.outPath}
-      ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay-arch.outPath}
-      chmod 1777 /tmp
-      chmod 1777 /var/tmp
-      chmod 1777 /var/log
-      chown -R jovyan:wheel /home/jovyan
-      chown -R runner:wheel /home/runner
-      chmod 775 /home/jovyan
-      chmod 775 /home/runner
-      chmod 1775 /nix/store
-      chmod 1777 /nix/var/nix/profiles/per-user
-      chmod 1777 /nix/var/nix/gcroots/per-user
-      # This pseudo-wrapper is suboptimal/insecure but it is otherwise necessary
-      # to generate a setuid wrapper for sudo that is generally performed by the
-      # nixos module
-      # https://github.com/NixOS/nixpkgs/blob/24.05/nixos/modules/security/sudo.nix
-      cp ${pkgs.sudo}/bin/sudo /run/wrappers/bin/sudo
-      chown root:wheel /run/wrappers/bin/sudo
-      chmod 4755 /run/wrappers/bin/sudo
-      # s6 requires /run to be owned by USER
-      chown ${storeOwner.uname} /run
-      # # Note: for multi-user nix with nix-daemon
-      # # /nix/store should be owned by root:nixbld
-      # chown -R root:nixbld /nix/store
-    ''
-    + extraFakeRootCommands;
+  extraCommands = ''
+    rm -rf nix-support
+    ln -s /nix/var/nix/profiles nix/var/nix/gcroots/profiles
+  ''
+  + extraExtraCommands;
+  fakeRootCommands = ''
+    ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay.outPath}
+    ${pkgs.gnutar}/bin/tar -C / -Jxpf ${s6-overlay-arch.outPath}
+    chmod 1777 /tmp
+    chmod 1777 /var/tmp
+    chmod 1777 /var/log
+    chown -R jovyan:wheel /home/jovyan
+    chown -R runner:wheel /home/runner
+    chmod 775 /home/jovyan
+    chmod 775 /home/runner
+    chmod 1775 /nix/store
+    chmod 1777 /nix/var/nix/profiles/per-user
+    chmod 1777 /nix/var/nix/gcroots/per-user
+    # This pseudo-wrapper is suboptimal/insecure but it is otherwise necessary
+    # to generate a setuid wrapper for sudo that is generally performed by the
+    # nixos module
+    # https://github.com/NixOS/nixpkgs/blob/24.05/nixos/modules/security/sudo.nix
+    cp ${pkgs.sudo}/bin/sudo /run/wrappers/bin/sudo
+    chown root:wheel /run/wrappers/bin/sudo
+    chmod 4755 /run/wrappers/bin/sudo
+    # s6 requires /run to be owned by USER
+    chown ${storeOwner.uname} /run
+    # # Note: for multi-user nix with nix-daemon
+    # # /nix/store should be owned by root:nixbld
+    # chown -R root:nixbld /nix/store
+  ''
+  + extraFakeRootCommands;
   enableFakechroot = true;
 
   # https://github.com/moby/docker-image-spec/blob/v1.2.0/v1.2.md
@@ -467,7 +464,9 @@ pkgs.dockerTools.buildLayeredImageWithNixDb {
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/root/channels:/root/.nix-defexpr/channels"
       "S6_CMD_WAIT_FOR_SERVICES_MAXTIME=300000"
-    ] ++ extraEnv;
-  } // extraConfig;
+    ]
+    ++ extraEnv;
+  }
+  // extraConfig;
 
 }
