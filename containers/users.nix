@@ -52,51 +52,49 @@ let
     };
   };
 
-  users =
-    {
-      root = {
-        uid = 0;
-        shell = "${pkgs.bashInteractive}/bin/bash";
-        home = "/root";
-        gid = 0;
-        groups = [ "wheel" ];
-        description = "System administrator";
-      };
+  users = {
+    root = {
+      uid = 0;
+      shell = "${pkgs.bashInteractive}/bin/bash";
+      home = "/root";
+      gid = 0;
+      groups = [ "wheel" ];
+      description = "System administrator";
+    };
 
-      nobody = {
-        uid = 65534;
-        shell = "${pkgs.shadow}/bin/nologin";
-        home = "/var/empty";
-        gid = 65534;
-        groups = [ "nobody" ];
-        description = "Unprivileged account (don't use!)";
+    nobody = {
+      uid = 65534;
+      shell = "${pkgs.shadow}/bin/nologin";
+      home = "/var/empty";
+      gid = 65534;
+      groups = [ "nobody" ];
+      description = "Unprivileged account (don't use!)";
+    };
+  }
+  // nonRootUsers
+  // lib.listToAttrs (
+    map (n: {
+      name = "nixbld${toString n}";
+      value = {
+        uid = 30000 + n;
+        gid = 30000;
+        groups = [ "nixbld" ];
+        description = "Nix build user ${toString n}";
       };
-    }
-    // nonRootUsers
-    // lib.listToAttrs (
-      map (n: {
-        name = "nixbld${toString n}";
-        value = {
-          uid = 30000 + n;
-          gid = 30000;
-          groups = [ "nixbld" ];
-          description = "Nix build user ${toString n}";
-        };
-      }) (lib.lists.range 1 32)
-    )
-    // extraUsers;
+    }) (lib.lists.range 1 32)
+  )
+  // extraUsers;
 
-  groups =
-    {
-      wheel.gid = 0;
-      users.gid = 100;
-      docker.gid = 121;
-      jovyan.gid = 1000;
-      runner.gid = 1001;
-      nixbld.gid = 30000;
-      nobody.gid = 65534;
-    }
-    // extraGroups;
+  groups = {
+    wheel.gid = 0;
+    users.gid = 100;
+    docker.gid = 121;
+    jovyan.gid = 1000;
+    runner.gid = 1001;
+    nixbld.gid = 30000;
+    nobody.gid = 65534;
+  }
+  // extraGroups;
 
   # passwd generation: user:x:uid:gid:description:home:shell
   userToPasswd =
@@ -242,9 +240,7 @@ pkgs.runCommand "nixpod-users"
     # Home directories
     mkdir -p $out/root
     ${lib.concatStringsSep "\n" (
-      lib.mapAttrsToList (
-        name: attrs: "mkdir -p $out${attrs.home}"
-      ) nonRootUsers
+      lib.mapAttrsToList (name: attrs: "mkdir -p $out${attrs.home}") nonRootUsers
     )}
 
     # PAM configuration
