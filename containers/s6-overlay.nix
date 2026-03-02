@@ -24,9 +24,7 @@ let
 
   archInfo =
     archMap.${system}
-      or (throw "s6-overlay: unsupported system '${system}', expected one of: ${
-        lib.concatStringsSep ", " (lib.attrNames archMap)
-      }");
+      or (throw "s6-overlay: unsupported system '${system}', expected one of: ${lib.concatStringsSep ", " (lib.attrNames archMap)}");
 
   noarchTarball = pkgs.fetchurl {
     url = "https://github.com/just-containers/s6-overlay/releases/download/${version}/s6-overlay-noarch.tar.xz";
@@ -38,8 +36,15 @@ let
     hash = archInfo.hash;
   };
 in
-pkgs.runCommand "s6-overlay-${version}" { nativeBuildInputs = [ pkgs.gnutar pkgs.xz ]; } ''
-  mkdir -p $out
-  tar -C $out --no-same-permissions -Jxf ${noarchTarball}
-  tar -C $out --no-same-permissions -Jxf ${archTarball}
-''
+pkgs.runCommand "s6-overlay-${version}"
+  {
+    nativeBuildInputs = [
+      pkgs.gnutar
+      pkgs.xz
+    ];
+  }
+  ''
+    mkdir -p $out
+    tar -C $out --no-same-permissions -Jxf ${noarchTarball}
+    tar -C $out --no-same-permissions -Jxf ${archTarball}
+  ''
