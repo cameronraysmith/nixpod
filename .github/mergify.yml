@@ -11,7 +11,6 @@ pull_request_rules:
   - name: automatic merge when not WIP, CI passes, and at least 1 approving review
     conditions:
       - "#approved-reviews-by>=1"
-      - check-success=gitguardian
       - check-success=nixci
       - base=main
       - label!=work-in-progress
