@@ -279,7 +279,7 @@ test-flake-workflow:
   @teller run -s -- \
   act workflow_dispatch \
   -W '.github/workflows/cid.yaml' \
-  -j nixci \
+  -j flake-check \
   -s GITHUB_TOKEN -s CACHIX_AUTH_TOKEN \
   --matrix os:ubuntu-latest
 
