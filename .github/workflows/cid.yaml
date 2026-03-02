@@ -89,28 +89,14 @@ jobs:
           echo "SKIP_TESTS=$SKIP_TESTS" >> $GITHUB_OUTPUT
           echo "CHECKOUT_REF=$CHECKOUT_REF" >> $GITHUB_OUTPUT
 
-  nixci:
+  flake-check:
     runs-on: ubuntu-latest
     needs: set-variables
     if: ${{ needs.set-variables.outputs.skip_ci != 'true' }}
     concurrency:
-      group: nixci-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
+      group: flake-check-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
-      # https://github.com/easimon/maximize-build-space/blob/v10/action.yml#L121-L137
-      # - name: Maximize build space
-      #   run: |
-      #     echo "Available storage before removing unused software:"
-      #     sudo df -h
-      #     echo
-      #     sudo rm -rf /usr/local/lib/android
-      #     echo "Available storage after removing android:"
-      #     sudo df -h
-      #     echo
-      #     sudo rm -rf /opt/hostedtoolcache/CodeQL
-      #     echo "Available storage after removing codeql:"
-      #     sudo df -h
-      #     echo
       - name: Install dependencies
         shell: bash
         run: |
@@ -122,8 +108,6 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@786fff0690178f1234e4e1fe9b536e94f5433196 # ratchet:DeterminateSystems/nix-installer-action@main
         with:
           extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
-      # - name: Run the Magic Nix Cache
-      #   uses: DeterminateSystems/magic-nix-cache-action@main
       - uses: cachix/cachix-action@be5295a636153b6ad194d3245f78f8e0b78dc704 # ratchet:cachix/cachix-action@v15
         continue-on-error: true
         with:
@@ -133,13 +117,10 @@ jobs:
       - name: Setup tmate debug session
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
         if: ${{ inputs.debug_enabled }}
-      - name: Install omnix
-        run: nix --accept-flake-config profile add "github:juspay/omnix"
       - name: Summarize flake
-        run: om show .
-      - name: Run flake CI
-        run: |
-          om ci run
+        run: nix flake show
+      - name: Run flake check
+        run: nix flake check
 
   build-nix-images:
     runs-on: ubuntu-latest
@@ -295,7 +276,7 @@ jobs:
   #         build-args: ${{ matrix.job == 'debjupnix' && 'USER=jovyan\nUID=1000\nGID=100' || '' }}
   release:
     runs-on: ubuntu-latest
-    needs: [nixci]
+    needs: [flake-check]
     if: ${{ github.repository_owner == 'cameronraysmith' && github.event_name == 'push' }}
     permissions:
 
