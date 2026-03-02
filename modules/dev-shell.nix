@@ -16,8 +16,13 @@
         ];
         nativeBuildInputs = with pkgs; [
           act
+          age
+          gitleaks
           just
+          nix-output-monitor
           ratchet
+          sops
+          ssh-to-age
         ];
       };
     };
