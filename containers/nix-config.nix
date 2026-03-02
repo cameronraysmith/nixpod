@@ -24,17 +24,16 @@ let
 
   # Structured nix.conf generation using lib.generators.toKeyValue
   # following the upstream NixOS/nix docker.nix pattern.
-  toConf =
-    lib.generators.toKeyValue {
-      mkKeyValue = lib.generators.mkKeyValueDefault {
-        mkValueString =
-          v:
-          if lib.isList v then
-            lib.concatStringsSep " " (map (lib.generators.mkValueStringDefault { }) v)
-          else
-            lib.generators.mkValueStringDefault { } v;
-      } " = ";
-    };
+  toConf = lib.generators.toKeyValue {
+    mkKeyValue = lib.generators.mkKeyValueDefault {
+      mkValueString =
+        v:
+        if lib.isList v then
+          lib.concatStringsSep " " (map (lib.generators.mkValueStringDefault { }) v)
+        else
+          lib.generators.mkValueStringDefault { } v;
+    } " = ";
+  };
 
   defaultNixConf = {
     sandbox = false;
@@ -43,9 +42,7 @@ let
       "nix-command"
       "flakes"
     ];
-    trusted-users =
-      [ "root" ]
-      ++ lib.optional (storeOwner != "root") storeOwner;
+    trusted-users = [ "root" ] ++ lib.optional (storeOwner != "root") storeOwner;
     trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
   };
 
@@ -116,35 +113,36 @@ let
   # We follow the fixed pattern: all symlinks use absolute /nix/... paths
   # so they resolve correctly at container runtime regardless of the store
   # path that contained them during build.
-  profileDirs = pkgs.runCommand "nix-profile-dirs"
-    {
-      allowSubstitutes = false;
-      preferLocalBuild = true;
-    }
-    ''
-      mkdir -p $out/nix/var/nix/profiles/per-user/${storeOwner}
-      mkdir -p $out/nix/var/nix/gcroots
+  profileDirs =
+    pkgs.runCommand "nix-profile-dirs"
+      {
+        allowSubstitutes = false;
+        preferLocalBuild = true;
+      }
+      ''
+        mkdir -p $out/nix/var/nix/profiles/per-user/${storeOwner}
+        mkdir -p $out/nix/var/nix/gcroots
 
-      # Default profile: link the built environment and create the
-      # generation chain using absolute paths (the 2.33.3 fix).
-      ln -s ${profile} $out/nix/var/nix/profiles/default-1-link
-      ln -s /nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/default
+        # Default profile: link the built environment and create the
+        # generation chain using absolute paths (the 2.33.3 fix).
+        ln -s ${profile} $out/nix/var/nix/profiles/default-1-link
+        ln -s /nix/var/nix/profiles/default-1-link $out/nix/var/nix/profiles/default
 
-      # User .nix-profile symlink using absolute path
-      mkdir -p $out${userHome}
-      ln -s /nix/var/nix/profiles/default $out${userHome}/.nix-profile
+        # User .nix-profile symlink using absolute path
+        mkdir -p $out${userHome}
+        ln -s /nix/var/nix/profiles/default $out${userHome}/.nix-profile
 
-      # Channel setup using absolute paths (the 2.33.3 fix)
-      ln -s ${channel} $out/nix/var/nix/profiles/per-user/${storeOwner}/channels-1-link
-      ln -s /nix/var/nix/profiles/per-user/${storeOwner}/channels-1-link $out/nix/var/nix/profiles/per-user/${storeOwner}/channels
+        # Channel setup using absolute paths (the 2.33.3 fix)
+        ln -s ${channel} $out/nix/var/nix/profiles/per-user/${storeOwner}/channels-1-link
+        ln -s /nix/var/nix/profiles/per-user/${storeOwner}/channels-1-link $out/nix/var/nix/profiles/per-user/${storeOwner}/channels
 
-      # .nix-defexpr with channel link using absolute path
-      mkdir -p $out${userHome}/.nix-defexpr
-      ln -s /nix/var/nix/profiles/per-user/${storeOwner}/channels $out${userHome}/.nix-defexpr/channels
+        # .nix-defexpr with channel link using absolute path
+        mkdir -p $out${userHome}/.nix-defexpr
+        ln -s /nix/var/nix/profiles/per-user/${storeOwner}/channels $out${userHome}/.nix-defexpr/channels
 
-      # .nix-channels file
-      echo "${channelUrl} ${channelName}" > $out${userHome}/.nix-channels
-    '';
+        # .nix-channels file
+        echo "${channelUrl} ${channelName}" > $out${userHome}/.nix-channels
+      '';
 
 in
 pkgs.symlinkJoin {
