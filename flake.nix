@@ -20,6 +20,7 @@
     };
     nix2container.url = "github:nlewo/nix2container";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
+    import-tree.url = "github:vic/import-tree";
     nix-index-database = {
       url = "github:nix-community/nix-index-database";
       inputs = {
