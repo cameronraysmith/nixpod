@@ -9,3 +9,4 @@ result
 # Dolt database files (added by bd init)
 .dolt/
 *.db
+.pre-commit-config.yaml
