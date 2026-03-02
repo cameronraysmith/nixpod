@@ -1,0 +1,15 @@
+keys:
+  - &dev age1dn8w7y4t4h23fmeenr3dghfz5qh53jcjq9qfv26km3mnv8l44g0sghptu3
+  - &ci age1m9m8h5vqr7dqlmvnzcwshmm4uk8umcllazum6eaulkdp3qc88ugs22j3p8
+
+creation_rules:
+  - path_regex: vars/.*\.yaml$
+    key_groups:
+      - age:
+          - *dev
+          - *ci
+  - path_regex: vars/.*\.json$
+    key_groups:
+      - age:
+          - *dev
+          - *ci
