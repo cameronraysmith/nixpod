@@ -283,28 +283,28 @@ test-flake-workflow:
   -s GITHUB_TOKEN -s CACHIX_AUTH_TOKEN \
   --matrix os:ubuntu-latest
 
-## secrets
+## secrets (teller)
 
 # Define the project variable
 gcp_project_id := env_var_or_default('GCP_PROJECT_ID', 'development')
 
 # Show existing secrets
-[group('secrets')]
+[group('secrets (teller)')]
 show:
   @teller show
 
 # Create a secret with the given name
-[group('secrets')]
+[group('secrets (teller)')]
 create-secret name:
   @gcloud secrets create {{name}} --replication-policy="automatic" --project {{gcp_project_id}}
 
 # Populate a single secret with the contents of a dotenv-formatted file
-[group('secrets')]
+[group('secrets (teller)')]
 populate-single-secret name path:
   @gcloud secrets versions add {{name}} --data-file={{path}} --project {{gcp_project_id}}
 
 # Populate each line of a dotenv-formatted file as a separate secret
-[group('secrets')]
+[group('secrets (teller)')]
 populate-separate-secrets path:
   @grep -v '^[[:space:]]*#' {{path}} | while IFS= read -r line; do \
      KEY=$(echo $line | cut -d '=' -f 1); \
@@ -314,38 +314,165 @@ populate-separate-secrets path:
    done
 
 # Complete process: Create a secret and populate it with the entire contents of a dotenv file
-[group('secrets')]
+[group('secrets (teller)')]
 create-and-populate-single-secret name path:
   @just create-secret {{name}}
   @just populate-single-secret {{name}} {{path}}
 
 # Complete process: Create and populate separate secrets for each line in the dotenv file
-[group('secrets')]
+[group('secrets (teller)')]
 create-and-populate-separate-secrets path:
   @just populate-separate-secrets {{path}}
 
 # Retrieve the contents of a given secret
-[group('secrets')]
+[group('secrets (teller)')]
 get-secret name:
   @gcloud secrets versions access latest --secret={{name}} --project={{gcp_project_id}}
 
 # Create empty dotenv from template
-[group('secrets')]
+[group('secrets (teller)')]
 seed-dotenv:
   @cp .template.env .env
 
 # Export unique secrets to dotenv format
-[group('secrets')]
+[group('secrets (teller)')]
 export:
   @teller export env | sort | uniq | grep -v '^$' > .secrets.env
 
 # Check secrets are available in teller shell.
-[group('secrets')]
+[group('secrets (teller)')]
 check-secrets:
   @printf "Check teller environment for secrets\n\n"
   @teller run -s -- env | grep -E 'GITHUB|CACHIX' | teller redact
 
 # Save KUBECONFIG to file
-[group('secrets')]
+[group('secrets (teller)')]
 get-kubeconfig:
   @teller run -s -- printenv KUBECONFIG > kubeconfig.yaml
+
+## secrets (sops)
+
+# Show existing secrets using sops
+[group('secrets (sops)')]
+show-secrets:
+  @echo "=== Shared secrets (vars/shared.yaml) ==="
+  @sops -d vars/shared.yaml
+  @echo
+
+# Edit shared secrets file
+[group('secrets (sops)')]
+edit-secrets:
+  @sops vars/shared.yaml
+
+# Create a new sops encrypted file
+[group('secrets (sops)')]
+new-secret file:
+  @sops {{ file }}
+
+# Export unique secrets to dotenv format using sops
+[group('secrets (sops)')]
+export-secrets:
+  @echo "# Exported from sops secrets" > .secrets.env
+  @sops -d vars/shared.yaml | grep -E '^[A-Z_]+:' | sed 's/: /=/' >> .secrets.env
+  @sort -u .secrets.env -o .secrets.env
+
+# Run command with all shared secrets as environment variables
+[group('secrets (sops)')]
+run-with-secrets +command:
+  @sops exec-env vars/shared.yaml '{{ command }}'
+
+# Check secrets are available in sops environment
+[group('secrets (sops)')]
+sops-check:
+  @printf "Check sops environment for secrets\n\n"
+  @sops exec-env vars/shared.yaml 'env | grep -E "GITHUB|CACHIX|CLOUDFLARE|BITWARDEN" | sed "s/=.*$/=***REDACTED***/"'
+
+# Show specific secret value from shared secrets
+[group('secrets (sops)')]
+sops-get key:
+  @sops -d vars/shared.yaml | grep "^{{ key }}:" | cut -d' ' -f2-
+
+# Validate all sops encrypted files can be decrypted
+[group('secrets (sops)')]
+validate-secrets:
+  @echo "Validating sops encrypted files..."
+  @for file in $(find vars \( -name "*.yaml" -o -name "*.json" \)); do \
+    echo "Testing: $file"; \
+    sops -d "$file" > /dev/null && echo "  Valid" || echo "  Failed"; \
+  done
+
+# Initialize sops age key for new developers
+[group('secrets (sops)')]
+sops-init:
+  @echo "Checking sops configuration..."
+  @if [ ! -f ~/.config/sops/age/keys.txt ]; then \
+    echo "Generating age key..."; \
+    mkdir -p ~/.config/sops/age; \
+    age-keygen -o ~/.config/sops/age/keys.txt; \
+    echo ""; \
+    echo "Age key generated. Add this public key to .sops.yaml:"; \
+    grep "public key:" ~/.config/sops/age/keys.txt; \
+  else \
+    echo "Age key already exists"; \
+    grep "public key:" ~/.config/sops/age/keys.txt; \
+  fi
+
+# Add or update a secret non-interactively
+[group('secrets (sops)')]
+set-secret secret_name secret_value:
+  @sops set vars/shared.yaml '["{{ secret_name }}"]' '"{{ secret_value }}"'
+  @echo "{{ secret_name }} has been set/updated"
+
+# Rotate a specific secret interactively
+[group('secrets (sops)')]
+rotate-secret secret_name:
+  @echo "Rotating {{ secret_name }}..."
+  @echo "Enter new value for {{ secret_name }}:"
+  @read -s NEW_VALUE && \
+    sops set vars/shared.yaml '["{{ secret_name }}"]' "\"$NEW_VALUE\"" && \
+    echo "{{ secret_name }} rotated successfully"
+
+# Update keys for existing secrets files after adding new recipients
+[group('secrets (sops)')]
+updatekeys:
+  @for file in $(find vars \( -name "*.yaml" -o -name "*.json" \)); do \
+    echo "Updating keys for: $file"; \
+    sops updatekeys -y "$file"; \
+  done
+  @echo "Keys updated for all secrets files"
+
+# Update github vars for repo from sops environment
+[group('secrets (sops)')]
+sops-ghvars repo="cameronraysmith/nixpod":
+  @echo "vars before updates:"
+  @echo
+  PAGER=cat gh variable list --repo={{ repo }}
+  @echo
+  sops exec-env vars/shared.yaml '\
+  gh variable set CACHIX_CACHE_NAME --repo={{ repo }} --body="$CACHIX_CACHE_NAME" && \
+  gh variable set FAST_FORWARD_ACTOR --repo={{ repo }} --body="$FAST_FORWARD_ACTOR"'
+  @echo
+  @echo "vars after updates (wait 3 seconds for github to update):"
+  sleep 3
+  @echo
+  PAGER=cat gh variable list --repo={{ repo }}
+
+# Update github secrets for repo from sops environment
+[group('secrets (sops)')]
+sops-ghsecrets repo="cameronraysmith/nixpod":
+  @echo "secrets before updates:"
+  @echo
+  PAGER=cat gh secret list --repo={{ repo }}
+  @echo
+  sops exec-env vars/shared.yaml '\
+  gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN" && \
+  gh secret set CLOUDFLARE_ACCOUNT_ID --repo={{ repo }} --body="$CLOUDFLARE_ACCOUNT_ID" && \
+  gh secret set CLOUDFLARE_API_TOKEN --repo={{ repo }} --body="$CLOUDFLARE_API_TOKEN" && \
+  gh secret set FAST_FORWARD_PAT --repo={{ repo }} --body="$FAST_FORWARD_PAT" && \
+  gh secret set FLAKE_UPDATER_APP_ID --repo={{ repo }} --body="$FLAKE_UPDATER_APP_ID" && \
+  gh secret set FLAKE_UPDATER_PRIVATE_KEY --repo={{ repo }} --body="$FLAKE_UPDATER_PRIVATE_KEY"'
+  @echo
+  @echo "secrets after updates (wait 3 seconds for github to update):"
+  sleep 3
+  @echo
+  PAGER=cat gh secret list --repo={{ repo }}
