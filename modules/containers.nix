@@ -262,7 +262,12 @@
           };
         in
         buildNixImage {
-          inherit nix2container pkgs lib storeOwner;
+          inherit
+            nix2container
+            pkgs
+            lib
+            storeOwner
+            ;
           name = "codenix";
           s6-overlay = self'.packages.s6-overlay-layer;
           userConfig = self'.packages.nixpod-users;
@@ -395,7 +400,12 @@
           };
         in
         buildNixImage {
-          inherit nix2container pkgs lib storeOwner;
+          inherit
+            nix2container
+            pkgs
+            lib
+            storeOwner
+            ;
           name = "jupnix";
           s6-overlay = self'.packages.s6-overlay-layer;
           userConfig = self'.packages.nixpod-users;
