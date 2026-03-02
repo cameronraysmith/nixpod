@@ -1,0 +1,23 @@
+sync:
+    mode: dolt-native
+    # git-remote is registered as a yaml-only config key in beads 0.56.1
+    # but has no consumer in production code yet. Setting it here for
+    # forward compatibility with the planned bootstrap-from-git-remote flow.
+    git-remote: https://github.com/cameronraysmith/nixpod.git
+
+backup:
+    # Auto-backup exports JSONL snapshots to .beads/backup/ and auto-commits
+    # them to git when a git remote exists. Disabled because bd dolt push
+    # already backs up full history via refs/dolt/data on the git remote.
+    enabled: false
+
+dolt:
+    # Issue mutations (create/update/close) always auto-commit to dolt
+    # unconditionally via inline DOLT_COMMIT in the storage layer,
+    # regardless of this setting. This setting controls whether residual
+    # working set changes (tip metadata, etc.) get committed after each
+    # command. Required for clean bd dolt pull — off leaves uncommitted
+    # state that blocks merges. Server mode defaults to off; on is
+    # preferred when using dolt remotes for multi-clone sync.
+    auto-commit: "on"
+    auto-push: false
