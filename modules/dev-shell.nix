@@ -1,6 +1,11 @@
 {
   perSystem =
-    { pkgs, config, self', ... }:
+    {
+      pkgs,
+      config,
+      self',
+      ...
+    }:
     {
       apps.default.program = self'.packages.activate-home;
 
