@@ -477,7 +477,7 @@ Run teller and sops in parallel during migration:
 3. Update workflows to use sops
 4. Remove teller after validation
 
-### GitGuardian vs gitleaks
+### Secret scanning with gitleaks
 
-Current workflow uses GitGuardian for secret scanning.
-Consider keeping both during transition, then consolidate to gitleaks for local pre-commit + CI scanning.
+Secret scanning uses gitleaks as a git-hooks.nix pre-commit hook, replacing the previous GitGuardian CI job.
+The hook runs `gitleaks protect --staged --verbose --redact` on every commit via the dev shell.
