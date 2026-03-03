@@ -56,8 +56,8 @@
               export SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt
 
               # Fetch the installer binary
-              curl --proto '=https' --tlsv1.2 -sSf -o nix-installer \
-              https://install.determinate.systems/nix/nix-installer-${system}
+              curl --proto '=https' --tlsv1.2 -sSf -L -o nix-installer \
+              https://github.com/NixOS/nix-installer/releases/latest/download/nix-installer-${system}
 
               # Make it executable
               chmod +x nix-installer
