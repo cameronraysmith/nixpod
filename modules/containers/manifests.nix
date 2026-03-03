@@ -3,6 +3,7 @@
   perSystem =
     {
       inputs',
+      pkgs,
       lib,
       system,
       ...
@@ -20,103 +21,60 @@
           ]
         else
           builtins.filter (sys: sys != "") (builtins.split " " envVar);
+
+      skopeo-nix2container = inputs'.nix2container.packages.skopeo-nix2container;
+      mkMultiArchManifest = pkgs.callPackage ../../lib/mk-multi-arch-manifest.nix { };
+
+      getEnvOr =
+        var: default:
+        let
+          val = builtins.getEnv var;
+        in
+        if val == "" then default else val;
+
+      mkManifest =
+        { name, packageName }:
+        mkMultiArchManifest {
+          inherit name;
+          images = lib.listToAttrs (
+            map (sys: lib.nameValuePair sys self.packages.${sys}.${packageName}) includedSystems
+          );
+          registry = {
+            name = "ghcr.io";
+            repo = "${githubOrg}/${name}";
+            username = getEnvOr "GITHUB_ACTOR" "cameronraysmith";
+            password = "$GITHUB_TOKEN";
+          };
+          version = getEnvOr "VERSION" "0.0.0";
+          tags = [
+            (builtins.getEnv "GIT_SHA_SHORT")
+            (builtins.getEnv "GIT_SHA")
+            (builtins.getEnv "GIT_REF")
+          ];
+          branch = getEnvOr "GITHUB_REF_NAME" "main";
+          skopeo = skopeo-nix2container;
+        };
     in
     {
       legacyPackages = {
-        # Combine OCI json for includedSystems and push to registries
-        nixpodManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
-          github = {
-            enable = true;
-            enableRegistry = true;
-            token = "$GH_TOKEN";
-          };
-          autoTags = {
-            branch = false;
-          };
-          registries = {
-            "ghcr.io" = {
-              # enable = lib.mkForce true;
-              repo = lib.mkForce "${githubOrg}/nixpod";
-              # username = builtins.getEnv "GITHUB_ACTOR";
-              # password = "$GH_TOKEN";
-            };
-          };
-          version = builtins.getEnv "VERSION";
-          imageFiles = builtins.map (sys: self.packages.${sys}.container) includedSystems;
-          tags = [
-            (builtins.getEnv "GIT_SHA_SHORT")
-            (builtins.getEnv "GIT_SHA")
-            (builtins.getEnv "GIT_REF")
-          ];
+        nixpodManifest = mkManifest {
+          name = "nixpod";
+          packageName = "container";
         };
 
-        ghanixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
-          github = {
-            enable = true;
-            enableRegistry = true;
-            token = "$GH_TOKEN";
-          };
-          autoTags = {
-            branch = false;
-          };
-          registries = {
-            "ghcr.io" = {
-              repo = lib.mkForce "${githubOrg}/ghanix";
-            };
-          };
-          version = builtins.getEnv "VERSION";
-          imageFiles = builtins.map (sys: self.packages.${sys}.ghanix) includedSystems;
-          tags = [
-            (builtins.getEnv "GIT_SHA_SHORT")
-            (builtins.getEnv "GIT_SHA")
-            (builtins.getEnv "GIT_REF")
-          ];
+        ghanixManifest = mkManifest {
+          name = "ghanix";
+          packageName = "ghanix";
         };
 
-        codenixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
-          github = {
-            enable = true;
-            enableRegistry = true;
-            token = "$GH_TOKEN";
-          };
-          autoTags = {
-            branch = false;
-          };
-          registries = {
-            "ghcr.io" = {
-              repo = lib.mkForce "${githubOrg}/codenix";
-            };
-          };
-          version = builtins.getEnv "VERSION";
-          imageFiles = builtins.map (sys: self.packages.${sys}.codenix) includedSystems;
-          tags = [
-            (builtins.getEnv "GIT_SHA_SHORT")
-            (builtins.getEnv "GIT_SHA")
-            (builtins.getEnv "GIT_REF")
-          ];
+        codenixManifest = mkManifest {
+          name = "codenix";
+          packageName = "codenix";
         };
 
-        jupnixManifest = inputs'.flocken.legacyPackages.mkDockerManifest {
-          github = {
-            enable = true;
-            enableRegistry = true;
-            token = "$GH_TOKEN";
-          };
-          autoTags = {
-            branch = false;
-          };
-          registries = {
-            "ghcr.io" = {
-              repo = lib.mkForce "${githubOrg}/jupnix";
-            };
-          };
-          version = builtins.getEnv "VERSION";
-          imageFiles = builtins.map (sys: self.packages.${sys}.jupnix) includedSystems;
-          tags = [
-            (builtins.getEnv "GIT_SHA_SHORT")
-            (builtins.getEnv "GIT_SHA")
-            (builtins.getEnv "GIT_REF")
-          ];
+        jupnixManifest = mkManifest {
+          name = "jupnix";
+          packageName = "jupnix";
         };
       };
     };
