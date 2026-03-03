@@ -1,9 +1,6 @@
 {
   "name": "nixpod-dev",
-  "build": {
-    "dockerfile": "../containers/Containerfile.debnix",
-    "context": ".."
-  },
+  "image": "ghcr.io/cameronraysmith/nixpod:latest",
   "customizations": {
     "vscode": {
       "extensions": [
