@@ -254,6 +254,7 @@ nix2container.buildImage {
       "GIT_SSL_CAINFO=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_SSL_CERT_FILE=/nix/var/nix/profiles/default/etc/ssl/certs/ca-bundle.crt"
       "NIX_PATH=/nix/var/nix/profiles/per-user/${storeOwner.uname}/channels:${userHome}/.nix-defexpr/channels"
+      "S6_KEEP_ENV=1"
       "S6_CMD_WAIT_FOR_SERVICES_MAXTIME=300000"
     ]
     ++ extraEnv;
