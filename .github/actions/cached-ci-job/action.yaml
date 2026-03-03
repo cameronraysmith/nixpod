@@ -1,0 +1,197 @@
+name: Cached CI Job
+description: Execute job only if not already successful for this commit SHA
+
+inputs:
+  check-name:
+    description: Full check run name (defaults to github.job, include matrix values for matrix jobs)
+    required: false
+    default: ${{ github.job }}
+  hash-sources:
+    description: |
+      Glob patterns for files to hash (one per line or space-separated).
+      Used to compute content-addressed cache key.
+      Example: '**/*.nix flake.lock Makefile'
+      The workflow file is automatically included.
+    required: false
+    default: ''
+  force-run:
+    description: Force execution even if already successful
+    required: false
+    default: 'false'
+
+outputs:
+  should-run:
+    description: Whether job should execute (true/false)
+    value: ${{ steps.decide.outputs.should-run }}
+  cache-source:
+    description: 'Where cache hit occurred (actions-cache or none)'
+    value: ${{ steps.decide.outputs.cache-source }}
+  cache-key:
+    description: 'Content-addressed cache key'
+    value: ${{ steps.compute-hash.outputs.cache-key }}
+  cache-path:
+    description: 'Cache directory path for job result marker'
+    value: ${{ steps.compute-hash.outputs.cache-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Compute content-addressed cache key
+      id: compute-hash
+      shell: bash
+      env:
+        CHECK_NAME: ${{ inputs.check-name }}
+        HASH_SOURCES: ${{ inputs.hash-sources }}
+      run: |
+        # Sanitize check name
+        SANITIZED=$(echo "$CHECK_NAME" | tr -d '()' | tr ', ' '-' | tr -s '-')
+
+        # Get workflow file path (automatically included in hash)
+        WORKFLOW_FILE=$(echo "$GITHUB_WORKFLOW_REF" | sed 's|^[^/]*/[^/]*/||' | sed 's|@.*||')
+        echo "Workflow file: $WORKFLOW_FILE"
+
+        # Auto-include the composite action itself (critical - computes the cache key)
+        CACHE_ACTION=".github/actions/cached-ci-job/action.yaml"
+
+        # Combine user sources + workflow file + cache action
+        if [ -n "$HASH_SOURCES" ]; then
+          ALL_SOURCES="$HASH_SOURCES $WORKFLOW_FILE $CACHE_ACTION"
+        else
+          # If no sources specified, use workflow file + cache action
+          ALL_SOURCES="$WORKFLOW_FILE $CACHE_ACTION"
+        fi
+
+        echo "Hash sources: $ALL_SOURCES"
+
+        # Compute content hash of all source files
+        # Note: Using git hash-object for consistency with Git's object hashing
+        # Using find instead of shell glob expansion to support ** recursive patterns
+        # Disable glob expansion to preserve patterns for manual processing
+        set -f
+        CONTENT_HASH=""
+        for pattern in $ALL_SOURCES; do
+          if [ -f "$pattern" ]; then
+            # Direct file path - hash it directly
+            FILE_HASH=$(git hash-object "$pattern" 2>/dev/null || echo "missing")
+            CONTENT_HASH="${CONTENT_HASH}${FILE_HASH}"
+          elif [[ "$pattern" == *"*"* ]]; then
+            # Glob pattern - use find to expand recursively
+            # Convert glob pattern to find-compatible format
+            # Examples: **/*.nix -> find all .nix files recursively
+            #           modules/**/*.nix -> find .nix files under modules/
+
+            # Extract base directory and file pattern
+            if [[ "$pattern" == *"/"* ]]; then
+              BASE_DIR="${pattern%%/**}"
+              FILE_PATTERN="${pattern##*/}"
+            else
+              BASE_DIR="."
+              FILE_PATTERN="$pattern"
+            fi
+
+            # Handle ** prefix (recursive from current dir)
+            if [[ "$pattern" == "**/"* ]]; then
+              BASE_DIR="."
+              FILE_PATTERN="${pattern#**/}"
+            fi
+
+            # Find matching files, sort for deterministic ordering
+            if [ -d "$BASE_DIR" ]; then
+              while IFS= read -r file; do
+                FILE_HASH=$(git hash-object "$file" 2>/dev/null || echo "missing")
+                CONTENT_HASH="${CONTENT_HASH}${FILE_HASH}"
+              done < <(find "$BASE_DIR" -type f -name "$FILE_PATTERN" 2>/dev/null | sort)
+            else
+              echo "::warning::Pattern base directory not found: $BASE_DIR (pattern: $pattern)"
+            fi
+          else
+            # Pattern doesn't match a file and has no glob chars - might be missing
+            echo "::warning::Source file not found: $pattern"
+          fi
+        done
+        set +f  # Re-enable glob expansion
+
+        # Hash the concatenated hashes to get final content hash
+        FINAL_HASH=$(echo -n "$CONTENT_HASH" | sha256sum | cut -c1-12)
+
+        # Construct cache key
+        CACHE_KEY="job-result-${SANITIZED}-${FINAL_HASH}"
+        CACHE_PATH=".cache/job-results/${SANITIZED}"
+
+        echo "Content hash: $FINAL_HASH"
+        echo "Cache key: $CACHE_KEY"
+        echo "Cache path: $CACHE_PATH"
+
+        echo "cache-key=$CACHE_KEY" >> $GITHUB_OUTPUT
+        echo "cache-path=$CACHE_PATH" >> $GITHUB_OUTPUT
+        echo "content-hash=$FINAL_HASH" >> $GITHUB_OUTPUT
+
+    - name: Prepare cache restore keys
+      id: cache-result
+      shell: bash
+      env:
+        CHECK_NAME: ${{ inputs.check-name }}
+      run: |
+        # Sanitize check name for restore-keys
+        SANITIZED=$(echo "$CHECK_NAME" | tr -d '()' | tr ', ' '-' | tr -s '-')
+        RESTORE_KEYS="job-result-${SANITIZED}-"
+
+        echo "Restore keys pattern: ${RESTORE_KEYS}*"
+        echo "restore-keys=$RESTORE_KEYS" >> $GITHUB_OUTPUT
+
+    - name: Lookup job result in actions/cache
+      id: cache-lookup
+      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      with:
+        path: ${{ steps.compute-hash.outputs.cache-path }}
+        key: ${{ steps.compute-hash.outputs.cache-key }}
+        restore-keys: ${{ steps.cache-result.outputs.restore-keys }}
+        lookup-only: true
+
+    - name: Make execution decision
+      id: decide
+      shell: bash
+      env:
+        FORCE: ${{ inputs.force-run }}
+        CACHE_HIT: ${{ steps.cache-lookup.outputs.cache-hit || 'false' }}
+        CACHE_KEY: ${{ steps.compute-hash.outputs.cache-key }}
+        CHECK_NAME: ${{ inputs.check-name }}
+      run: |
+        echo "=== Execution Decision ==="
+        echo "Force run: $FORCE"
+        echo "Cache key: $CACHE_KEY"
+        echo "Actions cache hit: $CACHE_HIT"
+        echo ""
+
+        # Force run overrides should-run decision but preserves accurate cache-source
+        # This allows callers to skip cache save when cache already exists
+        if [ "$FORCE" = "true" ]; then
+          echo "should-run=true" >> $GITHUB_OUTPUT
+          # Report actual cache status so callers can decide whether to save
+          if [ "$CACHE_HIT" = "true" ]; then
+            echo "cache-source=actions-cache" >> $GITHUB_OUTPUT
+          else
+            echo "cache-source=none" >> $GITHUB_OUTPUT
+          fi
+          SANITIZED_NAME=$(echo "$CHECK_NAME" | tr -d '()' | tr ', ' '-' | tr -s '-')
+          echo "::notice title=CI Cache | ${SANITIZED_NAME}::RUN | ${CACHE_KEY} | Forced"
+          echo "Decision: RUN (forced by input)"
+          exit 0
+        fi
+
+        # Check actions/cache (content-addressed)
+        if [ "$CACHE_HIT" = "true" ]; then
+          echo "should-run=false" >> $GITHUB_OUTPUT
+          echo "cache-source=actions-cache" >> $GITHUB_OUTPUT
+          SANITIZED_NAME=$(echo "$CHECK_NAME" | tr -d '()' | tr ', ' '-' | tr -s '-')
+          echo "::notice title=CI Cache | ${SANITIZED_NAME}::SKIP | ${CACHE_KEY} | Cached"
+          echo "Decision: SKIP (cached result found)"
+          exit 0
+        fi
+
+        # No cache hit - must run
+        echo "should-run=true" >> $GITHUB_OUTPUT
+        echo "cache-source=none" >> $GITHUB_OUTPUT
+        SANITIZED_NAME=$(echo "$CHECK_NAME" | tr -d '()' | tr ', ' '-' | tr -s '-')
+        echo "::notice title=CI Cache | ${SANITIZED_NAME}::RUN | ${CACHE_KEY} | Cache miss"
+        echo "Decision: RUN (no cached result found)"
