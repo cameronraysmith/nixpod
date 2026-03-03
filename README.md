@@ -69,7 +69,7 @@ See the [justfile](justfile) for details.
 - see credits of [cameronraysmith/nix-config](https://github.com/cameronraysmith/nix-config)
 - [cloudwatt/nix-container-images](https://github.com/cloudwatt/nix-container-images)
 - [nlewo/nix2container](https://github.com/nlewo/nix2container)
-- [DeterminateSystems/nix-installer](https://github.com/DeterminateSystems/nix-installer)
+- [NixOS/nix-installer](https://github.com/NixOS/nix-installer)
 - [pdtpartners/nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter)
 - [snowfallorg](https://github.com/snowfallorg)
 - [srid/nixos-config](https://github.com/srid/nixos-config)
