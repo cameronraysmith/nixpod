@@ -176,7 +176,7 @@ checknix:
 ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/sethvargo/ratchet:0.9.2"
 
 # List of GitHub Actions workflows
-gha_workflows := ".github/actions/build-nix-image/action.yml .github/actions/setup-nix/action.yml .github/actions/tag-build-push-container/action.yml .github/workflows/cid.yaml .github/workflows/containers.yaml .github/workflows/labeler.yml .github/workflows/pr-check.yaml .github/workflows/pr-merge.yaml .github/workflows/update-flake-lock.yml"
+gha_workflows := ".github/actions/build-nix-image/action.yml .github/actions/cached-ci-job/action.yaml .github/actions/setup-nix/action.yml .github/actions/tag-build-push-container/action.yml .github/workflows/ci.yaml .github/workflows/containers.yaml .github/workflows/labeler.yaml .github/workflows/pr-check.yaml .github/workflows/pr-merge.yaml .github/workflows/update-flake-inputs.yaml"
 
 # Pin all workflow versions to hash values (requires Docker)
 [group('CI/CD')]
@@ -207,11 +207,11 @@ list-workflows:
 # Trigger CI workflow
 [group('CI/CD')]
 gh-ci-run branch=`git branch --show-current`:
-  gh workflow run cid.yaml --ref "{{branch}}"
+  gh workflow run ci.yaml --ref "{{branch}}"
 
 # Show recent CI workflow runs
 [group('CI/CD')]
-gh-workflow-status workflow="cid.yaml" branch=`git branch --show-current` limit="5":
+gh-workflow-status workflow="ci.yaml" branch=`git branch --show-current` limit="5":
   gh run list --workflow "{{workflow}}" --branch "{{branch}}" --limit "{{limit}}"
 
 # Watch a CI run (uses latest if no run_id)
@@ -219,7 +219,7 @@ gh-workflow-status workflow="cid.yaml" branch=`git branch --show-current` limit=
 gh-watch run_id="":
   #!/usr/bin/env bash
   if [ -z "{{run_id}}" ]; then
-    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+    RUN_ID=$(gh run list --workflow ci.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
   else
     RUN_ID="{{run_id}}"
   fi
@@ -230,7 +230,7 @@ gh-watch run_id="":
 gh-logs run_id="" job="":
   #!/usr/bin/env bash
   if [ -z "{{run_id}}" ]; then
-    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+    RUN_ID=$(gh run list --workflow ci.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
   else
     RUN_ID="{{run_id}}"
   fi
@@ -245,7 +245,7 @@ gh-logs run_id="" job="":
 gh-rerun run_id="" failed_only="true":
   #!/usr/bin/env bash
   if [ -z "{{run_id}}" ]; then
-    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+    RUN_ID=$(gh run list --workflow ci.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
   else
     RUN_ID="{{run_id}}"
   fi
@@ -260,7 +260,7 @@ gh-rerun run_id="" failed_only="true":
 gh-cancel run_id="":
   #!/usr/bin/env bash
   if [ -z "{{run_id}}" ]; then
-    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+    RUN_ID=$(gh run list --workflow ci.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
   else
     RUN_ID="{{run_id}}"
   fi
