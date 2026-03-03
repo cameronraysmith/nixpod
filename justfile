@@ -135,6 +135,68 @@ ratchet-update:
 list-workflows:
   @act -l
 
+# Trigger CI workflow
+[group('CI/CD')]
+gh-ci-run branch=`git branch --show-current`:
+  gh workflow run cid.yaml --ref "{{branch}}"
+
+# Show recent CI workflow runs
+[group('CI/CD')]
+gh-workflow-status workflow="cid.yaml" branch=`git branch --show-current` limit="5":
+  gh run list --workflow "{{workflow}}" --branch "{{branch}}" --limit "{{limit}}"
+
+# Watch a CI run (uses latest if no run_id)
+[group('CI/CD')]
+gh-watch run_id="":
+  #!/usr/bin/env bash
+  if [ -z "{{run_id}}" ]; then
+    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+  else
+    RUN_ID="{{run_id}}"
+  fi
+  gh run watch "$RUN_ID" --exit-status
+
+# View CI run logs
+[group('CI/CD')]
+gh-logs run_id="" job="":
+  #!/usr/bin/env bash
+  if [ -z "{{run_id}}" ]; then
+    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+  else
+    RUN_ID="{{run_id}}"
+  fi
+  if [ -z "{{job}}" ]; then
+    gh run view "$RUN_ID" --log
+  else
+    gh run view "$RUN_ID" --log --job "{{job}}"
+  fi
+
+# Re-run failed CI jobs
+[group('CI/CD')]
+gh-rerun run_id="" failed_only="true":
+  #!/usr/bin/env bash
+  if [ -z "{{run_id}}" ]; then
+    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+  else
+    RUN_ID="{{run_id}}"
+  fi
+  if [ "{{failed_only}}" = "true" ]; then
+    gh run rerun "$RUN_ID" --failed
+  else
+    gh run rerun "$RUN_ID"
+  fi
+
+# Cancel a running CI workflow
+[group('CI/CD')]
+gh-cancel run_id="":
+  #!/usr/bin/env bash
+  if [ -z "{{run_id}}" ]; then
+    RUN_ID=$(gh run list --workflow cid.yaml --limit 1 --json databaseId --jq '.[0].databaseId')
+  else
+    RUN_ID="{{run_id}}"
+  fi
+  gh run cancel "$RUN_ID"
+
 # Show existing secrets using sops
 [group('secrets')]
 show-secrets:
