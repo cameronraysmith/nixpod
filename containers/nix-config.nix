@@ -12,6 +12,7 @@
   pkgs,
   lib ? pkgs.lib,
   nixConf ? { },
+  profilePackages ? [ pkgs.nix ],
   storeOwner ? "root",
   storeOwnerUid ? 0,
   storeOwnerGid ? 0,
@@ -75,24 +76,39 @@ let
     fi
   '';
 
-  # Profile environment with default packages (nix itself for the daemon)
+  # Profile environment containing packages reachable via the default
+  # profile's bin directory (/nix/var/nix/profiles/default/bin).
   rootEnv = pkgs.buildPackages.buildEnv {
     name = "root-profile-env";
-    paths = [ pkgs.nix ];
+    paths = profilePackages;
   };
 
   manifest = pkgs.buildPackages.runCommand "manifest.nix" { } ''
     cat > $out <<EOF
     [
-      {
-        out = { outPath = "${lib.getOutput "out" pkgs.nix}"; };
-        outputs = [ "out" ];
-        name = "${pkgs.nix.name}";
-        outPath = "${pkgs.nix}";
-        system = "${pkgs.nix.system}";
-        type = "derivation";
-        meta = { };
-      }
+    ${lib.concatStringsSep "\n" (
+      builtins.map (
+        drv:
+        let
+          outputs = drv.outputsToInstall or [ "out" ];
+        in
+        ''
+          {
+            ${lib.concatStringsSep "\n" (
+              builtins.map (output: ''
+                ${output} = { outPath = "${lib.getOutput output drv}"; };
+              '') outputs
+            )}
+            outputs = [ ${lib.concatStringsSep " " (builtins.map (x: "\"${x}\"") outputs)} ];
+            name = "${drv.name}";
+            outPath = "${drv}";
+            system = "${drv.system}";
+            type = "derivation";
+            meta = { };
+          }
+        ''
+      ) profilePackages
+    )}
     ]
     EOF
   '';
