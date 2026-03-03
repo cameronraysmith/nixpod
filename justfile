@@ -95,13 +95,82 @@ container-run variant="nixpod" tag="latest":
   docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
   docker run -it --rm {{container_registry}}{{variant}}:{{tag}}
 
+# Platform detection for devpod binary downloads
+architecture := if arch() == "x86_64" {
+    "amd64"
+  } else if arch() == "aarch64" {
+    "arm64"
+  } else {
+    error("unsupported architecture must be amd64 or arm64")
+  }
+
+opsys := if os() == "macos" {
+    "darwin"
+  } else if os() == "linux" {
+    "linux"
+  } else {
+    error("unsupported operating system must be darwin or linux")
+  }
+
+devpod_release := "latest" # or "v0.3.7" or "v0.4.0-alpha.4"
+
+devpod_binary_url := if devpod_release == "latest" {
+  "https://github.com/loft-sh/devpod/releases/latest/download/devpod-" + opsys + "-" + architecture
+} else {
+  "https://github.com/loft-sh/devpod/releases/download/" + devpod_release + "/devpod-" + opsys + "-" + architecture
+}
+
+# Install devpod
+[unix]
+[group('devpod')]
+install-devpod:
+  curl -L -o devpod {{devpod_binary_url}} && \
+  sudo install -c -m 0755 devpod /usr/local/bin && \
+  rm -f devpod
+  which devpod
+  devpod version
+
+# Print devpod info
+[group('devpod')]
+devpod:
+  devpod version && echo
+  devpod context list
+  devpod provider list
+  devpod list
+
+# Install and use devpod kubernetes provider
+[group('devpod')]
+provider:
+  devpod provider add kubernetes --silent || true \
+  && devpod provider use kubernetes
+
+# Run latest container variant in current kube context via devpod
+[group('devpod')]
+pod variant="nixpod" tag="latest":
+  devpod up \
+  --devcontainer-image {{container_registry}}{{variant}}:{{tag}} \
+  --provider kubernetes \
+  --ide vscode \
+  --open-ide \
+  --source git:https://github.com/cameronraysmith/nixpod \
+  --provider-option DISK_SIZE=100Gi \
+  {{variant}}
+
+# Interactively select devpod to stop
+[group('devpod')]
+stop:
+  devpod stop
+
+# Interactively select devpod to delete
+[group('devpod')]
+delete:
+  devpod delete
+
 # Run nixpkgs hello and nix-health
 [group('nix')]
 checknix:
   nix run nixpkgs#hello # 30s
   nix run github:srid/nix-health # 3m
-
-## CI/CD
 
 # Docker command to run sethvargo/ratchet to pin GitHub Actions workflows version tags to commit hashes
 ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/sethvargo/ratchet:0.9.2"
