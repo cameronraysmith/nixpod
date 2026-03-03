@@ -141,7 +141,7 @@ runs:
 
     - name: Lookup job result in actions/cache
       id: cache-lookup
-      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+      uses: actions/cache/restore@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # ratchet:actions/cache/restore@v5
       with:
         path: ${{ steps.compute-hash.outputs.cache-path }}
         key: ${{ steps.compute-hash.outputs.cache-key }}
