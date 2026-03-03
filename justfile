@@ -238,69 +238,53 @@ ratchet-update:
     eval "{{ratchet_base}} update $workflow"; \
   done
 
-# Update github vars for repo from environment variables
-[group('CI/CD')]
-ghvars repo="cameronraysmith/nixpod":
-  @echo "vars before updates:"
-  @echo
-  PAGER=cat gh variable list --repo={{ repo }}
-  @echo
-  gh variable set CACHIX_CACHE_NAME --repo={{ repo }} --body="$CACHIX_CACHE_NAME"
-  gh variable set FAST_FORWARD_ACTOR --repo={{ repo }} --body="$FAST_FORWARD_ACTOR"
-  @echo
-  @echo vars after updates:
-  @echo
-  PAGER=cat gh variable list --repo={{ repo }}
-
-# List available workflows and associated jobs.
+# List available workflows and associated jobs
 [group('CI/CD')]
 list-workflows:
   @act -l
 
-## secrets (sops)
-
 # Show existing secrets using sops
-[group('secrets (sops)')]
+[group('secrets')]
 show-secrets:
   @echo "=== Shared secrets (vars/shared.yaml) ==="
   @sops -d vars/shared.yaml
   @echo
 
 # Edit shared secrets file
-[group('secrets (sops)')]
+[group('secrets')]
 edit-secrets:
   @sops vars/shared.yaml
 
 # Create a new sops encrypted file
-[group('secrets (sops)')]
+[group('secrets')]
 new-secret file:
   @sops {{ file }}
 
 # Export unique secrets to dotenv format using sops
-[group('secrets (sops)')]
+[group('secrets')]
 export-secrets:
   @echo "# Exported from sops secrets" > .secrets.env
   @sops -d vars/shared.yaml | grep -E '^[A-Z_]+:' | sed 's/: /=/' >> .secrets.env
   @sort -u .secrets.env -o .secrets.env
 
 # Run command with all shared secrets as environment variables
-[group('secrets (sops)')]
+[group('secrets')]
 run-with-secrets +command:
   @sops exec-env vars/shared.yaml '{{ command }}'
 
 # Check secrets are available in sops environment
-[group('secrets (sops)')]
-sops-check:
+[group('secrets')]
+check-secrets:
   @printf "Check sops environment for secrets\n\n"
   @sops exec-env vars/shared.yaml 'env | grep -E "GITHUB|CACHIX|CLOUDFLARE|BITWARDEN" | sed "s/=.*$/=***REDACTED***/"'
 
 # Show specific secret value from shared secrets
-[group('secrets (sops)')]
-sops-get key:
+[group('secrets')]
+get-secret key:
   @sops -d vars/shared.yaml | grep "^{{ key }}:" | cut -d' ' -f2-
 
 # Validate all sops encrypted files can be decrypted
-[group('secrets (sops)')]
+[group('secrets')]
 validate-secrets:
   @echo "Validating sops encrypted files..."
   @for file in $(find vars \( -name "*.yaml" -o -name "*.json" \)); do \
@@ -309,7 +293,7 @@ validate-secrets:
   done
 
 # Initialize sops age key for new developers
-[group('secrets (sops)')]
+[group('secrets')]
 sops-init:
   @echo "Checking sops configuration..."
   @if [ ! -f ~/.config/sops/age/keys.txt ]; then \
@@ -325,13 +309,13 @@ sops-init:
   fi
 
 # Add or update a secret non-interactively
-[group('secrets (sops)')]
+[group('secrets')]
 set-secret secret_name secret_value:
   @sops set vars/shared.yaml '["{{ secret_name }}"]' '"{{ secret_value }}"'
   @echo "{{ secret_name }} has been set/updated"
 
 # Rotate a specific secret interactively
-[group('secrets (sops)')]
+[group('secrets')]
 rotate-secret secret_name:
   @echo "Rotating {{ secret_name }}..."
   @echo "Enter new value for {{ secret_name }}:"
@@ -340,7 +324,7 @@ rotate-secret secret_name:
     echo "{{ secret_name }} rotated successfully"
 
 # Update keys for existing secrets files after adding new recipients
-[group('secrets (sops)')]
+[group('secrets')]
 updatekeys:
   @for file in $(find vars \( -name "*.yaml" -o -name "*.json" \)); do \
     echo "Updating keys for: $file"; \
@@ -349,8 +333,8 @@ updatekeys:
   @echo "Keys updated for all secrets files"
 
 # Update github vars for repo from sops environment
-[group('secrets (sops)')]
-sops-ghvars repo="cameronraysmith/nixpod":
+[group('CI/CD')]
+ghvars repo="cameronraysmith/nixpod":
   @echo "vars before updates:"
   @echo
   PAGER=cat gh variable list --repo={{ repo }}
@@ -365,8 +349,8 @@ sops-ghvars repo="cameronraysmith/nixpod":
   PAGER=cat gh variable list --repo={{ repo }}
 
 # Update github secrets for repo from sops environment
-[group('secrets (sops)')]
-sops-ghsecrets repo="cameronraysmith/nixpod":
+[group('CI/CD')]
+ghsecrets repo="cameronraysmith/nixpod":
   @echo "secrets before updates:"
   @echo
   PAGER=cat gh secret list --repo={{ repo }}
