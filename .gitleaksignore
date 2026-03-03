@@ -1,0 +1,10 @@
+# .gitleaksignore - Fingerprints of false positives safe to ignore
+# Format: <commit>:<file>:<rule>:<line>
+
+# justfile ghsecrets repo parameter flagged as generic-api-key (repo name string, not a secret)
+80f1b6e0e9bab84599510a70cc2f61c3f95a75cf:justfile:generic-api-key:353
+999ec6b64c465e8ae1b5f8fe3c7b85036e931786:justfile:generic-api-key:462
+600781a825bf3849198b8ef7c6e98da3346ebf03:justfile:generic-api-key:256
+
+# home/git.nix GPG signing key config value (public key ID, not a secret)
+9a9c341e6e3908abd06a7fdbca4930c2670dfa34:home/git.nix:generic-api-key:7
