@@ -20,7 +20,7 @@
     asciinema
 
     # Fonts
-    noto-fonts-emoji
+    noto-fonts-color-emoji
     fira-code
     cascadia-code
     (
