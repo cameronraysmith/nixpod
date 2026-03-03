@@ -286,6 +286,62 @@ updatekeys:
   done
   @echo "Keys updated for all secrets files"
 
+# Add an existing age key to the local sops keyring
+[group('secrets')]
+sops-add-key:
+  #!/usr/bin/env bash
+  echo "Paste your age secret key (starts with AGE-SECRET-KEY-):"
+  read -s AGE_KEY
+  if [[ ! "$AGE_KEY" =~ ^AGE-SECRET-KEY- ]]; then
+    echo "Error: invalid age secret key format"
+    exit 1
+  fi
+  mkdir -p ~/.config/sops/age
+  if grep -q "$AGE_KEY" ~/.config/sops/age/keys.txt 2>/dev/null; then
+    echo "Key already exists in keyring"
+  else
+    echo "$AGE_KEY" >> ~/.config/sops/age/keys.txt
+    echo "Key added to ~/.config/sops/age/keys.txt"
+  fi
+  echo "Public key:"
+  echo "$AGE_KEY" | age-keygen -y
+
+# Upload CI age key to GitHub repository secrets
+[group('secrets')]
+sops-upload-github-key repo=`gh repo view --json nameWithOwner -q .nameWithOwner`:
+  #!/usr/bin/env bash
+  if [ ! -f ~/.config/sops/age/keys.txt ]; then
+    echo "Error: No age key found at ~/.config/sops/age/keys.txt"
+    exit 1
+  fi
+  CI_AGE_KEY=$(grep -o 'AGE-SECRET-KEY-[A-Z0-9]*' ~/.config/sops/age/keys.txt | head -1)
+  if [ -z "$CI_AGE_KEY" ]; then
+    echo "Error: Could not extract age secret key"
+    exit 1
+  fi
+  echo "$CI_AGE_KEY" | gh secret set CI_AGE_KEY -R "{{repo}}"
+  echo "CI_AGE_KEY uploaded to {{repo}}"
+
+# Check GitHub workflows for required secrets
+[group('secrets')]
+sops-check-requirements:
+  #!/usr/bin/env bash
+  echo "Secrets referenced in GitHub workflows:"
+  grep -roh 'secrets\.\([A-Z_]*\)' .github/ | sort -u | sed 's/secrets\./  /'
+  echo
+  echo "Variables referenced in GitHub workflows:"
+  grep -roh 'vars\.\([A-Z_]*\)' .github/ | sort -u | sed 's/vars\./  /'
+
+# Scan repository for leaked secrets
+[group('secrets')]
+scan-secrets:
+  gitleaks detect --verbose --redact
+
+# Scan staged files for leaked secrets
+[group('secrets')]
+scan-staged:
+  gitleaks protect --staged --verbose --redact
+
 # Update github vars for repo from sops environment
 [group('CI/CD')]
 ghvars repo="cameronraysmith/nixpod":
