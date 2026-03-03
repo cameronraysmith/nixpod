@@ -170,22 +170,6 @@
         "type": "github"
       }
     },
-    "nixos-flake": {
-      "locked": {
-        "lastModified": 1718149389,
-        "narHash": "sha256-Bom7owfn/piwRum+VmsRSGAjvnlhDEeE60IONzIQffs=",
-        "owner": "srid",
-        "repo": "nixos-flake",
-        "rev": "c23ce31c707c3e4b699312ab9c80a4a003e893b1",
-        "type": "github"
-      },
-      "original": {
-        "owner": "srid",
-        "repo": "nixos-flake",
-        "rev": "c23ce31c707c3e4b699312ab9c80a4a003e893b1",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1756266583,
@@ -242,7 +226,6 @@
         "import-tree": "import-tree",
         "nix-index-database": "nix-index-database",
         "nix2container": "nix2container",
-        "nixos-flake": "nixos-flake",
         "nixpkgs": "nixpkgs_2",
         "sops-nix": "sops-nix",
         "systems": "systems",
