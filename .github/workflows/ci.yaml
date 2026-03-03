@@ -17,6 +17,11 @@ on:
         required: false
         type: boolean
         default: false
+      force_run:
+        description: "Force execution even if already successful for this commit"
+        required: false
+        type: boolean
+        default: false
   pull_request:
     types: [opened, labeled, reopened, synchronize]
     paths-ignore:
@@ -44,8 +49,29 @@ permissions:
   actions: write
   contents: read
 
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          installer: quick
+          system: x86_64-linux
+      - name: Scan for secrets with gitleaks
+        run: nix run nixpkgs#gitleaks -- detect --verbose --redact
+
+
   set-variables:
+    needs: [secrets-scan]
     runs-on: ubuntu-latest
     outputs:
       debug: ${{ steps.set-variables.outputs.debug }}
@@ -91,7 +117,7 @@ jobs:
 
   flake-check:
     runs-on: ubuntu-latest
-    needs: set-variables
+    needs: [secrets-scan, set-variables]
     if: ${{ needs.set-variables.outputs.skip_ci != 'true' }}
     concurrency:
       group: flake-check-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
