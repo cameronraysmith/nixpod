@@ -7,8 +7,8 @@
         # options used inside these imported modules.
         home.stateVersion = "23.11";
         imports = [
-          inputs.catppuccin.homeManagerModules.catppuccin
-          inputs.nix-index-database.hmModules.nix-index
+          inputs.catppuccin.homeModules.catppuccin
+          inputs.nix-index-database.homeModules.nix-index
           ./atuin.nix
           ./neovim
           ./git.nix
