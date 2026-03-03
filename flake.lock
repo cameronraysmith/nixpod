@@ -52,33 +52,6 @@
         "type": "github"
       }
     },
-    "flocken": {
-      "inputs": {
-        "flake-parts": [
-          "flake-parts"
-        ],
-        "nixpkgs": [
-          "nixpkgs"
-        ],
-        "systems": [
-          "systems"
-        ]
-      },
-      "locked": {
-        "lastModified": 1737581094,
-        "narHash": "sha256-MSjyNy4zENfngnSdXQ6ef/wwACB0jfDyhy0qkI67F9A=",
-        "owner": "mirkolenz",
-        "repo": "flocken",
-        "rev": "97921a2650cb3de20c2a5ee591b00a6d5099fc40",
-        "type": "github"
-      },
-      "original": {
-        "owner": "mirkolenz",
-        "ref": "v2",
-        "repo": "flocken",
-        "type": "github"
-      }
-    },
     "git-hooks": {
       "inputs": {
         "flake-compat": "flake-compat",
@@ -264,7 +237,6 @@
       "inputs": {
         "catppuccin": "catppuccin",
         "flake-parts": "flake-parts",
-        "flocken": "flocken",
         "git-hooks": "git-hooks",
         "home-manager": "home-manager",
         "import-tree": "import-tree",
