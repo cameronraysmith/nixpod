@@ -123,30 +123,59 @@ jobs:
       group: flake-check-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
     steps:
-      - name: Install dependencies
-        shell: bash
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: ${{ github.job }}
+          hash-sources: 'flake.nix flake.lock modules/**/*.nix containers/**/*.nix home/**/*.nix .github/actions/setup-nix/action.yml'
+          force-run: ${{ inputs.force_run && 'true' || 'false' }}
+      - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
+        uses: ./.github/actions/setup-nix
+        with:
+          system: x86_64-linux
+          enable-cachix: true
+          cachix-name: ${{ vars.CACHIX_CACHE_NAME }}
+          cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      - name: Configure system features
+        if: steps.cache.outputs.should-run == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -yq zstd
-          sudo apt-get clean
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@786fff0690178f1234e4e1fe9b536e94f5433196 # ratchet:DeterminateSystems/nix-installer-action@main
-        with:
-          extra-conf: 'system-features = nixos-test benchmark big-parallel kvm'
-      - uses: cachix/cachix-action@be5295a636153b6ad194d3245f78f8e0b78dc704 # ratchet:cachix/cachix-action@v15
-        continue-on-error: true
-        with:
-          name: "${{ vars.CACHIX_CACHE_NAME }}"
-          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
-          extraPullNames: srid
+          echo "system-features = nixos-test benchmark big-parallel kvm" | sudo tee -a /etc/nix/nix.conf
+          sudo systemctl restart nix-daemon
       - name: Setup tmate debug session
         uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
-        if: ${{ inputs.debug_enabled }}
+        if: ${{ steps.cache.outputs.should-run == 'true' && inputs.debug_enabled }}
       - name: Summarize flake
+        if: steps.cache.outputs.should-run == 'true'
         run: nix flake show
       - name: Run flake check
-        run: nix flake check
+        if: steps.cache.outputs.should-run == 'true'
+        run: nix develop --accept-flake-config -c just check
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<MARKEREOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "cache_key": "${{ steps.cache.outputs.cache-key }}",
+            "workflow_run_id": "${{ github.run_id }}"
+          }
+          MARKEREOF
+      - name: Save job result to cache
+        if: success() && steps.cache.outputs.should-run == 'true'
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # ratchet:actions/cache/save@v5
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
 
   build-nix-images:
     runs-on: ubuntu-latest
