@@ -3,12 +3,9 @@
     {
       pkgs,
       config,
-      self',
       ...
     }:
     {
-      apps.default.program = self'.packages.activate-home;
-
       devShells.default = pkgs.mkShell {
         name = "nixpod";
         inputsFrom = [
