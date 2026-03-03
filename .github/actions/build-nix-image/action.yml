@@ -98,7 +98,7 @@ runs:
     # - name: Setup tmate debug session
     #   uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48 # ratchet:mxschmitt/action-tmate@v3
     #   env:
-    #     GH_TOKEN: ${{ github.token }}
+    #     GITHUB_TOKEN: ${{ github.token }}
     #     ARTIFACT_REGISTRY_PASSWORD: ${{ inputs.artifactRegistryPassword }}
     #     VERSION: ${{ inputs.releaseVersion }}
 
@@ -128,8 +128,6 @@ runs:
           if echo "$SKOPEO_OUTPUT" | grep -q 'manifest unknown'; then
             echo "Image $FQN_GIT_SHA does not exist. Building."
             nix-channel --update
-            podman manifest inspect docker.io/library/flocken:latest || true
-            podman manifest inspect quay.io/flocken:latest || true
             ${{ inputs.nixCommand }}
           else
             echo "Failed to inspect image with error: $SKOPEO_OUTPUT"
@@ -139,7 +137,7 @@ runs:
 
         df -h
       env:
-        GH_TOKEN: ${{ github.token }}
+        GITHUB_TOKEN: ${{ github.token }}
         # GCP_PROJECT_ID: ${{ inputs.gcpProjectId }}
         # ENCODED_GAR_SA_CREDS: ${{ inputs.encodedGARCredentials }}
         ARTIFACT_REGISTRY_PASSWORD: ${{ inputs.artifactRegistryPassword }}
