@@ -12,12 +12,32 @@
     let
       buildNixImage = import ../containers/build-image.nix;
       nix2container = inputs'.nix2container.packages.nix2container;
+
+      # Base packages for the default Nix profile, matching the legacy
+      # defaultPkgs from nix-legacy.nix. These populate
+      # /nix/var/nix/profiles/default/bin so commands are on PATH.
+      defaultProfilePackages = with pkgs; [
+        nix
+        bashInteractive
+        coreutils
+        gnutar
+        gzip
+        gnugrep
+        which
+        curl
+        less
+        wget
+        cacert
+        findutils
+        gitMinimal
+      ];
     in
     {
       packages.nixpod =
         let
           nixpodNixConfig = import ../containers/nix-config.nix {
             inherit pkgs lib;
+            profilePackages = defaultProfilePackages;
             nixConf = {
               allowed-users = [ "*" ];
               max-jobs = [ "auto" ];
@@ -69,6 +89,7 @@
           '';
           ghanixNixConfig = import ../containers/nix-config.nix {
             inherit pkgs lib;
+            profilePackages = defaultProfilePackages;
             storeOwner = "runner";
             nixConf = {
               allowed-users = [ "*" ];
@@ -249,6 +270,7 @@
           '';
           codenixNixConfig = import ../containers/nix-config.nix {
             inherit pkgs lib;
+            profilePackages = defaultProfilePackages;
             storeOwner = username;
             nixConf = {
               allowed-users = [ "*" ];
@@ -387,6 +409,7 @@
           '';
           jupnixNixConfig = import ../containers/nix-config.nix {
             inherit pkgs lib;
+            profilePackages = defaultProfilePackages;
             storeOwner = username;
             nixConf = {
               allowed-users = [ "*" ];
