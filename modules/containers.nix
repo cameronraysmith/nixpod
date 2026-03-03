@@ -49,7 +49,7 @@
             vim
           ];
           extraContents = [ self'.packages.default ];
-          cmd = [ "/root/.nix-profile/bin/bash" ];
+          cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
         };
 
       # Enable 'nix run .#container to build an OCI tarball with the
@@ -104,7 +104,7 @@
             atuinDaemonService
             self'.legacyPackages.homeConfigurations.runner.activationPackage
           ];
-          cmd = [ "/home/runner/.nix-profile/bin/bash" ];
+          cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
         };
 
       packages.codenix =
@@ -299,7 +299,7 @@
               "8888/tcp" = { };
             };
           };
-          cmd = [ "/home/${username}/.nix-profile/bin/bash" ];
+          cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
         };
 
       packages.jupnix =
@@ -436,7 +436,7 @@
               "8888/tcp" = { };
             };
           };
-          cmd = [ "/home/${username}/.nix-profile/bin/bash" ];
+          cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
         };
 
       legacyPackages.containerMatrix = {
