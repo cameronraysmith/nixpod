@@ -252,103 +252,10 @@ ghvars repo="cameronraysmith/nixpod":
   @echo
   PAGER=cat gh variable list --repo={{ repo }}
 
-# Update github secrets for repo from environment variables
-[group('CI/CD')]
-ghsecrets repo="cameronraysmith/nixpod":
-  @echo "secrets before updates:"
-  @echo
-  PAGER=cat gh secret list --repo={{ repo }}
-  @echo
-  eval "$(teller sh)" && \
-  gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN" && \
-  gh secret set ARTIFACT_REGISTRY_PASSWORD --repo={{ repo }} --body="$ARTIFACT_REGISTRY_PASSWORD" && \
-  gh secret set FAST_FORWARD_PAT --repo={{ repo }} --body="$FAST_FORWARD_PAT"
-  @echo
-  @echo secrets after updates:
-  @echo
-  PAGER=cat gh secret list --repo={{ repo }}
-
 # List available workflows and associated jobs.
 [group('CI/CD')]
 list-workflows:
   @act -l
-
-# Execute flake.yaml workflow.
-[group('CI/CD')]
-test-flake-workflow:
-  @teller run -s -- \
-  act workflow_dispatch \
-  -W '.github/workflows/cid.yaml' \
-  -j flake-check \
-  -s GITHUB_TOKEN -s CACHIX_AUTH_TOKEN \
-  --matrix os:ubuntu-latest
-
-## secrets (teller)
-
-# Define the project variable
-gcp_project_id := env_var_or_default('GCP_PROJECT_ID', 'development')
-
-# Show existing secrets
-[group('secrets (teller)')]
-show:
-  @teller show
-
-# Create a secret with the given name
-[group('secrets (teller)')]
-create-secret name:
-  @gcloud secrets create {{name}} --replication-policy="automatic" --project {{gcp_project_id}}
-
-# Populate a single secret with the contents of a dotenv-formatted file
-[group('secrets (teller)')]
-populate-single-secret name path:
-  @gcloud secrets versions add {{name}} --data-file={{path}} --project {{gcp_project_id}}
-
-# Populate each line of a dotenv-formatted file as a separate secret
-[group('secrets (teller)')]
-populate-separate-secrets path:
-  @grep -v '^[[:space:]]*#' {{path}} | while IFS= read -r line; do \
-     KEY=$(echo $line | cut -d '=' -f 1); \
-     VALUE=$(echo $line | cut -d '=' -f 2); \
-     gcloud secrets create $KEY --replication-policy="automatic" --project {{gcp_project_id}} 2>/dev/null; \
-     printf "$VALUE" | gcloud secrets versions add $KEY --data-file=- --project {{gcp_project_id}}; \
-   done
-
-# Complete process: Create a secret and populate it with the entire contents of a dotenv file
-[group('secrets (teller)')]
-create-and-populate-single-secret name path:
-  @just create-secret {{name}}
-  @just populate-single-secret {{name}} {{path}}
-
-# Complete process: Create and populate separate secrets for each line in the dotenv file
-[group('secrets (teller)')]
-create-and-populate-separate-secrets path:
-  @just populate-separate-secrets {{path}}
-
-# Retrieve the contents of a given secret
-[group('secrets (teller)')]
-get-secret name:
-  @gcloud secrets versions access latest --secret={{name}} --project={{gcp_project_id}}
-
-# Create empty dotenv from template
-[group('secrets (teller)')]
-seed-dotenv:
-  @cp .template.env .env
-
-# Export unique secrets to dotenv format
-[group('secrets (teller)')]
-export:
-  @teller export env | sort | uniq | grep -v '^$' > .secrets.env
-
-# Check secrets are available in teller shell.
-[group('secrets (teller)')]
-check-secrets:
-  @printf "Check teller environment for secrets\n\n"
-  @teller run -s -- env | grep -E 'GITHUB|CACHIX' | teller redact
-
-# Save KUBECONFIG to file
-[group('secrets (teller)')]
-get-kubeconfig:
-  @teller run -s -- printenv KUBECONFIG > kubeconfig.yaml
 
 ## secrets (sops)
 
