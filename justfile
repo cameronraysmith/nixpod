@@ -50,158 +50,50 @@ clean:
 run: lint check
   nix run
 
-# Compile nix flake to OCI json format
-[group('nix')]
-oci:
-  nix build .#container
+# Container variants produced by this flake
+_containers := "nixpod ghanix codenix jupnix"
 
-# Build and copy OCI format container image to docker daemon
-[group('nix')]
-nixcontainer:
-  docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
-  nix run .#container.copyToDockerDaemon
-
-#----------------------------------------------------------------
-# The just recipes below are for testing the flake in a container
-#----------------------------------------------------------------
-
-builder := "docker"
-container_user := "runner"
-container_home := "/home" / container_user
-container_work := container_home / "work"
 container_registry := "ghcr.io/cameronraysmith/"
 
-container_type := "testing" # or "container"
-container_image := if container_type == "testing" {
-    "debnix"
-  } else if container_type == "container" {
-    "nixpod"
-  } else {
-    error("container_type must be either 'testing' or 'container'") 
-  }
-container_tag := "latest"
+# Build container image (produces nix2container JSON manifest)
+[group('containers')]
+container-build variant="nixpod":
+  nix build ".#{{variant}}" -L
 
-architecture := if arch() == "x86_64" {
-    "amd64"
-  } else if arch() == "aarch64" {
-    "arm64"
-  } else {
-    error("unsupported architecture must be amd64 or arm64")
-  }
+# Build all container variants
+[group('containers')]
+container-build-all:
+  #!/usr/bin/env bash
+  for c in {{_containers}}; do
+    echo "Building $c..."
+    nix build ".#$c" -L
+  done
 
-opsys := if os() == "macos" {
-    "darwin"
-  } else if os() == "linux" {
-    "linux"
-  } else {
-    error("unsupported operating system must be darwin or linux")
-  }
+# Load container image into Docker daemon
+[group('containers')]
+container-load variant="nixpod":
+  docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
+  nix run ".#{{variant}}.copyToDockerDaemon"
 
-devpod_release := "latest" # or "v0.3.7" or "v0.4.0-alpha.4"
+# Push multi-arch manifest to registry (requires --impure for env vars)
+[group('containers')]
+container-push variant="nixpod":
+  nix run --impure ".#{{variant}}Manifest" -L
 
-devpod_binary_url := if devpod_release == "latest" {
-  "https://github.com/loft-sh/devpod/releases/latest/download/devpod-" + opsys + "-" + architecture
-} else {
-  "https://github.com/loft-sh/devpod/releases/download/" + devpod_release + "/devpod-" + opsys + "-" + architecture
-}
+# Push all container manifests
+[group('containers')]
+container-push-all:
+  #!/usr/bin/env bash
+  for c in {{_containers}}; do
+    echo "Pushing $c manifest..."
+    nix run --impure ".#${c}Manifest" -L
+  done
 
-# Install devpod
-[unix]
-install-devpod:
-  curl -L -o devpod {{devpod_binary_url}} && \
-  sudo install -c -m 0755 devpod /usr/local/bin && \
-  rm -f devpod
-  which devpod
-  devpod version
-
-# Print devpod info
-devpod:
-  devpod version && echo
-  devpod context list
-  devpod provider list
-  devpod list
-
-# Install and use devpod kubernetes provider
-provider:
-  devpod provider add kubernetes --silent || true \
-  && devpod provider use kubernetes
-
-# Run latest container_image in current kube context
-pod:
-  devpod up \
-  --devcontainer-image {{container_registry}}{{container_image}}:{{container_tag}} \
-  --provider kubernetes \
-  --ide vscode \
-  --open-ide \
-  --source git:https://github.com/cameronraysmith/nixpod \
-  --provider-option DISK_SIZE=100Gi \
-  {{container_image}}
-
-# Interactively select devpod to stop
-stop: 
-  devpod stop
-
-# Interactively select devpod to delete
-delete: 
-  devpod delete
-
-container_command_type := "sysbash"
-# If you want to 
-# **test the flake manually**
-# check the output of
-# $ just -n container_command_type="testingbash" container-run
-# and then run the container with
-# $ just container_command_type="testingbash" container-run
-# To activate home manager inside the container run: 
-#   > rm -f ~/.bashrc ~/.profile && nix run && direnv allow && zsh
-container_command := if container_command_type == "runflake" {
-    "cd " + container_home + " && rm -f .bashrc .profile .zshrc && cd " 
-    + container_work + " && nix run && direnv allow && zsh"
-  } else if container_command_type == "testingbash" {
-    "cd " + container_work + ' && echo "export PS1=\"> \"" >> ~/.bashrc && exec bash'
-  } else if container_command_type == "sysbash" {
-    "/bin/bash"
-  } else if container_command_type == "zsh" {
-    "zsh"
-  } else {
-    error("container_command_type must be one of 
-          'runflake', 'testingbash', 'sysbash' or 'zsh'") 
-  }
-
-# Pull container image from registry
-container-pull:
-  {{builder}} pull {{container_registry}}{{container_image}}:{{container_tag}}
-
-# Build and load image for running the flake in a container
-container-build: container-pull
-  {{builder}} build -t {{container_registry}}{{container_image}}:{{container_tag}} -f containers/Containerfile.{{container_image}} .
-
-# Build the image only if pull fails
-container-pull-or-build:
-  {{builder}} pull {{container_registry}}{{container_image}}:{{container_tag}} || \
-  {{builder}} build -t {{container_registry}}{{container_image}}:{{container_tag}} -f containers/Containerfile.{{container_image}} .
-
-# Run the container image
-container-run mount_path="$(pwd)": container-pull-or-build
-  {{builder}} run -it \
-  --rm -v {{mount_path}}:{{container_work}} {{container_registry}}{{container_image}}:{{container_tag}} \
-  -c '{{container_command}}'
-
-# Get base image digest
-basecontainer-digest:
-  {{builder}} run -it --rm \
-  --entrypoint skopeo quay.io/skopeo/stable \
-  inspect docker://docker.io/debian:stable-slim | \
-  jq -r .Digest | tr -d '\n'
-
-# Get base image tarball sha256
-basecontainer-sha256:
-  {{builder}} pull debian:stable-slim
-  {{builder}} save -o debian_stable_slim.tar debian:stable-slim
-  nix-hash --type sha256 --base16 debian_stable_slim.tar
-  nix-hash --type sha256 --base32 debian_stable_slim.tar
-  nix-hash --type sha256 --base64 debian_stable_slim.tar
-  rm debian_stable_slim.tar || true
+# Run a container image locally via Docker
+[group('containers')]
+container-run variant="nixpod" tag="latest":
+  docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
+  docker run -it --rm {{container_registry}}{{variant}}:{{tag}}
 
 # Run nixpkgs hello and nix-health
 [group('nix')]
