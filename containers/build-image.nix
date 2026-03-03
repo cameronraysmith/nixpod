@@ -213,6 +213,14 @@ nix2container.buildImage {
       regex = "/var/log";
       mode = "1777";
     }
+    # /run owned by storeOwner for s6-overlay preinit
+    {
+      path = runtimeDirs;
+      regex = "/run$";
+      mode = "0755";
+      uid = storeOwner.uid;
+      gid = storeOwner.gid;
+    }
     # Sudo wrapper with setuid
     {
       path = sudoWrapper;
