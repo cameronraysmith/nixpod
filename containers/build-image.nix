@@ -240,6 +240,7 @@ nix2container.buildImage {
           "/nix/var/nix/profiles/default/bin"
           "/nix/var/nix/profiles/default/sbin"
           "/run/current-system/sw/bin"
+          "/bin"
         ]
       }"
       "MANPATH=${
