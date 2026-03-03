@@ -418,7 +418,7 @@ ghvars repo="cameronraysmith/nixpod":
   @echo
   PAGER=cat gh variable list --repo={{ repo }}
   @echo
-  sops exec-env vars/shared.yaml '\
+  sops exec-env vars/shared.yaml 'unset GITHUB_TOKEN && \
   gh variable set CACHIX_CACHE_NAME --repo={{ repo }} --body="$CACHIX_CACHE_NAME" && \
   gh variable set FAST_FORWARD_ACTOR --repo={{ repo }} --body="$FAST_FORWARD_ACTOR"'
   @echo
