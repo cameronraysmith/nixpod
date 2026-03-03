@@ -19,5 +19,6 @@ dolt:
     # command. Required for clean bd dolt pull — off leaves uncommitted
     # state that blocks merges. Server mode defaults to off; on is
     # preferred when using dolt remotes for multi-clone sync.
+    auto-start: false
     auto-commit: "on"
     auto-push: false
