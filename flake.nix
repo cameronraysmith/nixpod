@@ -12,12 +12,6 @@
     };
     flake-parts.url = "github:hercules-ci/flake-parts";
     nixos-flake.url = "github:srid/nixos-flake/c23ce31c707c3e4b699312ab9c80a4a003e893b1";
-    flocken = {
-      url = "github:mirkolenz/flocken/v2";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-parts.follows = "flake-parts";
-      inputs.systems.follows = "systems";
-    };
     nix2container.url = "github:nlewo/nix2container";
     nix2container.inputs.nixpkgs.follows = "nixpkgs";
     import-tree.url = "github:vic/import-tree";
