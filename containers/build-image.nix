@@ -68,7 +68,7 @@ let
 
   # Layer 3: s6-overlay filesystem layout (/init, /command/, etc).
   s6Layer = nix2container.buildLayer {
-    deps = [ s6-overlay ];
+    copyToRoot = [ s6-overlay ];
     layers = [
       baseLayer
       nixLayer
