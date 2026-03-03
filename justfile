@@ -434,7 +434,7 @@ ghsecrets repo="cameronraysmith/nixpod":
   @echo
   PAGER=cat gh secret list --repo={{ repo }}
   @echo
-  sops exec-env vars/shared.yaml '\
+  sops exec-env vars/shared.yaml 'unset GITHUB_TOKEN && \
   gh secret set CACHIX_AUTH_TOKEN --repo={{ repo }} --body="$CACHIX_AUTH_TOKEN" && \
   gh secret set CLOUDFLARE_ACCOUNT_ID --repo={{ repo }} --body="$CLOUDFLARE_ACCOUNT_ID" && \
   gh secret set CLOUDFLARE_API_TOKEN --repo={{ repo }} --body="$CLOUDFLARE_API_TOKEN" && \
