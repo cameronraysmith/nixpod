@@ -215,7 +215,7 @@ checknix:
 ratchet_base := "docker run -it --rm -v \"${PWD}:${PWD}\" -w \"${PWD}\" ghcr.io/sethvargo/ratchet:0.9.2"
 
 # List of GitHub Actions workflows
-gha_workflows := ".github/actions/tag-build-push-container/action.yml .github/workflows/cid.yaml .github/workflows/cd.yml .github/workflows/update-flake-lock.yml .github/workflows/labeler.yml .github/workflows/release-drafter.yaml"
+gha_workflows := ".github/actions/build-nix-image/action.yml .github/actions/setup-nix/action.yml .github/actions/tag-build-push-container/action.yml .github/workflows/cid.yaml .github/workflows/containers.yaml .github/workflows/labeler.yml .github/workflows/pr-check.yaml .github/workflows/pr-merge.yaml .github/workflows/update-flake-lock.yml"
 
 # Pin all workflow versions to hash values (requires Docker)
 [group('CI/CD')]
