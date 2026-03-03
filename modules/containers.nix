@@ -48,7 +48,7 @@
             tree
             vim
           ];
-          extraContents = [ self'.packages.default ];
+          extraContents = [ self'.legacyPackages.homeConfigurations.root.activationPackage ];
           cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
         };
 
