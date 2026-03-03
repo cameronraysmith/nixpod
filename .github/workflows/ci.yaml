@@ -217,7 +217,7 @@ jobs:
           fi
           echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
           echo "GIT_SHA_SHORT=${GIT_SHA:0:7}" >> $GITHUB_ENV
-          echo "GIT_REF=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "GIT_REF=$(echo '${{ github.ref_name }}' | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build and push ${{ matrix.image }}
         env:
@@ -292,7 +292,7 @@ jobs:
           GIT_SHA=$(git rev-parse "$TAG")
           echo "GIT_SHA=$GIT_SHA" >> $GITHUB_ENV
           echo "GIT_SHA_SHORT=${GIT_SHA:0:7}" >> $GITHUB_ENV
-          echo "GIT_REF=${{ github.ref_name }}" >> $GITHUB_ENV
+          echo "GIT_REF=$(echo '${{ github.ref_name }}' | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build and push ${{ matrix.image }}
         env:
