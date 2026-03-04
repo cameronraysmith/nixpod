@@ -140,6 +140,11 @@ cd "$WORKTREE_DIR"
 echo -e "${BLUE}installing dependencies in worktree...${NC}"
 $NIX_CMD develop -c bun install --silent
 
+# Force-update tags so semantic-release's internal git fetch --tags doesn't
+# exit 1 on moved major-version tags (v0, v0.4, etc.)
+echo -e "${BLUE}synchronizing tags from remote...${NC}"
+git fetch --tags --force origin 2>/dev/null || true
+
 # Run semantic-release in dry-run mode
 echo -e "\n${BLUE}running semantic-release analysis...${NC}\n"
 
