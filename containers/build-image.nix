@@ -123,6 +123,25 @@ let
         ln -s ${pkgs.bashInteractive}/bin/bash $out/bin/sh
       '';
 
+  # Duplicate directory entries that must exist as real directories
+  # in the container (not symlinks). buildEnv creates symlinks when
+  # only one input provides a path; when two inputs both provide
+  # the same path, buildEnv creates a real merged directory. This
+  # derivation forces /tmp, /var/tmp, /var/log to be real
+  # directories so that perms (sticky bit, ownership) apply
+  # correctly and the directories are writable at runtime.
+  writableDirs =
+    pkgs.runCommand "writable-dirs"
+      {
+        allowSubstitutes = false;
+        preferLocalBuild = true;
+      }
+      ''
+        mkdir -p $out/tmp
+        mkdir -p $out/var/tmp
+        mkdir -p $out/var/log
+      '';
+
   # The sudo wrapper is a copy with setuid-like permissions.
   # In nix2container we set perms instead of fakeroot chown/chmod.
   sudoWrapper =
@@ -144,6 +163,7 @@ let
     paths = [
       userConfig
       runtimeDirs
+      writableDirs
       sudoWrapper
     ]
     ++ extraContents
