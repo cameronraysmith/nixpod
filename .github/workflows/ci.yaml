@@ -240,21 +240,15 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
         with:
           fetch-depth: '0'
-      - name: Get semantic-release version
-        shell: sh
-        id: semantic-release-version
-        run: echo version=$(npm view @cihelper/semanticrelease-preset-generic dependencies.semantic-release) >> $GITHUB_OUTPUT
       - name: Run semantic-release
-
         id: semantic-release
         uses: cycjimmy/semantic-release-action@b1b432f13acb7768e0c8efdec416d363a57546f2 # ratchet:cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
         with:
-          semantic_version: ${{ steps.semantic-release-version.outputs.version }}
-          extra_plugins: "@cihelper/semanticrelease-preset-generic@1"
-          extends: "@cihelper/semanticrelease-preset-generic"
+          extra_plugins: |
+            conventional-changelog-conventionalcommits
+            semantic-release-major-tag
 
   publish-nix-images:
     runs-on: ubuntu-latest
