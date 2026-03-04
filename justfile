@@ -411,6 +411,28 @@ scan-secrets:
 scan-staged:
   gitleaks protect --staged --verbose --redact
 
+# Dry-run semantic-release to preview what would happen
+[group('release')]
+test-release:
+    bun run test-release
+
+# Preview semantic-release version after merging current branch to target
+[group('release')]
+preview-version target="main":
+    ./scripts/preview-version.sh "{{target}}"
+
+# Run semantic-release (for CI use)
+[group('release')]
+release dry_run="false":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if [ "{{ dry_run }}" = "true" ]; then
+        npx semantic-release --dry-run --no-ci
+    else
+        echo "Running semantic-release..."
+        npx semantic-release
+    fi
+
 # Update github vars for repo from sops environment
 [group('CI/CD')]
 ghvars repo="cameronraysmith/nixpod":
