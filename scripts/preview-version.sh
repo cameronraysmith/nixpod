@@ -163,11 +163,11 @@ if echo "$OUTPUT" | grep -q "There are no relevant changes"; then
 elif echo "$OUTPUT" | grep -q "is not configured to publish from"; then
   echo -e "${YELLOW}cannot determine version${NC}"
   echo -e "branch ${TARGET_BRANCH} is not in release configuration"
-elif VERSION=$(echo "$OUTPUT" | grep -oP 'next release version is \K[0-9]+\.[0-9]+\.[0-9]+(-[a-z]+\.[0-9]+)?' | head -1); then
+elif VERSION=$(echo "$OUTPUT" | sed -n 's/.*next release version is \([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\(-[a-z][a-z]*\.[0-9][0-9]*\)\{0,1\}\).*/\1/p' | head -1) && [ -n "$VERSION" ]; then
   echo -e "${GREEN}next version: ${VERSION}${NC}"
 
   # Extract release type if available
-  if TYPE=$(echo "$OUTPUT" | grep -oP 'Release type: \K[a-z]+' | head -1); then
+  if TYPE=$(echo "$OUTPUT" | sed -n 's/.*Release type: \([a-z][a-z]*\).*/\1/p' | head -1) && [ -n "$TYPE" ]; then
     echo -e "release type: ${TYPE}"
   fi
 else
