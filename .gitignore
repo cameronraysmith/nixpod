@@ -11,3 +11,4 @@ logs/
 .dolt/
 *.db
 .pre-commit-config.yaml
+node_modules/
