@@ -1,0 +1,86 @@
+{
+  "name": "nixpod-home",
+  "version": "0.0.0-development",
+  "private": true,
+  "description": "Containerized Nix and home-manager development environments",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cameronraysmith/nixpod-home.git"
+  },
+  "license": "MIT",
+  "packageManager": "bun@1.3.4",
+  "scripts": {
+    "reinstall": "rm -rf node_modules && bun install",
+    "test-release": "semantic-release --dry-run --no-ci"
+  },
+  "devDependencies": {
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/github": "^12.0.6",
+    "conventional-changelog-conventionalcommits": "^9.2.0",
+    "semantic-release": "^25.0.3",
+    "semantic-release-major-tag": "^0.3.2"
+  },
+  "release": {
+    "branches": [
+      {
+        "name": "main"
+      },
+      {
+        "name": "beta",
+        "prerelease": true
+      }
+    ],
+    "plugins": [
+      [
+        "@semantic-release/commit-analyzer",
+        {
+          "preset": "conventionalcommits",
+          "parserOpts": {
+            "noteKeywords": [
+              "BREAKING CHANGE",
+              "BREAKING-CHANGE"
+            ]
+          }
+        }
+      ],
+      [
+        "@semantic-release/release-notes-generator",
+        {
+          "preset": "conventionalcommits",
+          "parserOpts": {
+            "noteKeywords": [
+              "BREAKING CHANGE",
+              "BREAKING-CHANGE",
+              "NOTABLE CHANGE",
+              "NOTABLE-CHANGE"
+            ]
+          }
+        }
+      ],
+      [
+        "@semantic-release/changelog",
+        {
+          "changelogTitle": "# Changelog"
+        }
+      ],
+      [
+        "@semantic-release/github",
+        {
+          "failComment": false,
+          "successComment": false,
+          "addReleases": "bottom"
+        }
+      ],
+      [
+        "semantic-release-major-tag",
+        {
+          "customTags": [
+            "v${major}",
+            "v${major}.${minor}"
+          ]
+        }
+      ]
+    ],
+    "npmPublish": false
+  }
+}
