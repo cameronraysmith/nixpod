@@ -35,6 +35,13 @@
   },
   extraPkgs ? [ ],
   extraContents ? [ ],
+  # Derivations placed directly in the container root, bypassing
+  # buildEnv. Use for s6 services.d entries that need writable
+  # directories at runtime (s6-supervise creates event/status/
+  # control subdirectories). buildEnv symlinks single-contributor
+  # directories into the read-only nix store, which prevents
+  # s6-supervise from writing supervision state.
+  extraCopyToRoot ? [ ],
   entrypoint ? [ "/init" ],
   cmd ? [ ],
   extraEnv ? [ ],
@@ -190,7 +197,7 @@ nix2container.buildImage {
     nixConfigLayer
   ];
 
-  copyToRoot = [ rootEnv ];
+  copyToRoot = [ rootEnv ] ++ extraCopyToRoot;
 
   perms = [
     # Home directories owned by storeOwner

@@ -122,9 +122,9 @@
             vim
           ];
           extraContents = [
-            atuinDaemonService
             self'.legacyPackages.homeConfigurations.runner.activationPackage
           ];
+          extraCopyToRoot = [ atuinDaemonService ];
           cmd = [ "${pkgs.bashInteractive}/bin/bash" ];
         };
 
@@ -307,9 +307,11 @@
           extraContents = [
             activateUserHomeService
             installCodeServerExtensionsService
+            self'.legacyPackages.homeConfigurations.${username}.activationPackage
+          ];
+          extraCopyToRoot = [
             atuinDaemonService
             codeServerService
-            self'.legacyPackages.homeConfigurations.${username}.activationPackage
           ];
           extraEnv = [
             "NB_USER=${username}"
@@ -445,9 +447,11 @@
             ++ [ python ];
           extraContents = [
             activateUserHomeService
+            self'.legacyPackages.homeConfigurations.${username}.activationPackage
+          ];
+          extraCopyToRoot = [
             atuinDaemonService
             jupyterServerService
-            self'.legacyPackages.homeConfigurations.${username}.activationPackage
           ];
           extraEnv = [
             "NB_USER=${username}"
