@@ -275,7 +275,20 @@ nix2container.buildImage {
       uid = 0;
       gid = 0;
     }
-  ];
+  ]
+  # s6 service directories must be writable by storeOwner.
+  # s6-hiercopy preserves source directory permissions when copying
+  # from /etc/services.d/ to /run/s6/legacy-services/. Nix store
+  # directories default to 0555 (read-only), so without this override
+  # the copied directories are also 0555 and s6-supervise (running as
+  # storeOwner) cannot create event/status/control subdirectories.
+  ++ (map (name: {
+    path = rootEnv;
+    regex = "/etc/services\\.d/${name}";
+    mode = "0755";
+    uid = storeOwner.uid;
+    gid = storeOwner.gid;
+  }) s6Services);
 
   config = {
     Entrypoint = entrypoint;
