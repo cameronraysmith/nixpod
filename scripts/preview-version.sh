@@ -160,9 +160,17 @@ echo -e "\n${BLUE}════════════════════�
 if echo "$OUTPUT" | grep -q "There are no relevant changes"; then
   echo -e "${YELLOW}no version bump required${NC}"
   echo -e "no semantic commits found since last release"
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "next-version=" >> "$GITHUB_OUTPUT"
+    echo "release-pending=false" >> "$GITHUB_OUTPUT"
+  fi
 elif echo "$OUTPUT" | grep -q "is not configured to publish from"; then
   echo -e "${YELLOW}cannot determine version${NC}"
   echo -e "branch ${TARGET_BRANCH} is not in release configuration"
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "next-version=" >> "$GITHUB_OUTPUT"
+    echo "release-pending=false" >> "$GITHUB_OUTPUT"
+  fi
 elif VERSION=$(echo "$OUTPUT" | sed -n 's/.*next release version is \([0-9][0-9]*\.[0-9][0-9]*\.[0-9][0-9]*\(-[a-z][a-z]*\.[0-9][0-9]*\)\{0,1\}\).*/\1/p' | head -1) && [ -n "$VERSION" ]; then
   echo -e "${GREEN}next version: ${VERSION}${NC}"
 
@@ -170,9 +178,18 @@ elif VERSION=$(echo "$OUTPUT" | sed -n 's/.*next release version is \([0-9][0-9]
   if TYPE=$(echo "$OUTPUT" | sed -n 's/.*Release type: \([a-z][a-z]*\).*/\1/p' | head -1) && [ -n "$TYPE" ]; then
     echo -e "release type: ${TYPE}"
   fi
+
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "next-version=$VERSION" >> "$GITHUB_OUTPUT"
+    echo "release-pending=true" >> "$GITHUB_OUTPUT"
+  fi
 else
   echo -e "${YELLOW}could not parse version from output${NC}"
   echo -e "check the semantic-release output above for details"
+  if [ -n "${GITHUB_OUTPUT:-}" ]; then
+    echo "next-version=" >> "$GITHUB_OUTPUT"
+    echo "release-pending=false" >> "$GITHUB_OUTPUT"
+  fi
 fi
 
 echo -e "${BLUE}═══════════════════════════════════════════════════════════════${NC}\n"
