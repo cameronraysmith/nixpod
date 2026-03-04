@@ -229,26 +229,41 @@ jobs:
     needs: [flake-check]
     if: ${{ github.repository_owner == 'cameronraysmith' && github.event_name == 'push' }}
     permissions:
-
       contents: write
     outputs:
-      version: ${{ steps.semantic-release.outputs.new_release_version }}
-      git-tag: ${{ steps.semantic-release.outputs.new_release_git_tag }}
-      released: ${{ steps.semantic-release.outputs.new_release_published }}
-      git-head: ${{ steps.semantic-release.outputs.new_release_git_head }}
+      version: ${{ steps.release-info.outputs.new_release_version }}
+      git-tag: ${{ steps.release-info.outputs.new_release_git_tag }}
+      released: ${{ steps.release-info.outputs.new_release_published }}
+      git-head: ${{ steps.release-info.outputs.new_release_git_head }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
         with:
           fetch-depth: '0'
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          installer: quick
+          system: x86_64-linux
+      - name: Install dependencies
+        run: nix develop --accept-flake-config -c bun install
       - name: Run semantic-release
-        id: semantic-release
-        uses: cycjimmy/semantic-release-action@b1b432f13acb7768e0c8efdec416d363a57546f2 # ratchet:cycjimmy/semantic-release-action@v4
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          extra_plugins: |
-            conventional-changelog-conventionalcommits
-            semantic-release-major-tag
+        run: nix develop --accept-flake-config -c just release
+      - name: Extract release info
+        id: release-info
+        if: always()
+        run: |
+          TAG=$(git describe --tags --exact-match HEAD 2>/dev/null || echo "")
+          if [ -n "$TAG" ]; then
+            VERSION="${TAG#v}"
+            echo "new_release_version=$VERSION" >> $GITHUB_OUTPUT
+            echo "new_release_git_tag=$TAG" >> $GITHUB_OUTPUT
+            echo "new_release_published=true" >> $GITHUB_OUTPUT
+            echo "new_release_git_head=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+          else
+            echo "new_release_published=false" >> $GITHUB_OUTPUT
+          fi
 
   publish-nix-images:
     runs-on: ubuntu-latest
