@@ -399,7 +399,6 @@
           # mkdir -p $out/etc/services.d/jupyterlab/log
           # ln -s ${jupyterLog} $out/etc/services.d/jupyterlab/log/run
           jupyterServerService = pkgs.runCommand "jupyter-service" { } ''
-            mkdir -p $out/tmp/jupyter_runtime
             mkdir -p $out/etc/services.d/jupyterlab
             ln -s ${jupyterServerScript} $out/etc/services.d/jupyterlab/run
           '';
