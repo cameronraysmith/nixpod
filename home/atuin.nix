@@ -1,4 +1,6 @@
+{ lib, ... }:
 {
+  xdg.configFile."atuin/config.toml".force = lib.mkForce true;
   programs.atuin = {
     enable = true;
     enableZshIntegration = true;
