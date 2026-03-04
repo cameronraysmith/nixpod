@@ -115,6 +115,62 @@ jobs:
           echo "SKIP_TESTS=$SKIP_TESTS" >> $GITHUB_OUTPUT
           echo "CHECKOUT_REF=$CHECKOUT_REF" >> $GITHUB_OUTPUT
 
+  preview-release-version:
+    needs: [secrets-scan]
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # ratchet:actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Fetch target branch
+        run: |
+          git fetch origin
+          git branch -f main origin/main
+
+      - name: Configure git identity for temporary commits
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Nix
+        uses: ./.github/actions/setup-nix
+        with:
+          installer: quick
+          system: x86_64-linux
+
+      - name: Install dependencies
+        run: nix develop --accept-flake-config -c bun install
+
+      - name: Preview release version
+        id: preview
+        run: |
+          echo "::group::Preview semantic-release version"
+          nix develop --accept-flake-config -c just preview-version main
+          echo "::endgroup::"
+
+      - name: Annotate release preview
+        if: always() && steps.preview.outputs.release-pending != ''
+        run: |
+          VERSION="${{ steps.preview.outputs.next-version }}"
+          PENDING="${{ steps.preview.outputs.release-pending }}"
+
+          if [ "$PENDING" = "true" ] && [ -n "$VERSION" ]; then
+            echo "::notice title=Release Preview::Next version would be $VERSION"
+            echo "## Release Preview" >> "$GITHUB_STEP_SUMMARY"
+            echo "Next version: **$VERSION**" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::notice title=Release Preview::No release pending"
+            echo "## Release Preview" >> "$GITHUB_STEP_SUMMARY"
+            echo "No release pending" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
   flake-check:
     runs-on: ubuntu-latest
     needs: [secrets-scan, set-variables]
