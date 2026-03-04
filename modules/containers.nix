@@ -13,8 +13,7 @@
       buildNixImage = import ../containers/build-image.nix;
       nix2container = inputs'.nix2container.packages.nix2container;
 
-      # Base packages for the default Nix profile, matching the legacy
-      # defaultPkgs from nix-legacy.nix. These populate
+      # Base packages for the default Nix profile. These populate
       # /nix/var/nix/profiles/default/bin so commands are on PATH.
       defaultProfilePackages = with pkgs; [
         nix
