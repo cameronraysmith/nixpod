@@ -35,13 +35,14 @@
   },
   extraPkgs ? [ ],
   extraContents ? [ ],
-  # Derivations placed directly in the container root, bypassing
-  # buildEnv. Use for s6 services.d entries that need writable
-  # directories at runtime (s6-supervise creates event/status/
-  # control subdirectories). buildEnv symlinks single-contributor
-  # directories into the read-only nix store, which prevents
-  # s6-supervise from writing supervision state.
-  extraCopyToRoot ? [ ],
+  # Service directory names under /etc/services.d/ that need to be
+  # real directories (not buildEnv symlinks) at runtime. s6-supervise
+  # creates event/status/control subdirectories inside each service
+  # directory; if buildEnv symlinks the directory into the read-only
+  # nix store, s6-supervise fails with "unable to mkdir event".
+  # Adding each name here creates a second contributor so buildEnv
+  # creates a real merged directory instead of a symlink.
+  s6Services ? [ ],
   entrypoint ? [ "/init" ],
   cmd ? [ ],
   extraEnv ? [ ],
@@ -137,6 +138,11 @@ let
   # derivation forces /tmp, /var/tmp, /var/log to be real
   # directories so that perms (sticky bit, ownership) apply
   # correctly and the directories are writable at runtime.
+  # Generate mkdir commands for s6 service directories
+  s6ServiceDirCmds = lib.concatMapStringsSep "\n" (
+    name: "mkdir -p $out/etc/services.d/${name}"
+  ) s6Services;
+
   writableDirs =
     pkgs.runCommand "writable-dirs"
       {
@@ -147,6 +153,7 @@ let
         mkdir -p $out/tmp
         mkdir -p $out/var/tmp
         mkdir -p $out/var/log
+        ${s6ServiceDirCmds}
       '';
 
   # The sudo wrapper is a copy with setuid-like permissions.
@@ -197,7 +204,7 @@ nix2container.buildImage {
     nixConfigLayer
   ];
 
-  copyToRoot = [ rootEnv ] ++ extraCopyToRoot;
+  copyToRoot = [ rootEnv ];
 
   perms = [
     # Home directories owned by storeOwner
