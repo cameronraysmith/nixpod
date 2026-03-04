@@ -14,9 +14,11 @@
         nativeBuildInputs = with pkgs; [
           act
           age
+          bun
           gitleaks
           just
           nix-output-monitor
+          nodejs_24 # semantic-release >= 24.10.0 requires node ^22.14.0 || >= 24.10.0
           ratchet
           sops
           ssh-to-age
