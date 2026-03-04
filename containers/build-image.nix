@@ -197,33 +197,45 @@ nix2container.buildImage {
       uid = 0;
       gid = 0;
     }
-    # Sticky bit directories
-    {
-      path = runtimeDirs;
-      regex = "/tmp";
-      mode = "1777";
-    }
-    {
-      path = runtimeDirs;
-      regex = "/var/tmp";
-      mode = "1777";
-    }
-    {
-      path = runtimeDirs;
-      regex = "/var/log";
-      mode = "1777";
-    }
+    # Permissions below reference rootEnv because nix2container
+    # matches perms by store path: path must equal the store path
+    # being walked during tar creation. Since buildEnv merges
+    # runtimeDirs/sudoWrapper into rootEnv, perms must target
+    # rootEnv to affect the container filesystem paths.
+    #
+    # Caveat: buildEnv creates symlinks for paths provided by a
+    # single input (e.g. /tmp from runtimeDirs alone). Symlink
+    # tar entries have mode forced to 0o777, so sticky bit and
+    # setuid perms only work on real directories/files (those
+    # where multiple inputs force buildEnv to create a merged
+    # real directory).
     # /run owned by storeOwner for s6-overlay preinit
     {
-      path = runtimeDirs;
+      path = rootEnv;
       regex = "/run$";
       mode = "0755";
       uid = storeOwner.uid;
       gid = storeOwner.gid;
     }
+    # Sticky bit directories
+    {
+      path = rootEnv;
+      regex = "/tmp";
+      mode = "1777";
+    }
+    {
+      path = rootEnv;
+      regex = "/var/tmp";
+      mode = "1777";
+    }
+    {
+      path = rootEnv;
+      regex = "/var/log";
+      mode = "1777";
+    }
     # Sudo wrapper with setuid
     {
-      path = sudoWrapper;
+      path = rootEnv;
       regex = "/run/wrappers/bin/sudo";
       mode = "4755";
       uid = 0;
