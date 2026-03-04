@@ -2,6 +2,7 @@ result
 .direnv
 *.qcow2
 .env
+logs/
 
 # Bead worktree isolation
 .worktrees/
