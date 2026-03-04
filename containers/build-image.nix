@@ -194,8 +194,8 @@ nix2container.buildImage {
   inherit name tag;
 
   initializeNixDatabase = true;
-  nixUid = 0;
-  nixGid = 0;
+  nixUid = storeOwner.uid;
+  nixGid = storeOwner.gid;
 
   layers = [
     baseLayer
