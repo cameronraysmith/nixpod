@@ -231,6 +231,18 @@ nix2container.buildImage {
       uid = 0;
       gid = 0;
     }
+    # Nix profile and state directories owned by storeOwner.
+    # nixConfig creates /nix/var/nix/profiles/, gcroots/, etc.
+    # with nix store defaults (root:root 0555). Non-root container
+    # users need write access for profile operations during
+    # home-manager activation.
+    {
+      path = nixConfig;
+      regex = "/nix/var/nix";
+      mode = "0755";
+      uid = storeOwner.uid;
+      gid = storeOwner.gid;
+    }
     # Permissions below reference rootEnv because nix2container
     # matches perms by store path: path must equal the store path
     # being walked during tar creation. Since buildEnv merges
