@@ -17,7 +17,7 @@ This repository originally contained a [nix flake](https://zero-to-nix.com/conce
 ## Testing
 
 > [!NOTE]
-> This repository previously supported building containers exclusively via [Containerfiles](https://github.com/cameronraysmith/nixpod/blob/main/containers/Containerfile.debnix). Currently it uses [pkgs.dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools) and the Containerfiles are only retained for comparison. Other excellent tools for building container images with nix that may be supported in the future are [nix2container](https://github.com/nlewo/nix2container) and [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter).
+> This repository builds container images using [nix2container](https://github.com/nlewo/nix2container). Reference [Containerfiles](./containers/debnix.Containerfile) are retained for comparison.
 
 ### direnv and dev shell
 
@@ -28,7 +28,7 @@ nix develop
 just container_command_type="runflake" container-run
 ```
 
-should pull or build the container image in [containers/Containerfile.debnix](./containers/Containerfile.debnix) and run the flake in that image. If you want to force a local rebuild run `just container-build`.
+should pull or build the container image in [containers/debnix.Containerfile](./containers/debnix.Containerfile) and run the flake in that image. If you want to force a local rebuild run `just container-build`.
 Note that just `just` will print help and you can run `just -n <command>` first for a dry run.
 See comments in the [justfile](justfile) for additional details.
 
