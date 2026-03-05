@@ -69,23 +69,37 @@ container-build-all:
     nix build ".#$c" -L
   done
 
-# Load container image into Docker daemon
+# Load container image into Docker daemon via skopeo
 [group('containers')]
 container-load variant="nixpod":
   docker info > /dev/null 2>&1 || (echo "The docker daemon is not running" && exit 1)
-  nix run ".#{{variant}}.copyToDockerDaemon"
+  nix run ".#load-{{variant}}"
 
-# Push multi-arch manifest to registry (requires --impure for env vars)
+# Push single-arch image to registry (current platform)
 [group('containers')]
 container-push variant="nixpod":
-  nix run --impure ".#{{variant}}Manifest" -L
+  nix run --impure ".#push-{{variant}}" -L
 
-# Push all container manifests
+# Push all single-arch images (current platform)
 [group('containers')]
 container-push-all:
   #!/usr/bin/env bash
   for c in {{_containers}}; do
-    echo "Pushing $c manifest..."
+    echo "Pushing $c..."
+    nix run --impure ".#push-${c}" -L
+  done
+
+# Assemble multi-arch manifest from already-pushed per-arch images
+[group('containers')]
+container-manifest variant="nixpod":
+  nix run --impure ".#{{variant}}Manifest" -L
+
+# Assemble all multi-arch manifests
+[group('containers')]
+container-manifest-all:
+  #!/usr/bin/env bash
+  for c in {{_containers}}; do
+    echo "Assembling $c manifest..."
     nix run --impure ".#${c}Manifest" -L
   done
 
