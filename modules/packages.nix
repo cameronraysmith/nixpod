@@ -16,7 +16,6 @@
       ];
       myUserName = "runner";
       githubOrg = "cameronraysmith";
-      buildS6OverlayLayer = import ../containers/s6-overlay.nix;
     in
     {
       legacyPackages.homeConfigurations = builtins.listToAttrs (
@@ -43,16 +42,6 @@
         # Enable 'nix build' to build the home configuration, without
         # activating it.
         default = self'.legacyPackages.homeConfigurations.${myUserName}.activationPackage;
-
-        s6-overlay-layer = buildS6OverlayLayer { inherit pkgs system; };
-
-        nixpod-users = import ../containers/users.nix {
-          inherit pkgs lib;
-        };
-
-        nixpod-nix-config = import ../containers/nix-config.nix {
-          inherit pkgs lib;
-        };
       };
     };
 }
