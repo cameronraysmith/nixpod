@@ -52,12 +52,8 @@
           fullRepo = "${registry}/${repo}";
           skopeoExe = lib.getExe skopeo;
 
-          # Additional tags: version (without arch suffix), git SHA, git ref, latest on main
-          allTags = [
-            version
-          ]
-          ++ (lib.filter (t: t != "") tags)
-          ++ (if branch == "main" then [ "latest" ] else [ ]);
+          # Only arch-qualified tags: unqualified tags (version, latest) belong to manifest assembly
+          archTags = map (t: "${t}-${arch}") (lib.filter (t: t != "") tags);
         in
         writeShellApplication {
           name = "push-${name}";
@@ -100,17 +96,21 @@
               "nix:${image}" \
               "docker://${fullRepo}:${archTag}"
 
-            ${lib.concatMapStringsSep "\n" (tag: ''
-              echo "Tagging ${fullRepo}:${archTag} as ${fullRepo}:${tag}"
-              ${craneExe} tag "${fullRepo}:${archTag}" "${tag}"
-            '') allTags}
+            ${lib.optionalString (archTags != [ ]) (
+              lib.concatMapStringsSep "\n" (tag: ''
+                echo "Tagging ${fullRepo}:${archTag} as ${fullRepo}:${tag}"
+                ${craneExe} tag "${fullRepo}:${archTag}" "${tag}"
+              '') archTags
+            )}
 
             set +x
             echo "Successfully pushed ${arch} image for ${name}"
             echo "Primary: ${fullRepo}:${archTag}"
-            ${lib.concatMapStringsSep "\n" (tag: ''
-              echo "  Also tagged: ${fullRepo}:${tag}"
-            '') allTags}
+            ${lib.optionalString (archTags != [ ]) (
+              lib.concatMapStringsSep "\n" (tag: ''
+                echo "  Also tagged: ${fullRepo}:${tag}"
+              '') archTags
+            )}
           '';
         };
 
