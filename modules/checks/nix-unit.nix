@@ -135,6 +135,30 @@
           expr = builtins.hasAttr "nixpod-users" self.packages.x86_64-linux;
           expected = true;
         };
+
+        # TC-N12: Container packages are linux-only
+        # Non-linux package sets must be strict subsets of linux package sets,
+        # ensuring container packages (guarded by lib.mkIf isLinux) never
+        # appear on darwin or other non-linux systems.
+        testLinuxPackagesStrictSuperset = {
+          expr =
+            let
+              allSystems = builtins.attrNames self.packages;
+              isLinux = s: builtins.match ".*-linux" s != null;
+              linuxSystem = builtins.head (builtins.filter isLinux allSystems);
+              linuxPkgs = self.packages.${linuxSystem};
+              nonLinuxSystems = builtins.filter (s: !(isLinux s)) allSystems;
+            in
+            builtins.all (
+              system:
+              let
+                sysPkgNames = builtins.attrNames self.packages.${system};
+              in
+              builtins.all (name: builtins.hasAttr name linuxPkgs) sysPkgNames
+              && builtins.length sysPkgNames < builtins.length (builtins.attrNames linuxPkgs)
+            ) nonLinuxSystems;
+          expected = true;
+        };
       };
     };
 }
