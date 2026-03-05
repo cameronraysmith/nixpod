@@ -6,6 +6,7 @@
       pkgs,
       lib,
       system,
+      mkMultiArchManifest,
       ...
     }:
     let
@@ -23,7 +24,6 @@
           builtins.filter (sys: sys != "") (builtins.split " " envVar);
 
       skopeo-nix2container = inputs'.nix2container.packages.skopeo-nix2container;
-      mkMultiArchManifest = pkgs.callPackage ../../lib/mk-multi-arch-manifest.nix { };
 
       getEnvOr =
         var: default:
