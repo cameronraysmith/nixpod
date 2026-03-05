@@ -11,6 +11,7 @@
     imports = [
       inputs.catppuccin.homeModules.catppuccin
       inputs.nix-index-database.homeModules.nix-index
-    ] ++ (builtins.attrValues config.flake.modules.homeManager);
+    ]
+    ++ (builtins.attrValues config.flake.modules.homeManager);
   };
 }
