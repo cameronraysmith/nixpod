@@ -3,16 +3,15 @@
   perSystem =
     {
       self',
-      inputs',
       pkgs,
       lib,
       system,
+      buildNixImage,
+      mkNixConfig,
+      containerS6Services,
       ...
     }:
     let
-      buildNixImage = import ../containers/build-image.nix;
-      nix2container = inputs'.nix2container.packages.nix2container;
-
       # Base packages for the default Nix profile. These populate
       # /nix/var/nix/profiles/default/bin so commands are on PATH.
       defaultProfilePackages = with pkgs; [
@@ -34,8 +33,7 @@
     {
       packages.nixpod =
         let
-          nixpodNixConfig = import ../containers/nix-config.nix {
-            inherit pkgs lib;
+          nixpodNixConfig = mkNixConfig {
             profilePackages = defaultProfilePackages;
             nixConf = {
               allowed-users = [ "*" ];
@@ -49,7 +47,6 @@
           };
         in
         buildNixImage {
-          inherit nix2container pkgs lib;
           name = "nixpod";
           s6-overlay = self'.packages.s6-overlay-layer;
           userConfig = self'.packages.nixpod-users;
@@ -77,17 +74,7 @@
 
       packages.ghanix =
         let
-          atuinDaemonScript = pkgs.writeScript "atuin-daemon" ''
-            #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
-            printf "running atuin daemon\n\n"
-            exec ${pkgs.atuin}/bin/atuin daemon
-          '';
-          atuinDaemonService = pkgs.runCommand "atuin-daemon" { } ''
-            mkdir -p $out/etc/services.d/atuindaemon
-            ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
-          '';
-          ghanixNixConfig = import ../containers/nix-config.nix {
-            inherit pkgs lib;
+          ghanixNixConfig = mkNixConfig {
             profilePackages = defaultProfilePackages;
             storeOwner = "runner";
             nixConf = {
@@ -102,7 +89,6 @@
           };
         in
         buildNixImage {
-          inherit nix2container pkgs lib;
           name = "ghanix";
           s6-overlay = self'.packages.s6-overlay-layer;
           userConfig = self'.packages.nixpod-users;
@@ -121,7 +107,7 @@
             vim
           ];
           extraContents = [
-            atuinDaemonService
+            containerS6Services.atuinDaemon
             self'.legacyPackages.homeConfigurations.runner.activationPackage
           ];
           s6Services = [ "atuindaemon" ];
@@ -143,18 +129,6 @@
             uname = username;
             gname = "wheel";
           };
-          activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
-            #!/command/with-contenv ${pkgs.runtimeShell}
-            printf "activating home manager\n\n"
-            /activate
-            printf "home manager environment\n\n"
-            printenv | sort
-            printf "====================\n\n"
-          '';
-          activateUserHomeService = pkgs.runCommand "activate-user-home" { } ''
-            mkdir -p $out/etc/cont-init.d
-            ln -s ${activateUserHomeScript} $out/etc/cont-init.d/01-activate-user-home
-          '';
           # https://gist.github.com/hyperupcall/99e355405611be6c4e0a38b6e3e8aad0#file-settings-jsonc
           installCodeServerExtensionsScript = pkgs.writeScript "install-code-extensions-run" ''
             #!/command/with-contenv ${pkgs.runtimeShell}
@@ -259,17 +233,7 @@
             mkdir -p $out/etc/services.d/codeserver
             ln -s ${codeServerScript} $out/etc/services.d/codeserver/run
           '';
-          atuinDaemonScript = pkgs.writeScript "atuin-daemon" ''
-            #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
-            printf "running atuin daemon\n\n"
-            exec ${pkgs.atuin}/bin/atuin daemon
-          '';
-          atuinDaemonService = pkgs.runCommand "atuin-daemon" { } ''
-            mkdir -p $out/etc/services.d/atuindaemon
-            ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
-          '';
-          codenixNixConfig = import ../containers/nix-config.nix {
-            inherit pkgs lib;
+          codenixNixConfig = mkNixConfig {
             profilePackages = defaultProfilePackages;
             storeOwner = username;
             nixConf = {
@@ -284,12 +248,7 @@
           };
         in
         buildNixImage {
-          inherit
-            nix2container
-            pkgs
-            lib
-            storeOwner
-            ;
+          inherit storeOwner;
           name = "codenix";
           s6-overlay = self'.packages.s6-overlay-layer;
           userConfig = self'.packages.nixpod-users;
@@ -305,9 +264,9 @@
             ]
             ++ [ python ];
           extraContents = [
-            activateUserHomeService
+            containerS6Services.activateUserHome
             installCodeServerExtensionsService
-            atuinDaemonService
+            containerS6Services.atuinDaemon
             codeServerService
             self'.legacyPackages.homeConfigurations.${username}.activationPackage
           ];
@@ -343,18 +302,6 @@
             uname = username;
             gname = "wheel";
           };
-          activateUserHomeScript = pkgs.writeScript "activate-user-home-run" ''
-            #!/command/with-contenv ${pkgs.runtimeShell}
-            printf "activating home manager\n\n"
-            /activate
-            printf "home manager environment\n\n"
-            printenv | sort
-            printf "====================\n\n"
-          '';
-          activateUserHomeService = pkgs.runCommand "activate-user-home" { } ''
-            mkdir -p $out/etc/cont-init.d
-            ln -s ${activateUserHomeScript} $out/etc/cont-init.d/01-activate-user-home
-          '';
           createJupyterLogScript = pkgs.writeScript "create-jupyter-log-run" ''
             #!/command/with-contenv ${pkgs.runtimeShell}
             /run/wrappers/bin/sudo mkdir -p /var/log/jupyterlab
@@ -401,17 +348,7 @@
             mkdir -p $out/etc/services.d/jupyterlab
             ln -s ${jupyterServerScript} $out/etc/services.d/jupyterlab/run
           '';
-          atuinDaemonScript = pkgs.writeScript "atuin-daemon" ''
-            #!/command/with-contenv ${pkgs.bashInteractive}/bin/bash
-            printf "running atuin daemon\n\n"
-            exec ${pkgs.atuin}/bin/atuin daemon
-          '';
-          atuinDaemonService = pkgs.runCommand "atuin-daemon" { } ''
-            mkdir -p $out/etc/services.d/atuindaemon
-            ln -s ${atuinDaemonScript} $out/etc/services.d/atuindaemon/run
-          '';
-          jupnixNixConfig = import ../containers/nix-config.nix {
-            inherit pkgs lib;
+          jupnixNixConfig = mkNixConfig {
             profilePackages = defaultProfilePackages;
             storeOwner = username;
             nixConf = {
@@ -426,12 +363,7 @@
           };
         in
         buildNixImage {
-          inherit
-            nix2container
-            pkgs
-            lib
-            storeOwner
-            ;
+          inherit storeOwner;
           name = "jupnix";
           s6-overlay = self'.packages.s6-overlay-layer;
           userConfig = self'.packages.nixpod-users;
@@ -447,8 +379,8 @@
             ]
             ++ [ python ];
           extraContents = [
-            activateUserHomeService
-            atuinDaemonService
+            containerS6Services.activateUserHome
+            containerS6Services.atuinDaemon
             jupyterServerService
             self'.legacyPackages.homeConfigurations.${username}.activationPackage
           ];
