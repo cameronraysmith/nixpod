@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
 
       - name: Run Labeler
-        uses: crazy-max/ghaction-github-labeler@de749cf181958193cb7debf1a9c5bb28922f3e1b # ratchet:crazy-max/ghaction-github-labeler@v5
+        uses: crazy-max/ghaction-github-labeler@24d110aa46a59976b8a7f35518cb7f14f434c916 # v5
         with:
           skip-delete: true
           github-token: ${{ secrets.GITHUB_TOKEN }}
