@@ -188,7 +188,7 @@ jobs:
         uses: ./.github/actions/cached-ci-job
         with:
           check-name: ${{ github.job }}
-          hash-sources: 'flake.nix flake.lock modules/**/*.nix containers/**/*.nix home/**/*.nix .github/actions/setup-nix/action.yml'
+          hash-sources: 'flake.nix flake.lock modules/**/*.nix containers/**/*.nix .github/actions/setup-nix/action.yml'
           force-run: ${{ inputs.force_run && 'true' || 'false' }}
       - name: Setup Nix
         if: steps.cache.outputs.should-run == 'true'
