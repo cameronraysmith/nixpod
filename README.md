@@ -75,7 +75,7 @@ nix build .#ghanix           # build GitHub Actions runner container
 nix build .#jupnix           # build JupyterLab container
 nix run .#load-nixpod        # load nixpod into Docker daemon via skopeo
 nix fmt                      # format nix files via treefmt (nixfmt)
-nix flake check              # validate flake and run pre-commit checks
+nix flake check              # validate flake, run nix-unit tests and pre-commit checks
 ```
 
 <details>
@@ -106,15 +106,21 @@ Run `just` to see all available recipes or `just -n <recipe>` for a dry run.
 **packages** (per system: aarch64-darwin, aarch64-linux, x86_64-darwin, x86_64-linux)
 
 - `default` -- home-manager activation package
+- `load-nixpod`, `load-ghanix`, `load-codenix`, `load-jupnix` -- scripts that load images into Docker
+- `push-nixpod`, `push-ghanix`, `push-codenix`, `push-jupnix` -- push arch-qualified images to ghcr.io
+
+*Linux-only packages* (aarch64-linux, x86_64-linux):
+
 - `nixpod`, `ghanix`, `codenix`, `jupnix` -- nix2container JSON image manifests
 - `container` -- alias for nixpod
-- `load-nixpod`, `load-ghanix`, `load-codenix`, `load-jupnix` -- scripts that load images into Docker
 - `nixpod-users` -- system user identity derivation (passwd, group, shadow, PAM)
 - `s6-overlay-layer` -- s6-overlay filesystem layout
 
 **apps** (per system)
 
 - `load-nixpod`, `load-ghanix`, `load-codenix`, `load-jupnix` -- container loader apps
+- `push-nixpod`, `push-ghanix`, `push-codenix`, `push-jupnix` -- per-arch image push apps
+- `nixpodManifest`, `ghanixManifest`, `codenixManifest`, `jupnixManifest` -- multi-arch manifest assembly
 
 **devShells**
 
@@ -122,6 +128,7 @@ Run `just` to see all available recipes or `just -n <recipe>` for a dry run.
 
 **checks**
 
+- `nix-unit` -- 12 evaluation-time tests for flake structure and container invariants
 - `pre-commit` -- git-hooks.nix pre-commit checks
 - `treefmt` -- treefmt formatting validation
 
@@ -153,7 +160,7 @@ The flake uses import-tree to auto-discover flake-parts modules from the `module
 Container images are constructed with nix2container's `buildImage` and `buildLayer` for deferred tar creation and efficient layer management.
 s6-overlay provides process supervision within containers.
 Home-manager user configurations use deferred module composition via the `flake.modules.homeManager.*` namespace.
-Multi-arch manifest publishing uses a crane-based manifest builder with skopeo's nix2container transport.
+Multi-arch publishing uses a decoupled push/manifest model: skopeo pushes per-arch images via the nix2container transport, then crane assembles multi-platform manifest lists.
 
 
 ## Acknowledgements
@@ -163,6 +170,7 @@ Multi-arch manifest publishing uses a crane-based manifest builder with skopeo's
 - [flake-parts](https://github.com/hercules-ci/flake-parts) -- modular flake output composition
 - [import-tree](https://github.com/vic/import-tree) -- auto-discovery of flake-parts modules
 - [home-manager](https://github.com/nix-community/home-manager) -- declarative user environment configuration
+- [nix-unit](https://github.com/nix-community/nix-unit) -- evaluation-time unit testing for Nix expressions
 - [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) -- multi-arch manifest assembly
 - [catppuccin](https://github.com/catppuccin/nix) -- theming for terminal and editor configuration
 - [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter) -- CRI-layer container integration
