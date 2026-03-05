@@ -1,75 +1,172 @@
 <div align="center">
 
-# nixpod home
+# nixpod
 
 <a href="https://nix.dev/concepts/flakes" target="_blank">
 	<img alt="Nix Flakes Ready" src="https://img.shields.io/static/v1?logo=nixos&logoColor=d8dee9&label=Nix%20Flakes&labelColor=5e81ac&message=In%20Containers&color=d8dee9&style=for-the-badge">
 </a>
 
-**[tl;dr](#experimenting)**
+[![CI][ci-badge]][ci-link]
+
+**containerized nix + home-manager development environments**
 
 </div>
 
-Using [nix](https://github.com/NixOS/nix), [home-manager](https://github.com/nix-community/home-manager), and [nixpkgs](https://github.com/NixOS/nixpkgs) [dockerTools](https://nixos.org/manual/nixpkgs/stable/#sec-pkgs-dockerTools), [nixpod](https://ghcr.io/cameronraysmith/nixpod) provides a containerized or containerizable drop-in user configuration on any platform where the [nix](https://github.com/NixOS/nix) package manager is already, or can be, [installed](https://nix.dev/install-nix.html). This is intended to include, but is not limited to, scenarios like those involving [kubernetes ephemeral containers](https://kubernetes.io/docs/concepts/workloads/pods/ephemeral-containers/) via images like [netshoot](https://github.com/nicolaka/netshoot), which might be used for debugging purposes adjacent to otherwise minimal container images. See the [github packages associated to this repository](https://github.com/cameronraysmith?tab=packages&repo_name=nixpod) for the containers currently built in the [nixpod CID](https://github.com/cameronraysmith/nixpod/blob/main/.github/workflows/cid.yaml).
+---
 
-This repository originally contained a [nix flake](https://zero-to-nix.com/concepts/flakes) that essentially integrated a few parts of [srid/nixos-config](https://github.com/srid/nixos-config) into [juspay/nix-dev-home](https://github.com/juspay/nix-dev-home). These were merged upstream in [juspay/nix-dev-home#7](https://github.com/juspay/nix-dev-home/pull/7), so you might want to look there.
+## What this provides
 
-## Testing
+Containerized multi-user Nix development environments for platforms where NixOS cannot be used directly.
+Four container variants ship prebuilt multi-arch images (x86_64, aarch64) to `ghcr.io`, each with the Nix daemon, s6-overlay process supervision, and home-manager user configuration.
 
-> [!NOTE]
-> This repository builds container images using [nix2container](https://github.com/nlewo/nix2container). Reference [Containerfiles](./containers/debnix.Containerfile) are retained for comparison.
+| Variant | Purpose | User | Port |
+|---------|---------|------|------|
+| **nixpod** | General development | root (uid 0) | -- |
+| **ghanix** | GitHub Actions runners | runner (uid 1001) | -- |
+| **codenix** | code-server IDE | jovyan (uid 1000) | 8888 |
+| **jupnix** | JupyterLab | jovyan (uid 1000) | 8888 |
 
-### direnv and dev shell
+<details>
+<summary>Variant details</summary>
 
-If you have [direnv](https://github.com/direnv/direnv) installed and configured you probably know what to do. If you do not and you would like to use the [nix dev shell](https://nixos.wiki/wiki/Flakes#Super_fast_nix-shell), which will install [just](https://github.com/casey/just) using nix, you can execute `nix develop`.  If the [container `builder` specified in the justfile](justfile) is already installed on your `PATH` with necessary daemon running and available,
+The *nixpod* container is the base variant with home-manager activated for root, intended for general-purpose development and debugging including scenarios like Kubernetes ephemeral containers.
 
-```bash
-nix develop
-just container_command_type="runflake" container-run
-```
+The *ghanix* container is configured for GitHub Actions self-hosted runners with the runner user and includes the atuin daemon service.
 
-should pull or build the container image in [containers/debnix.Containerfile](./containers/debnix.Containerfile) and run the flake in that image. If you want to force a local rebuild run `just container-build`.
-Note that just `just` will print help and you can run `just -n <command>` first for a dry run.
-See comments in the [justfile](justfile) for additional details.
+The *codenix* container runs code-server on port 8888 with the jovyan user, includes VS Code extension installation and home-manager activation via s6 init scripts, and the atuin daemon.
 
-### macOS
+The *jupnix* container runs JupyterLab on port 8888 with the jovyan user and includes the atuin daemon and home-manager activation.
 
-If you have a container image manager compatible with macOS installed, such as docker or rancher desktop, and you prefer not to use the [nix dev shell](#direnv-and-dev-shell), you can probably (with docker desktop for example)
+All variants share a common base image built by `modules/containers/build-image.nix` with four ordered layers (base utilities, Nix daemon, s6-overlay, Nix configuration) plus a variant-specific customization layer.
 
-```bash
-open -a Docker
-curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
-cargo install just
-just container_command_type="runflake" container-run
-```
+</details>
 
-however, please see [rust](https://www.rust-lang.org/tools/install) and [just](https://github.com/casey/just#installation) for details if you prefer another installation method like [homebrew](https://formulae.brew.sh/formula/just).
+## Quick start
 
-## Experimenting
-
-If you want to simply run a distribution of this flake in a container image, you can execute
-
-```bash
-just container_type="container" container_command="zsh" container-run
-```
-
-### docker
-
-If you're using docker as the `builder`, this will execute a series of commands like
+Pull and run a prebuilt image:
 
 ```bash
 docker pull ghcr.io/cameronraysmith/nixpod:latest
 docker run -it --rm ghcr.io/cameronraysmith/nixpod:latest
 ```
 
-See the [justfile](justfile) for details.
+Build from source and load into the local Docker daemon:
+
+```bash
+nix run .#load-nixpod
+```
+
+This uses skopeo with the nix2container transport to copy the image directly, without producing a full tarball.
+On macOS, the loader automatically targets the corresponding Linux architecture.
+
+Enter the development shell:
+
+```bash
+nix develop
+```
+
+## Build commands
+
+```bash
+nix build                    # build default home-manager activation package
+nix build .#nixpod           # build nixpod container (nix2container JSON manifest)
+nix build .#codenix          # build code-server container
+nix build .#ghanix           # build GitHub Actions runner container
+nix build .#jupnix           # build JupyterLab container
+nix run .#load-nixpod        # load nixpod into Docker daemon via skopeo
+nix fmt                      # format nix files via treefmt (nixfmt)
+nix flake check              # validate flake and run pre-commit checks
+```
+
+<details>
+<summary>Justfile recipes</summary>
+
+The justfile provides grouped convenience commands.
+Run `just` to see all available recipes or `just -n <recipe>` for a dry run.
+
+**Nix operations:** `just build`, `just check`, `just lint`, `just io`, `just update`, `just clean`
+
+**Container lifecycle:** `just container-build`, `just container-load`, `just container-run`, `just container-push`, `just container-push-all`, `just container-build-all`
+
+**CI helpers:** `just gh-ci-run`, `just gh-workflow-status`, `just gh-watch`, `just gh-logs`, `just gh-rerun`, `just gh-cancel`
+
+**Secrets management:** `just show-secrets`, `just edit-secrets`, `just scan-secrets`, `just export-secrets`, `just validate-secrets`, and additional sops utilities
+
+**Release management:** `just test-release`, `just preview-version`, `just release`
+
+**Devpod operations:** `just pod`, `just devpod`, `just provider`
+
+</details>
+
+## Flake outputs
+
+<details>
+<summary>Output summary</summary>
+
+**packages** (per system: aarch64-darwin, aarch64-linux, x86_64-darwin, x86_64-linux)
+
+- `default` -- home-manager activation package
+- `nixpod`, `ghanix`, `codenix`, `jupnix` -- nix2container JSON image manifests
+- `container` -- alias for nixpod
+- `load-nixpod`, `load-ghanix`, `load-codenix`, `load-jupnix` -- scripts that load images into Docker
+- `nixpod-users` -- system user identity derivation (passwd, group, shadow, PAM)
+- `s6-overlay-layer` -- s6-overlay filesystem layout
+
+**apps** (per system)
+
+- `load-nixpod`, `load-ghanix`, `load-codenix`, `load-jupnix` -- container loader apps
+
+**devShells**
+
+- `default` -- development shell with build and operations tooling
+
+**checks**
+
+- `pre-commit` -- git-hooks.nix pre-commit checks
+- `treefmt` -- treefmt formatting validation
+
+**formatter** -- treefmt (nixfmt)
+
+**homeModules** -- `default` home-manager module (atuin, git, neovim, starship, terminal, zsh with catppuccin theming)
+
+**legacyPackages** -- `homeConfigurations` (root, jovyan, runner) and `containerMatrix` for CI matrix discovery
+
+</details>
+
+## Development
+
+Enter the development shell with `nix develop` or via direnv if configured.
+The shell provides:
+
+- **build and CI:** just, act, nix-output-monitor, ratchet
+- **secrets:** age, sops, ssh-to-age, gitleaks
+- **release:** bun, nodejs (for semantic-release)
+- **pre-commit hooks:** treefmt (nixfmt) and gitleaks secret scanning via git-hooks.nix
+
+Format all Nix files with `nix fmt`.
+Validate the flake and run pre-commit checks with `nix flake check`.
+
+## Architecture
+
+The project is built on Nix Flakes with flake-parts for modular output composition.
+The flake uses import-tree to auto-discover flake-parts modules from the `modules/` directory, eliminating manual import lists.
+Container images are constructed with nix2container's `buildImage` and `buildLayer` for deferred tar creation and efficient layer management.
+s6-overlay provides process supervision within containers.
+Home-manager user configurations use deferred module composition via the `flake.modules.homeManager.*` namespace.
+Multi-arch manifest publishing uses a crane-based manifest builder with skopeo's nix2container transport.
+
 
 ## Acknowledgements
 
-- see credits of [cameronraysmith/nix-config](https://github.com/cameronraysmith/nix-config)
-- [cloudwatt/nix-container-images](https://github.com/cloudwatt/nix-container-images)
-- [nlewo/nix2container](https://github.com/nlewo/nix2container)
-- [NixOS/nix-installer](https://github.com/NixOS/nix-installer)
-- [pdtpartners/nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter)
-- [snowfallorg](https://github.com/snowfallorg)
-- [srid/nixos-config](https://github.com/srid/nixos-config)
+- [nix2container](https://github.com/nlewo/nix2container) -- deferred tar creation for container images
+- [s6-overlay](https://github.com/just-containers/s6-overlay) -- process supervision in containers
+- [flake-parts](https://github.com/hercules-ci/flake-parts) -- modular flake output composition
+- [import-tree](https://github.com/vic/import-tree) -- auto-discovery of flake-parts modules
+- [home-manager](https://github.com/nix-community/home-manager) -- declarative user environment configuration
+- [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) -- multi-arch manifest assembly
+- [catppuccin](https://github.com/catppuccin/nix) -- theming for terminal and editor configuration
+- [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter) -- CRI-layer container integration
+- [vanixiets](https://github.com/cameronraysmith/vanixiets) -- reference nix-darwin and home-manager patterns
+
+[ci-badge]: https://github.com/cameronraysmith/nixpod/actions/workflows/ci.yaml/badge.svg
+[ci-link]: https://github.com/cameronraysmith/nixpod/actions/workflows/ci.yaml
