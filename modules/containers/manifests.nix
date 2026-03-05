@@ -1,29 +1,27 @@
+# Per-arch push packages and multi-arch manifest assembly for container variants
+# push-* packages push a single-arch image; *Manifest packages assemble manifest lists
 { self, ... }:
 {
   perSystem =
     {
       inputs',
+      self',
       pkgs,
       lib,
       system,
-      mkMultiArchManifest,
+      mkPushImage,
+      mkManifest,
       ...
     }:
     let
+      registry = "ghcr.io";
       githubOrg = "cameronraysmith";
-      includedSystems =
-        let
-          envVar = builtins.getEnv "NIX_IMAGE_SYSTEMS";
-        in
-        if envVar == "" then
-          [
-            "x86_64-linux"
-            "aarch64-linux"
-          ]
-        else
-          builtins.filter (sys: sys != "") (builtins.split " " envVar);
 
       skopeo-nix2container = inputs'.nix2container.packages.skopeo-nix2container;
+
+      # On darwin, target the corresponding linux system for container images
+      targetSystem =
+        if pkgs.stdenv.isDarwin then builtins.replaceStrings [ "-darwin" ] [ "-linux" ] system else system;
 
       getEnvOr =
         var: default:
@@ -32,50 +30,72 @@
         in
         if val == "" then default else val;
 
-      mkManifest =
-        { name, packageName }:
-        mkMultiArchManifest {
-          inherit name;
-          images = lib.listToAttrs (
-            map (sys: lib.nameValuePair sys self.packages.${sys}.${packageName}) includedSystems
-          );
-          registry = {
-            name = "ghcr.io";
-            repo = "${githubOrg}/${name}";
-            username = getEnvOr "GITHUB_ACTOR" "cameronraysmith";
-            password = "$GITHUB_TOKEN";
-          };
-          version = getEnvOr "VERSION" "0.0.0";
-          tags = [
-            (builtins.getEnv "GIT_SHA_SHORT")
-            (builtins.getEnv "GIT_SHA")
-            (builtins.getEnv "GIT_REF")
-          ];
-          branch = getEnvOr "GITHUB_REF_NAME" "main";
+      version = getEnvOr "VERSION" "0.0.0";
+      branch = getEnvOr "GITHUB_REF_NAME" "main";
+
+      envTags = [
+        (builtins.getEnv "GIT_SHA_SHORT")
+        (builtins.getEnv "GIT_SHA")
+        (builtins.getEnv "GIT_REF")
+      ];
+
+      # Container variant definitions: variant name to package attribute name
+      variants = {
+        nixpod = "container";
+        ghanix = "ghanix";
+        codenix = "codenix";
+        jupnix = "jupnix";
+      };
+
+      pushPackages = lib.mapAttrs' (
+        variant: packageName:
+        lib.nameValuePair "push-${variant}" (mkPushImage {
+          name = variant;
+          repo = "${githubOrg}/${variant}";
+          image = self.packages.${targetSystem}.${packageName};
+          inherit
+            registry
+            version
+            branch
+            ;
+          tags = envTags;
           skopeo = skopeo-nix2container;
-        };
+        })
+      ) variants;
+
+      manifestPackages = lib.mapAttrs' (
+        variant: _:
+        lib.nameValuePair "${variant}Manifest" (mkManifest {
+          name = variant;
+          repo = "${githubOrg}/${variant}";
+          inherit
+            registry
+            version
+            branch
+            ;
+          tags = envTags;
+        })
+      ) variants;
+
+      pushApps = lib.mapAttrs' (
+        variant: _:
+        lib.nameValuePair "push-${variant}" {
+          type = "app";
+          program = "${self'.packages."push-${variant}"}/bin/push-${variant}";
+        }
+      ) variants;
+
+      manifestApps = lib.mapAttrs' (
+        variant: _:
+        lib.nameValuePair "${variant}Manifest" {
+          type = "app";
+          program = "${self'.legacyPackages."${variant}Manifest"}/bin/manifest-${variant}";
+        }
+      ) variants;
     in
     {
-      legacyPackages = {
-        nixpodManifest = mkManifest {
-          name = "nixpod";
-          packageName = "container";
-        };
-
-        ghanixManifest = mkManifest {
-          name = "ghanix";
-          packageName = "ghanix";
-        };
-
-        codenixManifest = mkManifest {
-          name = "codenix";
-          packageName = "codenix";
-        };
-
-        jupnixManifest = mkManifest {
-          name = "jupnix";
-          packageName = "jupnix";
-        };
-      };
+      packages = pushPackages;
+      legacyPackages = manifestPackages;
+      apps = pushApps // manifestApps;
     };
 }
