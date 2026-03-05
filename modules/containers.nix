@@ -30,7 +30,7 @@
         gitMinimal
       ];
     in
-    {
+    lib.mkIf pkgs.stdenv.isLinux {
       packages.nixpod =
         let
           nixpodNixConfig = mkNixConfig {
