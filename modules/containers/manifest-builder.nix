@@ -1,9 +1,15 @@
-# Multi-arch manifest builder using skopeo (nix: transport) and crane (manifest lists)
-# Single-arch builds auto-detected and skip manifest list creation
+# Per-arch image push and manifest assembly using skopeo (nix: transport) and crane
+# mkPushImage: push a single-arch image to the registry with arch-suffixed tag
+# mkManifest: assemble a manifest list from already-pushed per-arch images via crane
 { ... }:
 {
   perSystem =
-    { pkgs, lib, ... }:
+    {
+      pkgs,
+      lib,
+      system,
+      ...
+    }:
     let
       inherit (pkgs)
         writeShellApplication
@@ -11,11 +17,19 @@
         crane
         jq
         ;
+
+      systemToArch = {
+        "x86_64-linux" = "amd64";
+        "aarch64-linux" = "arm64";
+      };
+
+      craneExe = lib.getExe crane;
+      jqExe = lib.getExe jq;
     in
     {
-      _module.args.mkMultiArchManifest =
+      _module.args.mkPushImage =
         {
-          images,
+          image,
           name,
           registry,
           version,
@@ -24,46 +38,20 @@
           skopeo,
         }:
         let
-          # Tags: version first, then explicit tags or "latest" on main branch
-          parsedTags = [
+          arch = systemToArch.${system};
+          archTag = "${version}-${arch}";
+          repo = "${registry}/${name}";
+          skopeoExe = lib.getExe skopeo;
+
+          # Additional tags: version (without arch suffix), git SHA, git ref, latest on main
+          allTags = [
             version
           ]
-          ++ (if tags != [ ] then tags else (if branch == "main" then [ "latest" ] else [ ]));
-          isSingleArch = lib.length (lib.attrNames images) == 1;
-          systemToArch = {
-            "x86_64-linux" = "amd64";
-            "aarch64-linux" = "arm64";
-          };
-
-          # Single-arch: push to primary tag; multi-arch: push with arch suffix, then create manifest list
-          archImages = lib.mapAttrs' (
-            system: image:
-            let
-              arch = systemToArch.${system};
-              primaryTag = lib.head parsedTags;
-            in
-            lib.nameValuePair arch {
-              inherit system image arch;
-              tag = if isSingleArch then primaryTag else "${version}-${arch}";
-              uri = "${registry.name}/${registry.repo}:${
-                if isSingleArch then primaryTag else "${version}-${arch}"
-              }";
-            }
-          ) images;
-
-          manifestName = "${registry.name}/${registry.repo}:${lib.head parsedTags}";
-          repoBase = "${registry.name}/${registry.repo}";
-
-          skopeoExe = lib.getExe skopeo;
-          craneExe = lib.getExe crane;
-          jqExe = lib.getExe jq;
-
+          ++ (lib.filter (t: t != "") tags)
+          ++ (if branch == "main" then [ "latest" ] else [ ]);
         in
-        assert lib.assertMsg (images != { }) "At least one image must be provided";
-        assert lib.assertMsg (parsedTags != [ ]) "At least one tag must be set";
-
         writeShellApplication {
-          name = "multi-arch-manifest-${name}";
+          name = "push-${name}";
           runtimeInputs = [
             skopeo
             crane
@@ -74,8 +62,8 @@
           text = ''
             function cleanup {
               set -x
-              ${skopeoExe} logout "${registry.name}" || true
-              ${craneExe} auth logout "${registry.name}" || true
+              ${skopeoExe} logout "${registry}" || true
+              ${craneExe} auth logout "${registry}" || true
             }
             trap cleanup EXIT
 
@@ -87,68 +75,105 @@
             fi
 
             set +x
-            echo "Logging in to ${registry.name}"
+            echo "Logging in to ${registry}"
             ${skopeoExe} login \
-              --username "${registry.username}" \
-              --password "${registry.password}" \
-              "${registry.name}"
-            ${craneExe} auth login "${registry.name}" \
-              --username "${registry.username}" \
-              --password "${registry.password}"
+              --username "$GITHUB_ACTOR" \
+              --password "$GITHUB_TOKEN" \
+              "${registry}"
+            ${craneExe} auth login "${registry}" \
+              --username "$GITHUB_ACTOR" \
+              --password "$GITHUB_TOKEN"
             set -x
 
-            declare -A PUSHED_DIGESTS
-            ${lib.concatMapStringsSep "\n" (archImage: ''
-              echo "Pushing ${archImage.arch} image to ${archImage.uri}"
-              DIGESTFILE=$(mktemp)
-              ${skopeoExe} copy \
-                --digestfile "$DIGESTFILE" \
-                --dest-creds "${registry.username}:${registry.password}" \
-                "nix:${archImage.image}" \
-                "docker://${archImage.uri}"
-              PUSHED_DIGESTS["${archImage.arch}"]=$(cat "$DIGESTFILE")
-              rm "$DIGESTFILE"
-              echo "Pushed ${archImage.arch} with digest: ''${PUSHED_DIGESTS["${archImage.arch}"]}"
-            '') (lib.attrValues archImages)}
-
-            ${lib.optionalString (!isSingleArch) ''
-              echo "Creating multi-arch manifest list: ${manifestName}"
-              ${craneExe} index append \
-                ${
-                  lib.concatMapStringsSep " \\\n            " (
-                    archImage: ''-m "${repoBase}@''${PUSHED_DIGESTS["${archImage.arch}"]}"''
-                  ) (lib.attrValues archImages)
-                } \
-                -t "${manifestName}"
-
-              set +x
-              echo "Manifest: ${manifestName}"
-              ${craneExe} manifest "${manifestName}" | ${jqExe} .
-              echo "Tags: ${toString parsedTags}"
-              set -x
-            ''}
+            echo "Pushing ${arch} image to ${repo}:${archTag}"
+            ${skopeoExe} copy \
+              --dest-creds "$GITHUB_ACTOR:$GITHUB_TOKEN" \
+              "nix:${image}" \
+              "docker://${repo}:${archTag}"
 
             ${lib.concatMapStringsSep "\n" (tag: ''
-              ${craneExe} tag \
-                "${registry.name}/${registry.repo}:${lib.head parsedTags}" \
-                "${tag}"
-            '') (lib.tail parsedTags)}
+              echo "Tagging ${repo}:${archTag} as ${repo}:${tag}"
+              ${craneExe} tag "${repo}:${archTag}" "${tag}"
+            '') allTags}
 
             set +x
-            ${
-              if isSingleArch then
-                ''
-                  echo "Successfully pushed single-arch image for ${name}"
-                ''
-              else
-                ''
-                  echo "Successfully pushed multi-arch manifest for ${name}"
-                ''
-            }
-            echo "Available at: ${registry.name}/${registry.repo}:${lib.head parsedTags}"
+            echo "Successfully pushed ${arch} image for ${name}"
+            echo "Primary: ${repo}:${archTag}"
             ${lib.concatMapStringsSep "\n" (tag: ''
-              echo "  Also tagged: ${registry.name}/${registry.repo}:${tag}"
-            '') (lib.tail parsedTags)}
+              echo "  Also tagged: ${repo}:${tag}"
+            '') allTags}
+          '';
+        };
+
+      _module.args.mkManifest =
+        {
+          name,
+          registry,
+          version,
+          tags ? [ ],
+          branch ? "main",
+          arches ? [
+            "amd64"
+            "arm64"
+          ],
+        }:
+        let
+          repo = "${registry}/${name}";
+
+          allTags = [
+            version
+          ]
+          ++ (lib.filter (t: t != "") tags)
+          ++ (if branch == "main" then [ "latest" ] else [ ]);
+
+          primaryTag = lib.head allTags;
+        in
+        writeShellApplication {
+          name = "manifest-${name}";
+          runtimeInputs = [
+            crane
+            jq
+            coreutils
+          ];
+
+          text = ''
+            function cleanup {
+              set -x
+              ${craneExe} auth logout "${registry}" || true
+            }
+            trap cleanup EXIT
+
+            set +x
+            echo "Logging in to ${registry}"
+            ${craneExe} auth login "${registry}" \
+              --username "$GITHUB_ACTOR" \
+              --password "$GITHUB_TOKEN"
+            set -x
+
+            declare -A DIGESTS
+            ${lib.concatMapStringsSep "\n" (arch: ''
+              echo "Reading digest for ${repo}:${version}-${arch}"
+              DIGESTS["${arch}"]=$(${craneExe} digest "${repo}:${version}-${arch}")
+              echo "  ${arch}: ''${DIGESTS["${arch}"]}"
+            '') arches}
+
+            echo "Creating multi-arch manifest list: ${repo}:${primaryTag}"
+            ${craneExe} index append \
+              ${
+                lib.concatMapStringsSep " \\\n          " (arch: ''-m "${repo}@''${DIGESTS["${arch}"]}"'') arches
+              } \
+              -t "${repo}:${primaryTag}"
+
+            ${lib.concatMapStringsSep "\n" (tag: ''
+              echo "Tagging ${repo}:${primaryTag} as ${repo}:${tag}"
+              ${craneExe} tag "${repo}:${primaryTag}" "${tag}"
+            '') (lib.tail allTags)}
+
+            set +x
+            echo "Successfully created multi-arch manifest for ${name}"
+            echo "Manifest: ${repo}:${primaryTag}"
+            ${craneExe} manifest "${repo}:${primaryTag}" | ${jqExe} .
+            echo "Tags: ${toString allTags}"
           '';
         };
     };
