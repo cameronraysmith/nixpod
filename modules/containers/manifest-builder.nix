@@ -18,10 +18,18 @@
         jq
         ;
 
-      systemToArch = {
-        "x86_64-linux" = "amd64";
-        "aarch64-linux" = "arm64";
-      };
+      # Map nix system identifiers to OCI architecture names, handling both
+      # linux and darwin systems (darwin builds target linux containers)
+      systemToArch =
+        let
+          linuxSystem =
+            if pkgs.stdenv.isDarwin then builtins.replaceStrings [ "-darwin" ] [ "-linux" ] system else system;
+        in
+        {
+          "x86_64-linux" = "amd64";
+          "aarch64-linux" = "arm64";
+        }
+        .${linuxSystem};
 
       craneExe = lib.getExe crane;
       jqExe = lib.getExe jq;
@@ -32,15 +40,16 @@
           image,
           name,
           registry,
+          repo,
           version,
           tags ? [ ],
           branch ? "main",
           skopeo,
         }:
         let
-          arch = systemToArch.${system};
+          arch = systemToArch;
           archTag = "${version}-${arch}";
-          repo = "${registry}/${name}";
+          fullRepo = "${registry}/${repo}";
           skopeoExe = lib.getExe skopeo;
 
           # Additional tags: version (without arch suffix), git SHA, git ref, latest on main
@@ -85,22 +94,22 @@
               --password "$GITHUB_TOKEN"
             set -x
 
-            echo "Pushing ${arch} image to ${repo}:${archTag}"
+            echo "Pushing ${arch} image to ${fullRepo}:${archTag}"
             ${skopeoExe} copy \
               --dest-creds "$GITHUB_ACTOR:$GITHUB_TOKEN" \
               "nix:${image}" \
-              "docker://${repo}:${archTag}"
+              "docker://${fullRepo}:${archTag}"
 
             ${lib.concatMapStringsSep "\n" (tag: ''
-              echo "Tagging ${repo}:${archTag} as ${repo}:${tag}"
-              ${craneExe} tag "${repo}:${archTag}" "${tag}"
+              echo "Tagging ${fullRepo}:${archTag} as ${fullRepo}:${tag}"
+              ${craneExe} tag "${fullRepo}:${archTag}" "${tag}"
             '') allTags}
 
             set +x
             echo "Successfully pushed ${arch} image for ${name}"
-            echo "Primary: ${repo}:${archTag}"
+            echo "Primary: ${fullRepo}:${archTag}"
             ${lib.concatMapStringsSep "\n" (tag: ''
-              echo "  Also tagged: ${repo}:${tag}"
+              echo "  Also tagged: ${fullRepo}:${tag}"
             '') allTags}
           '';
         };
@@ -109,6 +118,7 @@
         {
           name,
           registry,
+          repo,
           version,
           tags ? [ ],
           branch ? "main",
@@ -118,7 +128,7 @@
           ],
         }:
         let
-          repo = "${registry}/${name}";
+          fullRepo = "${registry}/${repo}";
 
           allTags = [
             version
@@ -152,27 +162,29 @@
 
             declare -A DIGESTS
             ${lib.concatMapStringsSep "\n" (arch: ''
-              echo "Reading digest for ${repo}:${version}-${arch}"
-              DIGESTS["${arch}"]=$(${craneExe} digest "${repo}:${version}-${arch}")
+              echo "Reading digest for ${fullRepo}:${version}-${arch}"
+              DIGESTS["${arch}"]=$(${craneExe} digest "${fullRepo}:${version}-${arch}")
               echo "  ${arch}: ''${DIGESTS["${arch}"]}"
             '') arches}
 
-            echo "Creating multi-arch manifest list: ${repo}:${primaryTag}"
+            echo "Creating multi-arch manifest list: ${fullRepo}:${primaryTag}"
             ${craneExe} index append \
               ${
-                lib.concatMapStringsSep " \\\n          " (arch: ''-m "${repo}@''${DIGESTS["${arch}"]}"'') arches
+                lib.concatMapStringsSep " \\\n          " (
+                  arch: ''-m "${fullRepo}@''${DIGESTS["${arch}"]}"''
+                ) arches
               } \
-              -t "${repo}:${primaryTag}"
+              -t "${fullRepo}:${primaryTag}"
 
             ${lib.concatMapStringsSep "\n" (tag: ''
-              echo "Tagging ${repo}:${primaryTag} as ${repo}:${tag}"
-              ${craneExe} tag "${repo}:${primaryTag}" "${tag}"
+              echo "Tagging ${fullRepo}:${primaryTag} as ${fullRepo}:${tag}"
+              ${craneExe} tag "${fullRepo}:${primaryTag}" "${tag}"
             '') (lib.tail allTags)}
 
             set +x
             echo "Successfully created multi-arch manifest for ${name}"
-            echo "Manifest: ${repo}:${primaryTag}"
-            ${craneExe} manifest "${repo}:${primaryTag}" | ${jqExe} .
+            echo "Manifest: ${fullRepo}:${primaryTag}"
+            ${craneExe} manifest "${fullRepo}:${primaryTag}" | ${jqExe} .
             echo "Tags: ${toString allTags}"
           '';
         };
