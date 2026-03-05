@@ -21,6 +21,7 @@
     git-hooks = {
       url = "github:cachix/git-hooks.nix";
       inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-compat.follows = "";
     };
     sops-nix = {
       url = "github:Mic92/sops-nix";
