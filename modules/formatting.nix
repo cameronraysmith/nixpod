@@ -14,6 +14,7 @@
       };
 
       pre-commit.settings = {
+        package = pkgs.prek;
         hooks.treefmt.enable = true;
         hooks.gitleaks = {
           enable = true;
