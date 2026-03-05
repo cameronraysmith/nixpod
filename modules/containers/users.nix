@@ -196,70 +196,72 @@
 
     in
     {
-      packages.nixpod-users =
-        pkgs.runCommand "nixpod-users"
-          {
-            inherit
-              passwdContents
-              groupContents
-              shadowContents
-              ;
-            passAsFile = [
-              "passwdContents"
-              "groupContents"
-              "shadowContents"
-            ];
-            allowSubstitutes = false;
-            preferLocalBuild = true;
-          }
-          ''
-            set -euo pipefail
+      packages = lib.mkIf pkgs.stdenv.isLinux {
+        nixpod-users =
+          pkgs.runCommand "nixpod-users"
+            {
+              inherit
+                passwdContents
+                groupContents
+                shadowContents
+                ;
+              passAsFile = [
+                "passwdContents"
+                "groupContents"
+                "shadowContents"
+              ];
+              allowSubstitutes = false;
+              preferLocalBuild = true;
+            }
+            ''
+              set -euo pipefail
 
-            mkdir -p $out/etc
+              mkdir -p $out/etc
 
-            # User accounts
-            cat $passwdContentsPath > $out/etc/passwd
-            echo "" >> $out/etc/passwd
+              # User accounts
+              cat $passwdContentsPath > $out/etc/passwd
+              echo "" >> $out/etc/passwd
 
-            cat $groupContentsPath > $out/etc/group
-            echo "" >> $out/etc/group
+              cat $groupContentsPath > $out/etc/group
+              echo "" >> $out/etc/group
 
-            cat $shadowContentsPath > $out/etc/shadow
-            echo "" >> $out/etc/shadow
+              cat $shadowContentsPath > $out/etc/shadow
+              echo "" >> $out/etc/shadow
 
-            # Home directories
-            mkdir -p $out/root
-            ${lib.concatStringsSep "\n" (
-              lib.mapAttrsToList (name: attrs: "mkdir -p $out${attrs.home}") nonRootUsers
-            )}
+              # Home directories
+              mkdir -p $out/root
+              ${lib.concatStringsSep "\n" (
+                lib.mapAttrsToList (name: attrs: "mkdir -p $out${attrs.home}") nonRootUsers
+              )}
 
-            # PAM configuration
-            mkdir -p $out/etc/pam.d
+              # PAM configuration
+              mkdir -p $out/etc/pam.d
 
-            cat > $out/etc/pam.d/sudo <<'PAMEOF'
-            ${pamSudo}
-            PAMEOF
+              cat > $out/etc/pam.d/sudo <<'PAMEOF'
+              ${pamSudo}
+              PAMEOF
 
-            cat > $out/etc/pam.d/su <<'PAMEOF'
-            ${pamSu}
-            PAMEOF
+              cat > $out/etc/pam.d/su <<'PAMEOF'
+              ${pamSu}
+              PAMEOF
 
-            cat > $out/etc/pam.d/system-auth <<'PAMEOF'
-            ${pamSystemAuth}
-            PAMEOF
+              cat > $out/etc/pam.d/system-auth <<'PAMEOF'
+              ${pamSystemAuth}
+              PAMEOF
 
-            cat > $out/etc/pam.d/login <<'PAMEOF'
-            ${pamLogin}
-            PAMEOF
+              cat > $out/etc/pam.d/login <<'PAMEOF'
+              ${pamLogin}
+              PAMEOF
 
-            # Sudoers configuration
-            mkdir -p $out/etc/sudoers.d
+              # Sudoers configuration
+              mkdir -p $out/etc/sudoers.d
 
-            cat > $out/etc/sudoers.d/wheel <<'SUDOEOF'
-            ${sudoersWheel}
-            SUDOEOF
+              cat > $out/etc/sudoers.d/wheel <<'SUDOEOF'
+              ${sudoersWheel}
+              SUDOEOF
 
-            chmod 440 $out/etc/sudoers.d/wheel
-          '';
+              chmod 440 $out/etc/sudoers.d/wheel
+            '';
+      };
     };
 }
