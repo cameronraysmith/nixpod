@@ -7,16 +7,6 @@ on:
         required: true
         type: boolean
         default: false
-      run_build_images:
-        description: "Run build-images job"
-        required: false
-        type: boolean
-        default: false
-      run_execute_workflow:
-        description: "Run execute-workflow job"
-        required: false
-        type: boolean
-        default: false
       force_run:
         description: "Force execution even if already successful for this commit"
         required: false
@@ -263,7 +253,7 @@ jobs:
         with:
           check-name: build-nix-images (${{ matrix.image }}, ${{ matrix.platform.system }}, ${{ matrix.platform.runner }})
           hash-sources: 'flake.nix flake.lock modules/**/*.nix modules/**/*.lua .github/actions/setup-nix/action.yml'
-          force-run: ${{ (inputs.run_build_images || inputs.run_execute_workflow || inputs.force_run) && 'true' || 'false' }}
+          force-run: ${{ inputs.force_run && 'true' || 'false' }}
 
       - name: Setup Nix
         if: steps.cache.outputs.should-run == 'true'
@@ -339,7 +329,7 @@ jobs:
         with:
           check-name: publish-manifests (${{ matrix.image }})
           hash-sources: 'flake.nix flake.lock modules/**/*.nix modules/**/*.lua .github/actions/setup-nix/action.yml'
-          force-run: ${{ (inputs.run_build_images || inputs.run_execute_workflow || inputs.force_run) && 'true' || 'false' }}
+          force-run: ${{ inputs.force_run && 'true' || 'false' }}
 
       - name: Setup Nix
         if: steps.cache.outputs.should-run == 'true'
