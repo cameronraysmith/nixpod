@@ -14,42 +14,18 @@ shared:
     - or:
         - check-success=preview-release-version
         - check-skipped=preview-release-version
-    - or:
-        - "check-success=build-nix-images (nixpod, x86_64-linux, ubuntu-latest)"
-        - "check-skipped=build-nix-images (nixpod, x86_64-linux, ubuntu-latest)"
-    - or:
-        - "check-success=build-nix-images (nixpod, aarch64-linux, ubuntu-24.04-arm)"
-        - "check-skipped=build-nix-images (nixpod, aarch64-linux, ubuntu-24.04-arm)"
-    - or:
-        - "check-success=build-nix-images (codenix, x86_64-linux, ubuntu-latest)"
-        - "check-skipped=build-nix-images (codenix, x86_64-linux, ubuntu-latest)"
-    - or:
-        - "check-success=build-nix-images (codenix, aarch64-linux, ubuntu-24.04-arm)"
-        - "check-skipped=build-nix-images (codenix, aarch64-linux, ubuntu-24.04-arm)"
-    - or:
-        - "check-success=build-nix-images (ghanix, x86_64-linux, ubuntu-latest)"
-        - "check-skipped=build-nix-images (ghanix, x86_64-linux, ubuntu-latest)"
-    - or:
-        - "check-success=build-nix-images (ghanix, aarch64-linux, ubuntu-24.04-arm)"
-        - "check-skipped=build-nix-images (ghanix, aarch64-linux, ubuntu-24.04-arm)"
-    - or:
-        - "check-success=build-nix-images (jupnix, x86_64-linux, ubuntu-latest)"
-        - "check-skipped=build-nix-images (jupnix, x86_64-linux, ubuntu-latest)"
-    - or:
-        - "check-success=build-nix-images (jupnix, aarch64-linux, ubuntu-24.04-arm)"
-        - "check-skipped=build-nix-images (jupnix, aarch64-linux, ubuntu-24.04-arm)"
-    - or:
-        - "check-success=publish-manifests (nixpod)"
-        - "check-skipped=publish-manifests (nixpod)"
-    - or:
-        - "check-success=publish-manifests (codenix)"
-        - "check-skipped=publish-manifests (codenix)"
-    - or:
-        - "check-success=publish-manifests (ghanix)"
-        - "check-skipped=publish-manifests (ghanix)"
-    - or:
-        - "check-success=publish-manifests (jupnix)"
-        - "check-skipped=publish-manifests (jupnix)"
+    - "check-success=build-nix-images (nixpod, x86_64-linux, ubuntu-latest)"
+    - "check-success=build-nix-images (nixpod, aarch64-linux, ubuntu-24.04-arm)"
+    - "check-success=build-nix-images (codenix, x86_64-linux, ubuntu-latest)"
+    - "check-success=build-nix-images (codenix, aarch64-linux, ubuntu-24.04-arm)"
+    - "check-success=build-nix-images (ghanix, x86_64-linux, ubuntu-latest)"
+    - "check-success=build-nix-images (ghanix, aarch64-linux, ubuntu-24.04-arm)"
+    - "check-success=build-nix-images (jupnix, x86_64-linux, ubuntu-latest)"
+    - "check-success=build-nix-images (jupnix, aarch64-linux, ubuntu-24.04-arm)"
+    - "check-success=publish-manifests (nixpod)"
+    - "check-success=publish-manifests (codenix)"
+    - "check-success=publish-manifests (ghanix)"
+    - "check-success=publish-manifests (jupnix)"
 
   human_author_conditions: &human_author_conditions
     - author!=renovate[bot]
