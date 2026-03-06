@@ -67,9 +67,6 @@
 - name: work-in-progress
   description: Work in progress that should not be auto-merged
   color: ffffff
-- name: build-images
-  description: Control image build on PRs
-  color: fef2c0
 - name: skip-ci
   description: Skip CI workflow
   color: 35539d
