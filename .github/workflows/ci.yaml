@@ -188,7 +188,7 @@ jobs:
         uses: ./.github/actions/cached-ci-job
         with:
           check-name: ${{ github.job }}
-          hash-sources: 'flake.nix flake.lock modules/**/*.nix containers/**/*.nix .github/actions/setup-nix/action.yml'
+          hash-sources: 'flake.nix flake.lock modules/**/*.nix modules/**/*.lua .github/actions/setup-nix/action.yml'
           force-run: ${{ inputs.force_run && 'true' || 'false' }}
       - name: Setup Nix
         if: steps.cache.outputs.should-run == 'true'
@@ -236,7 +236,7 @@ jobs:
   build-nix-images:
     runs-on: ${{ matrix.platform.runner }}
     needs: [set-variables]
-    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && ( contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || contains(github.event.pull_request.labels.*.name, 'flake-update') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images) || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) ) }}
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' }}
     concurrency:
       group: bni-${{ matrix.image }}-${{ matrix.platform.system }}-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -257,8 +257,16 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ needs.set-variables.outputs.checkout_ref }}
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: build-nix-images (${{ matrix.image }}, ${{ matrix.platform.system }}, ${{ matrix.platform.runner }})
+          hash-sources: 'flake.nix flake.lock modules/**/*.nix modules/**/*.lua .github/actions/setup-nix/action.yml'
+          force-run: ${{ (inputs.run_build_images || inputs.run_execute_workflow || inputs.force_run) && 'true' || 'false' }}
 
       - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
         uses: ./.github/actions/setup-nix
         with:
           system: ${{ matrix.platform.system }}
@@ -268,6 +276,7 @@ jobs:
           cachix-auth-token: ${{ secrets.CACHIX_AUTH_TOKEN }}
 
       - name: Set git variables
+        if: steps.cache.outputs.should-run == 'true'
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             GIT_SHA="${{ github.event.pull_request.head.sha }}"
@@ -279,15 +288,36 @@ jobs:
           echo "GIT_REF=$(echo '${{ github.ref_name }}' | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Build and push ${{ matrix.image }} (${{ matrix.platform.system }})
+        if: steps.cache.outputs.should-run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           nix run --impure ".#push-${{ matrix.image }}" --accept-flake-config --print-build-logs --show-trace
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<MARKEREOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "cache_key": "${{ steps.cache.outputs.cache-key }}",
+            "workflow_run_id": "${{ github.run_id }}"
+          }
+          MARKEREOF
+      - name: Save job result to cache
+        if: success() && steps.cache.outputs.should-run == 'true'
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # ratchet:actions/cache/save@v5
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
 
   publish-manifests:
     runs-on: ubuntu-latest
     needs: [set-variables, build-nix-images]
-    if: ${{ needs.set-variables.outputs.skip_ci != 'true' && ( contains(github.event.pull_request.labels.*.name, 'build-images') || contains(github.event.pull_request.labels.*.name, 'execute-workflow') || contains(github.event.pull_request.labels.*.name, 'flake-update') || (github.event_name == 'workflow_dispatch' && inputs.run_build_images) || (github.event_name == 'workflow_dispatch' && inputs.run_execute_workflow) ) }}
+    if: ${{ needs.set-variables.outputs.skip_ci != 'true' }}
     concurrency:
       group: pm-${{ matrix.image }}-${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
@@ -303,14 +333,23 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ needs.set-variables.outputs.checkout_ref }}
+      - name: Check execution cache
+        id: cache
+        uses: ./.github/actions/cached-ci-job
+        with:
+          check-name: publish-manifests (${{ matrix.image }})
+          hash-sources: 'flake.nix flake.lock modules/**/*.nix modules/**/*.lua .github/actions/setup-nix/action.yml'
+          force-run: ${{ (inputs.run_build_images || inputs.run_execute_workflow || inputs.force_run) && 'true' || 'false' }}
 
       - name: Setup Nix
+        if: steps.cache.outputs.should-run == 'true'
         uses: ./.github/actions/setup-nix
         with:
           installer: quick
           system: x86_64-linux
 
       - name: Set git variables
+        if: steps.cache.outputs.should-run == 'true'
         run: |
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             GIT_SHA="${{ github.event.pull_request.head.sha }}"
@@ -322,10 +361,31 @@ jobs:
           echo "GIT_REF=$(echo '${{ github.ref_name }}' | tr '/' '-')" >> $GITHUB_ENV
 
       - name: Assemble ${{ matrix.image }} manifest
+        if: steps.cache.outputs.should-run == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           nix run --impure ".#${{ matrix.image }}Manifest" --accept-flake-config --print-build-logs
+      - name: Create job result marker
+        if: success() && steps.cache.outputs.should-run == 'true'
+        shell: bash
+        run: |
+          mkdir -p "${{ steps.cache.outputs.cache-path }}"
+          cat > "${{ steps.cache.outputs.cache-path }}/marker" <<MARKEREOF
+          {
+            "success": true,
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}",
+            "cache_key": "${{ steps.cache.outputs.cache-key }}",
+            "workflow_run_id": "${{ github.run_id }}"
+          }
+          MARKEREOF
+      - name: Save job result to cache
+        if: success() && steps.cache.outputs.should-run == 'true'
+        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # ratchet:actions/cache/save@v5
+        with:
+          path: ${{ steps.cache.outputs.cache-path }}
+          key: ${{ steps.cache.outputs.cache-key }}
 
   release:
     runs-on: ubuntu-latest
