@@ -299,7 +299,7 @@ jobs:
           MARKEREOF
       - name: Save job result to cache
         if: success() && steps.cache.outputs.should-run == 'true'
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # ratchet:actions/cache/save@v5
+        uses: actions/cache/save@565629816435f6c0b50676926c9b05c254113c0c # ratchet:actions/cache/save@v5
         with:
           path: ${{ steps.cache.outputs.cache-path }}
           key: ${{ steps.cache.outputs.cache-key }}
@@ -372,7 +372,7 @@ jobs:
           MARKEREOF
       - name: Save job result to cache
         if: success() && steps.cache.outputs.should-run == 'true'
-        uses: actions/cache/save@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # ratchet:actions/cache/save@v5
+        uses: actions/cache/save@565629816435f6c0b50676926c9b05c254113c0c # ratchet:actions/cache/save@v5
         with:
           path: ${{ steps.cache.outputs.cache-path }}
           key: ${{ steps.cache.outputs.cache-key }}
