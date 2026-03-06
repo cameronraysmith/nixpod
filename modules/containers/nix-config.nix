@@ -9,6 +9,9 @@
 # - Correct profile symlinks using absolute /nix/var/nix/profiles/ paths
 # - builtins.path for normalized nixpkgs store path names
 { ... }:
+let
+  caches = import ../../lib/caches.nix;
+in
 {
   perSystem =
     { pkgs, lib, ... }:
@@ -48,7 +51,8 @@
               "flakes"
             ];
             trusted-users = [ "root" ] ++ lib.optional (storeOwner != "root") storeOwner;
-            trusted-public-keys = [ "cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=" ];
+            substituters = caches.substituters;
+            trusted-public-keys = caches.publicKeys;
           };
 
           nixConfContents = toConf (defaultNixConf // nixConf);
