@@ -59,6 +59,41 @@ nix run .#load-nixpod
 This uses skopeo with the nix2container transport to copy the image directly, without producing a full tarball.
 On macOS, the loader automatically targets the corresponding Linux architecture.
 
+<details>
+<summary>Building containers on macOS (Apple Silicon)</summary>
+
+Building container images requires a Linux builder since nix2container produces Linux derivations.
+On Apple Silicon Macs, [nix-rosetta-builder](https://github.com/cpick/nix-rosetta-builder) provides an `x86_64-linux` and `aarch64-linux` builder via a lightweight Linux VM using Rosetta 2 translation.
+
+To set it up, add the flake input and import the nix-darwin module:
+
+```nix
+# flake.nix
+inputs.nix-rosetta-builder.url = "github:cpick/nix-rosetta-builder";
+```
+
+Then enable it in your nix-darwin configuration:
+
+```nix
+{
+  imports = [ inputs.nix-rosetta-builder.darwinModules.default ];
+
+  nix-rosetta-builder = {
+    enable = true;
+    onDemand = true;
+    cores = 12;
+    memory = "48GiB";
+    diskSize = "500GiB";
+  };
+}
+```
+
+The `onDemand` option powers off the VM when idle to save resources.
+Adjust `cores`, `memory`, and `diskSize` to match available system resources.
+See the [nix-rosetta-builder README](https://github.com/cpick/nix-rosetta-builder) for the full set of configuration options.
+
+</details>
+
 Enter the development shell:
 
 ```bash
