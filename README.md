@@ -258,6 +258,7 @@ Multi-arch publishing uses a decoupled push/manifest model: skopeo pushes per-ar
 - [home-manager](https://github.com/nix-community/home-manager) -- declarative user environment configuration
 - [nix-unit](https://github.com/nix-community/nix-unit) -- evaluation-time unit testing for Nix expressions
 - [crane](https://github.com/google/go-containerregistry/tree/main/cmd/crane) -- multi-arch manifest assembly
+- [nix-rosetta-builder](https://github.com/cpick/nix-rosetta-builder) -- Rosetta 2-accelerated Linux builder for Apple Silicon
 - [catppuccin](https://github.com/catppuccin/nix) -- theming for terminal and editor configuration
 - [nix-snapshotter](https://github.com/pdtpartners/nix-snapshotter) -- CRI-layer container integration
 - [vanixiets](https://github.com/cameronraysmith/vanixiets) -- reference nix-darwin and home-manager patterns
