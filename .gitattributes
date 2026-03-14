@@ -1,0 +1,7 @@
+flake.lock linguist-generated=true
+bun.lock linguist-generated=true
+*.sh linguist-detectable=false
+scripts/** linguist-detectable=false
+.envrc linguist-detectable=false
+justfile linguist-detectable=false
+*.nix text eol=lf
