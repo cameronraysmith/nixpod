@@ -92,6 +92,57 @@ The `onDemand` option powers off the VM when idle to save resources.
 Adjust `cores`, `memory`, and `diskSize` to match available system resources.
 See the [nix-rosetta-builder README](https://github.com/cpick/nix-rosetta-builder) for the full set of configuration options.
 
+### First-time bootstrap
+
+The nix-rosetta-builder VM image is an `aarch64-linux` NixOS system, so building it requires a Linux builder, which creates a chicken-and-egg problem on a fresh macOS system that has no Linux builder yet.
+
+nix-darwin ships a native `nix.linux-builder` module that provisions a QEMU-based Linux VM.
+This VM can build `aarch64-linux` derivations, which is sufficient to build the nix-rosetta-builder VM image.
+The bootstrap uses this native builder as a temporary stepping stone.
+
+**Step 1** — enable the native linux-builder and apply the configuration:
+
+```nix
+{
+  nix.linux-builder.enable = true;
+}
+```
+
+```bash
+darwin-rebuild switch
+```
+
+This starts a QEMU VM that registers itself as a `nix.buildMachines` entry for `aarch64-linux` builds.
+
+**Step 2** — with the native builder running, enable nix-rosetta-builder and disable the native one:
+
+```nix
+{
+  imports = [ inputs.nix-rosetta-builder.darwinModules.default ];
+
+  nix.linux-builder.enable = false;
+
+  nix-rosetta-builder = {
+    enable = true;
+    onDemand = true;
+    cores = 12;
+    memory = "48GiB";
+    diskSize = "500GiB";
+  };
+}
+```
+
+```bash
+darwin-rebuild switch
+```
+
+The native linux-builder provides the `aarch64-linux` build capability needed to build the nix-rosetta-builder VM image during this second `darwin-rebuild switch`.
+Once nix-rosetta-builder is running, it registers itself as the Linux builder and can rebuild its own VM image on future activations, so the native builder is no longer needed.
+
+Setting `nix.linux-builder.enable = false` is permanent.
+It prevents running two Linux VMs for the same purpose and triggers a nix-darwin cleanup activation that removes the native builder's working directory at `/var/lib/linux-builder`.
+The native builder would only need to be re-enabled if nix-rosetta-builder were completely removed and reinstalled from scratch.
+
 </details>
 
 Enter the development shell:
