@@ -2,8 +2,9 @@ name: Update Flake Inputs
 
 on:
   schedule:
-    # 3s UTC / 10s EST / 11s EDT
-    - cron: "0 3,15 * * *"
+    # Tue+Fri 22 UTC / 5p EST / 6p EDT
+    # revert to `0 3,15 * * *` for twice-daily sync with upstream updates
+    - cron: "0 22 * * 2,5"
   workflow_dispatch:
     inputs:
       auto_merge:
