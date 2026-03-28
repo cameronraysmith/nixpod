@@ -28,8 +28,12 @@ ephemeral.sqlite3-shm
 
 # Dolt server management (auto-started by bd)
 dolt-server.pid
+dolt-server.port
 dolt-server.log
 dolt-server.lock
+
+# Credential key (machine-local secret)
+.beads-credential-key
 
 # Legacy files (from pre-Dolt versions)
 *.db
