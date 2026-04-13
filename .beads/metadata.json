@@ -2,5 +2,6 @@
   "database": "dolt",
   "backend": "dolt",
   "dolt_mode": "server",
-  "dolt_database": "nixpod"
+  "dolt_database": "nixpod",
+  "project_id": "65daeadd-b70b-40c8-a945-563437cf3acd"
 }
