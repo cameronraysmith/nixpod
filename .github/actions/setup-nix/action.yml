@@ -147,7 +147,7 @@ runs:
 
     - name: post setup-nix
       if: runner.os == 'macOS' && inputs.installer == 'full'
-      uses: srz-zumix/post-run-action@1a8fae7b66af5af138983031ee58347f76513293 # v3
+      uses: srz-zumix/post-run-action@42756f7452b9439d0365b7e087b2c364f54209c6 # v3
       with:
         shell: bash -e {0}
         post-run: |
