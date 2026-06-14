@@ -194,7 +194,7 @@ jobs:
           echo "system-features = nixos-test benchmark big-parallel kvm" | sudo tee -a /etc/nix/nix.conf
           sudo systemctl restart nix-daemon
       - name: Setup tmate debug session
-        uses: mxschmitt/action-tmate@c0afd6f790e3a5564914980036ebf83216678101 # v3
+        uses: mxschmitt/action-tmate@35b54afac29c97fb54faba5b513f8fbd1882f113 # v3
         if: ${{ steps.cache.outputs.should-run == 'true' && inputs.debug_enabled }}
       - name: Summarize flake
         if: steps.cache.outputs.should-run == 'true'
