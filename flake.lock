@@ -161,9 +161,6 @@
     },
     "nix-unit": {
       "inputs": {
-        "flake-parts": [
-          "flake-parts"
-        ],
         "nix-github-actions": "nix-github-actions",
         "nixpkgs": [
           "nixpkgs"
@@ -173,11 +170,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1762774186,
-        "narHash": "sha256-hRADkHjNt41+JUHw2EiSkMaL4owL83g5ZppjYUdF/Dc=",
+        "lastModified": 1784020394,
+        "narHash": "sha256-eG+ETC+lvHDLhlKgQB6/lGfpqr56Lt3+j1pHOeb4tK4=",
         "owner": "nix-community",
         "repo": "nix-unit",
-        "rev": "1c9ab50554eed0b768f9e5b6f646d63c9673f0f7",
+        "rev": "3a484e17e4911ed97d56e37506f22e294c7c0ccd",
         "type": "github"
       },
       "original": {
