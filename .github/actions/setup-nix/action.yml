@@ -71,7 +71,7 @@ runs:
   steps:
     - name: reclaim space (linux)
       if: runner.os == 'Linux' && inputs.installer == 'full'
-      uses: wimpysworld/nothing-but-nix@687c797a730352432950c707ab493fcc951818d7 # main
+      uses: wimpysworld/nothing-but-nix@0ef18845238eab0332d1a89b6124a81cc0fbb917 # main
       with:
         hatchet-protocol: ${{ inputs.hatchet }}
         nix-permission-edict: true
